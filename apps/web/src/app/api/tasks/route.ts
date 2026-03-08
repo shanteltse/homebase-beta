@@ -27,24 +27,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
+  try {
+    const body = await request.json();
 
-  const [task] = await db
-    .insert(tasks)
-    .values({
-      userId: session.user.id,
-      title: body.title,
-      category: body.category,
-      subcategory: body.subcategory,
-      priority: body.priority ?? "medium",
-      dueDate: body.dueDate ? new Date(body.dueDate) : null,
-      subtasks: body.subtasks ?? [],
-      tags: body.tags ?? [],
-      assignee: body.assignee,
-      notes: body.notes,
-      links: body.links ?? [],
-    })
-    .returning();
+    const [task] = await db
+      .insert(tasks)
+      .values({
+        userId: session.user.id,
+        title: body.title,
+        category: body.category,
+        subcategory: body.subcategory,
+        priority: body.priority ?? "medium",
+        dueDate: body.dueDate ? new Date(body.dueDate) : null,
+        subtasks: body.subtasks ?? [],
+        tags: body.tags ?? [],
+        assignee: body.assignee,
+        notes: body.notes,
+        links: body.links ?? [],
+      })
+      .returning();
 
-  return NextResponse.json(task, { status: 201 });
+    return NextResponse.json(task, { status: 201 });
+  } catch (error) {
+    console.error("Failed to create task:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to create task" },
+      { status: 500 },
+    );
+  }
 }
