@@ -48,10 +48,19 @@ export async function POST(request: Request) {
       .returning();
 
     return NextResponse.json(task, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
+    const err = error as Record<string, unknown>;
     console.error("Failed to create task:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to create task" },
+      {
+        error: err?.message ?? "Failed to create task",
+        code: err?.code,
+        detail: err?.detail,
+        hint: err?.hint,
+        sourceError: err?.sourceError
+          ? { message: (err.sourceError as Record<string, unknown>)?.message, code: (err.sourceError as Record<string, unknown>)?.code, detail: (err.sourceError as Record<string, unknown>)?.detail }
+          : undefined,
+      },
       { status: 500 },
     );
   }
