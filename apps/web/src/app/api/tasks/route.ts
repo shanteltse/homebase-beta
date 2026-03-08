@@ -48,14 +48,10 @@ export async function POST(request: Request) {
       .returning();
 
     return NextResponse.json(task, { status: 201 });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Failed to create task:", error);
     return NextResponse.json(
-      {
-        error: String(error),
-        keys: error && typeof error === "object" ? Object.getOwnPropertyNames(error) : [],
-        full: JSON.stringify(error, Object.getOwnPropertyNames(error as object)),
-      },
+      { error: "Failed to create task" },
       { status: 500 },
     );
   }
