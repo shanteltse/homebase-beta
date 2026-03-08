@@ -3,11 +3,7 @@ import { z } from "zod/v4";
 export const taskPrioritySchema = z.enum(["high", "medium", "low"]);
 export type TaskPriority = z.infer<typeof taskPrioritySchema>;
 
-export const taskStatusSchema = z.enum([
-  "active",
-  "completed",
-  "waiting",
-]);
+export const taskStatusSchema = z.enum(["active", "completed", "waiting"]);
 export type TaskStatus = z.infer<typeof taskStatusSchema>;
 
 export const recurringPatternSchema = z.object({

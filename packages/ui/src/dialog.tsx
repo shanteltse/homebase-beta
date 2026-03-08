@@ -3,7 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { cn } from "./cn";
-import type { ComponentPropsWithoutRef } from "react";
+import type { ComponentPropsWithoutRef, HTMLAttributes } from "react";
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -18,7 +18,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       className={cn(
         "fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-        className
+        className,
       )}
       {...props}
     />
@@ -36,7 +36,7 @@ function DialogContent({
       <DialogPrimitive.Content
         className={cn(
           "fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-lg border border-border bg-background p-6 shadow-lg",
-          className
+          className,
         )}
         {...props}
       >
@@ -53,10 +53,8 @@ function DialogContent({
 function DialogHeader({
   className,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div className={cn("space-y-1.5 text-left", className)} {...props} />
-  );
+}: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("space-y-1.5 text-left", className)} {...props} />;
 }
 
 function DialogTitle({

@@ -5,10 +5,14 @@ export const categorySchema = z.object({
   name: z.string().min(1),
   color: z.string(),
   icon: z.string().optional(),
-  subcategories: z.array(z.object({
-    id: z.string(),
-    name: z.string().min(1),
-  })).default([]),
+  subcategories: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1),
+      }),
+    )
+    .default([]),
   isDefault: z.boolean().default(false),
 });
 export type Category = z.infer<typeof categorySchema>;

@@ -18,7 +18,7 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         className={cn(
           "z-50 min-w-[8rem] overflow-hidden rounded-md border border-border bg-background p-1 shadow-md",
-          className
+          className,
         )}
         {...props}
       />
@@ -34,7 +34,7 @@ function DropdownMenuItem({
     <DropdownMenuPrimitive.Item
       className={cn(
         "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm text-foreground outline-none focus:bg-muted data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        className
+        className,
       )}
       {...props}
     />
@@ -59,7 +59,10 @@ function DropdownMenuLabel({
 }: ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label>) {
   return (
     <DropdownMenuPrimitive.Label
-      className={cn("px-2 py-1.5 text-sm font-semibold text-foreground", className)}
+      className={cn(
+        "px-2 py-1.5 text-sm font-semibold text-foreground",
+        className,
+      )}
       {...props}
     />
   );

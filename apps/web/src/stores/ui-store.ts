@@ -32,8 +32,7 @@ export const useUIStore = create<UIState>((set) => ({
       notifications: state.notifications.filter((n) => n.id !== id),
     })),
 
-  toggleSidebar: () =>
-    set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 }));

@@ -5,7 +5,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-sm px-4">
         <div className="mb-8 text-center">
-          <h1 className="font-display text-3xl text-foreground">HomeBase</h1>
+          <h1 className="heading-lg text-foreground">HomeBase</h1>
         </div>
         {children}
       </div>

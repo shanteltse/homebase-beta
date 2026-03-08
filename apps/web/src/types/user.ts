@@ -8,7 +8,9 @@ export const notificationPreferencesSchema = z.object({
   quietHoursStart: z.string().optional(),
   quietHoursEnd: z.string().optional(),
 });
-export type NotificationPreferences = z.infer<typeof notificationPreferencesSchema>;
+export type NotificationPreferences = z.infer<
+  typeof notificationPreferencesSchema
+>;
 
 export const emailDigestSchema = z.object({
   enabled: z.boolean().default(false),

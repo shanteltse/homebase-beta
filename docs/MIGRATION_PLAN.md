@@ -46,17 +46,17 @@ HomeBase does **not** need a separate backend. Next.js serves as both the fronte
 
 ### What Lives Where
 
-| Concern | Where it Runs | Why |
-|---------|--------------|-----|
-| **UI rendering** | Client + Server Components | Next.js App Router handles both |
-| **Auth identity** | Client-side Firebase Auth SDK | Firebase handles sign-in UI and tokens |
-| **Auth session** | Next.js API route + httpOnly cookie | Server sets secure cookie from Firebase token |
-| **Route protection** | Next.js middleware (`middleware.ts`) | Runs on edge before page loads |
-| **Firestore reads/writes** | Client-side Firebase SDK | Firestore security rules enforce access; React Query caches |
-| **Anthropic AI calls** | Next.js API routes only | API key stays server-side (audit requirement) |
-| **Notification scheduling** | Vercel Cron + Next.js API route | Durable server-side scheduling (not service worker setTimeout) |
-| **Email digests** | Vercel Cron + Next.js API route | Server composes and sends via email provider |
-| **Rate limiting** | Next.js middleware or API routes | Protects AI endpoints from abuse |
+| Concern                     | Where it Runs                        | Why                                                            |
+| --------------------------- | ------------------------------------ | -------------------------------------------------------------- |
+| **UI rendering**            | Client + Server Components           | Next.js App Router handles both                                |
+| **Auth identity**           | Client-side Firebase Auth SDK        | Firebase handles sign-in UI and tokens                         |
+| **Auth session**            | Next.js API route + httpOnly cookie  | Server sets secure cookie from Firebase token                  |
+| **Route protection**        | Next.js middleware (`middleware.ts`) | Runs on edge before page loads                                 |
+| **Firestore reads/writes**  | Client-side Firebase SDK             | Firestore security rules enforce access; React Query caches    |
+| **Anthropic AI calls**      | Next.js API routes only              | API key stays server-side (audit requirement)                  |
+| **Notification scheduling** | Vercel Cron + Next.js API route      | Durable server-side scheduling (not service worker setTimeout) |
+| **Email digests**           | Vercel Cron + Next.js API route      | Server composes and sends via email provider                   |
+| **Rate limiting**           | Next.js middleware or API routes     | Protects AI endpoints from abuse                               |
 
 ### Why Not a Separate Backend?
 
@@ -78,27 +78,27 @@ None of these apply at launch. Revisit when the need is concrete.
 
 ### What We're Migrating
 
-| Legacy Feature | Complexity | Priority |
-|---|---|---|
-| Task CRUD (create, edit, delete, complete) | Medium | P0 |
-| Categories & subcategories | Low | P0 |
-| Due dates & natural language parsing | Medium | P1 |
-| Subtasks | Low | P1 |
-| Recurring tasks | Medium | P2 |
-| Tags | Low | P1 |
-| Assignees & household members | Medium | P2 |
-| Calendar views (month/week/day) | High | P2 |
-| Firebase Auth (email, Google) | Medium | P0 |
-| Firestore sync | Medium | P1 |
-| Notifications & reminders | High | P3 |
-| AI task parsing (Anthropic) | Medium | P3 |
-| AI link suggestions | Low | P3 |
-| Gamification & achievements | Low | P4 |
-| Email digests | Medium | P4 |
-| Onboarding wizard | Low | P2 |
-| Dashboard rundown | Low | P2 |
-| Service worker / offline | High | P4 |
-| Settings management | Low | P1 |
+| Legacy Feature                             | Complexity | Priority |
+| ------------------------------------------ | ---------- | -------- |
+| Task CRUD (create, edit, delete, complete) | Medium     | P0       |
+| Categories & subcategories                 | Low        | P0       |
+| Due dates & natural language parsing       | Medium     | P1       |
+| Subtasks                                   | Low        | P1       |
+| Recurring tasks                            | Medium     | P2       |
+| Tags                                       | Low        | P1       |
+| Assignees & household members              | Medium     | P2       |
+| Calendar views (month/week/day)            | High       | P2       |
+| Firebase Auth (email, Google)              | Medium     | P0       |
+| Firestore sync                             | Medium     | P1       |
+| Notifications & reminders                  | High       | P3       |
+| AI task parsing (Anthropic)                | Medium     | P3       |
+| AI link suggestions                        | Low        | P3       |
+| Gamification & achievements                | Low        | P4       |
+| Email digests                              | Medium     | P4       |
+| Onboarding wizard                          | Low        | P2       |
+| Dashboard rundown                          | Low        | P2       |
+| Service worker / offline                   | High       | P4       |
+| Settings management                        | Low        | P1       |
 
 ---
 
@@ -570,14 +570,14 @@ src/features/gamification/
 
 ## Phase Summary
 
-| Phase | Name | Delivers | Key Dependencies |
-|-------|------|----------|-----------------|
-| **0** | Foundation | Tooling, types, UI primitives, app shell, test infra | None |
-| **1** | Auth + Task CRUD | Login/register, task create/read/update/delete, filters | Phase 0 |
-| **2** | Enrichment | Due dates, subtasks, tags, assignees, settings, dashboard, onboarding | Phase 1 |
-| **3** | Calendar + Sync + Notifications | Calendar views, Firestore sync, households, notifications, recurring | Phase 2 |
-| **4** | AI Features | Server-proxied NLP parsing, link suggestions, follow-ups | Phase 1 (API routes) |
-| **5** | Polish & Scale | Gamification, email digests, offline/PWA, security hardening, E2E | Phase 3 |
+| Phase | Name                            | Delivers                                                              | Key Dependencies     |
+| ----- | ------------------------------- | --------------------------------------------------------------------- | -------------------- |
+| **0** | Foundation                      | Tooling, types, UI primitives, app shell, test infra                  | None                 |
+| **1** | Auth + Task CRUD                | Login/register, task create/read/update/delete, filters               | Phase 0              |
+| **2** | Enrichment                      | Due dates, subtasks, tags, assignees, settings, dashboard, onboarding | Phase 1              |
+| **3** | Calendar + Sync + Notifications | Calendar views, Firestore sync, households, notifications, recurring  | Phase 2              |
+| **4** | AI Features                     | Server-proxied NLP parsing, link suggestions, follow-ups              | Phase 1 (API routes) |
+| **5** | Polish & Scale                  | Gamification, email digests, offline/PWA, security hardening, E2E     | Phase 3              |
 
 Phases 3 and 4 can run in parallel since they have no interdependencies beyond Phase 1.
 
@@ -585,13 +585,13 @@ Phases 3 and 4 can run in parallel since they have no interdependencies beyond P
 
 ## Risks & Mitigations
 
-| Risk | Impact | Mitigation |
-|------|--------|-----------|
-| Firestore rules too permissive | Data leak between users | Write rules test suite; rule: users read/write only own data |
-| Offline sync conflicts | Data loss | Last-write-wins with `updatedAt`; defer full offline to Phase 5 |
-| AI costs spiral | Budget overrun | Rate limit per user; cache common parse patterns server-side |
-| Scope creep from legacy feature parity | Never ships | Phases are scoped; ship Phase 1 as usable MVP |
-| Next.js 16 breaking changes | Migration friction | Pin version; follow canary changelog |
+| Risk                                   | Impact                  | Mitigation                                                      |
+| -------------------------------------- | ----------------------- | --------------------------------------------------------------- |
+| Firestore rules too permissive         | Data leak between users | Write rules test suite; rule: users read/write only own data    |
+| Offline sync conflicts                 | Data loss               | Last-write-wins with `updatedAt`; defer full offline to Phase 5 |
+| AI costs spiral                        | Budget overrun          | Rate limit per user; cache common parse patterns server-side    |
+| Scope creep from legacy feature parity | Never ships             | Phases are scoped; ship Phase 1 as usable MVP                   |
+| Next.js 16 breaking changes            | Migration friction      | Pin version; follow canary changelog                            |
 
 ---
 

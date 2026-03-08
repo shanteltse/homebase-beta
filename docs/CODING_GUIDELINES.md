@@ -100,18 +100,18 @@ src/features/tasks/
 
 ### Expected Features for HomeBase
 
-| Feature | Description |
-|---------|-------------|
-| `auth` | Login, register, session management |
-| `tasks` | CRUD, filtering, sorting, subtasks, recurring |
-| `calendar` | Month/week/day views, drag-and-drop |
-| `household` | Household codes, member management, sharing |
-| `notifications` | Reminders, digests, push notifications |
-| `tags` | Custom tag CRUD, filtering |
-| `settings` | User preferences, category management |
-| `onboarding` | Setup wizard flow |
-| `ai` | Server-side AI proxy, NLP parsing, suggestions |
-| `gamification` | Achievements, streaks, stats |
+| Feature         | Description                                    |
+| --------------- | ---------------------------------------------- |
+| `auth`          | Login, register, session management            |
+| `tasks`         | CRUD, filtering, sorting, subtasks, recurring  |
+| `calendar`      | Month/week/day views, drag-and-drop            |
+| `household`     | Household codes, member management, sharing    |
+| `notifications` | Reminders, digests, push notifications         |
+| `tags`          | Custom tag CRUD, filtering                     |
+| `settings`      | User preferences, category management          |
+| `onboarding`    | Setup wizard flow                              |
+| `ai`            | Server-side AI proxy, NLP parsing, suggestions |
+| `gamification`  | Achievements, streaks, stats                   |
 
 ---
 
@@ -125,14 +125,14 @@ src/features/tasks/
 
 ### Code
 
-| Type | Convention | Example |
-|------|-----------|---------|
-| React components | `PascalCase` | `TaskCard`, `CreateTaskForm` |
-| Hooks | `use` prefix, `camelCase` | `useDisclosure`, `useTasks` |
-| Types / Interfaces | `PascalCase` | `Task`, `CreateTaskInput` |
-| Constants | `UPPER_SNAKE_CASE` | `TASK_PRIORITIES`, `ROLES` |
-| Functions / variables | `camelCase` | `formatDate`, `taskCount` |
-| API query keys | Array of descriptive strings | `['tasks', { page }]` |
+| Type                  | Convention                   | Example                      |
+| --------------------- | ---------------------------- | ---------------------------- |
+| React components      | `PascalCase`                 | `TaskCard`, `CreateTaskForm` |
+| Hooks                 | `use` prefix, `camelCase`    | `useDisclosure`, `useTasks`  |
+| Types / Interfaces    | `PascalCase`                 | `Task`, `CreateTaskInput`    |
+| Constants             | `UPPER_SNAKE_CASE`           | `TASK_PRIORITIES`, `ROLES`   |
+| Functions / variables | `camelCase`                  | `formatDate`, `taskCount`    |
+| API query keys        | Array of descriptive strings | `['tasks', { page }]`        |
 
 ### Import Order
 
@@ -174,6 +174,60 @@ const buttonVariants = cva("inline-flex items-center rounded-md font-medium", {
 });
 ```
 
+### Tailwind Rules
+
+- **Never use `mt-*` or `mb-*` when `gap-*` on a parent flex/grid achieves the same spacing.** Margin creates coupling between siblings; gap is owned by the container.
+
+  ```tsx
+  // Bad
+  <div>
+    <h2>Title</h2>
+    <p className="mt-2">Description</p>
+  </div>
+
+  // Good
+  <div className="flex flex-col gap-2">
+    <h2>Title</h2>
+    <p>Description</p>
+  </div>
+  ```
+
+### Typography
+
+Custom utility classes are defined in `globals.css`. They set font family, size, weight, and line height — **never color**. Apply color separately with `text-foreground`, `text-muted-foreground`, etc.
+
+| Class | Font | Size | Weight | Use for |
+|---|---|---|---|---|
+| `heading-xl` | Display | 4xl | normal | Hero headings |
+| `heading-lg` | Display | 3xl | normal | Auth page brand |
+| `heading-md` | Display | 2xl | normal | Page titles |
+| `heading-sm` | Display | xl | normal | Sidebar brand |
+| `heading-xs` | Display | lg | normal | Mobile header brand |
+| `title` | Sans | xl | 600 | Section titles (non-display font) |
+| `body-lg` | Sans | base | normal | Prominent body text |
+| `body` | Sans | sm | normal | Default body text, descriptions |
+| `label` | Sans | sm | 500 | Form labels, stat labels, metadata |
+| `stat` | Sans | 2xl | 600 | Dashboard stat values |
+| `caption` | Sans | xs | normal | Mobile nav labels, fine print |
+
+```tsx
+// Usage — always pair with a color class
+<h2 className="heading-md text-foreground">Tasks</h2>
+<p className="body text-muted-foreground">Manage your tasks.</p>
+<p className="label text-muted-foreground">Overdue</p>
+<p className="stat text-foreground">12</p>
+```
+
+### Import Rules
+
+- **Never use `React.ReactNode`, `React.HTMLAttributes`, etc.** Import the type directly: `import type { ReactNode } from "react"`.
+- **Don't import React** unless you actually need the namespace (you almost never do with the JSX transform).
+
+### Comment Rules
+
+- **No obvious comments.** Don't comment what the code already says (`{/* Sidebar */}`, `{/* Main content */}`). Only comment where the logic isn't self-evident.
+- **No phase/TODO comments in shipped code.** Placeholder text is fine in the UI ("Coming soon"), but don't leave `{/* will be added in Phase X */}` comments.
+
 ### Component Guidelines
 
 - **Colocate** styles, state, and utilities close to where they're used.
@@ -203,13 +257,13 @@ const buttonVariants = cva("inline-flex items-center rounded-md font-medium", {
 
 Not everything goes through API routes. The rule is simple:
 
-| Data Operation | Where it Runs | Why |
-|---|---|---|
+| Data Operation         | Where it Runs                  | Why                                              |
+| ---------------------- | ------------------------------ | ------------------------------------------------ |
 | Firestore reads/writes | **Client-side** (Firebase SDK) | Security rules enforce access; no backend needed |
-| Anthropic AI calls | **Server-side** (API route) | API key must stay server-side |
-| Auth session cookie | **Server-side** (API route) | httpOnly cookies require server |
-| Email sending | **Server-side** (API route) | Email provider key must stay server-side |
-| Scheduled jobs | **Server-side** (Vercel Cron) | Needs reliable scheduling |
+| Anthropic AI calls     | **Server-side** (API route)    | API key must stay server-side                    |
+| Auth session cookie    | **Server-side** (API route)    | httpOnly cookies require server                  |
+| Email sending          | **Server-side** (API route)    | Email provider key must stay server-side         |
+| Scheduled jobs         | **Server-side** (Vercel Cron)  | Needs reliable scheduling                        |
 
 **Rule of thumb:** If it needs a secret or server authority, use an API route. If it's just CRUD against Firestore, use the client SDK directly.
 
@@ -277,13 +331,13 @@ export const getTasksQueryOptions = (filters?: TaskFilters) => {
 
 ### Categories of State
 
-| Category | Tool | When to Use |
-|----------|------|-------------|
-| **Server cache** | TanStack React Query | Any data from an API / database |
-| **Component state** | `useState`, `useReducer` | UI state local to a component |
-| **Global app state** | Zustand | Notifications, modals, theme, sidebar |
-| **Form state** | React Hook Form | Form inputs and validation |
-| **URL state** | `useSearchParams`, `useParams` | Filters, pagination, active tabs |
+| Category             | Tool                           | When to Use                           |
+| -------------------- | ------------------------------ | ------------------------------------- |
+| **Server cache**     | TanStack React Query           | Any data from an API / database       |
+| **Component state**  | `useState`, `useReducer`       | UI state local to a component         |
+| **Global app state** | Zustand                        | Notifications, modals, theme, sidebar |
+| **Form state**       | React Hook Form                | Form inputs and validation            |
+| **URL state**        | `useSearchParams`, `useParams` | Filters, pagination, active tabs      |
 
 ### Rules
 
@@ -301,7 +355,10 @@ Use **React Hook Form** + **Zod** for all forms.
 ```tsx
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createTaskInputSchema, type CreateTaskInput } from "../api/create-task";
+import {
+  createTaskInputSchema,
+  type CreateTaskInput,
+} from "../api/create-task";
 
 const form = useForm<CreateTaskInput>({
   resolver: zodResolver(createTaskInputSchema),
@@ -379,11 +436,11 @@ const POLICIES = {
 
 Focus on **integration tests** that test real user workflows. Don't over-unit-test.
 
-| Level | Tool | What to Test |
-|-------|------|-------------|
-| Unit | Vitest | Utility functions, hooks, isolated logic |
+| Level       | Tool                     | What to Test                                       |
+| ----------- | ------------------------ | -------------------------------------------------- |
+| Unit        | Vitest                   | Utility functions, hooks, isolated logic           |
 | Integration | Vitest + Testing Library | Feature flows (render component, interact, assert) |
-| E2E | Playwright | Critical user journeys (auth, create task, etc.) |
+| E2E         | Playwright               | Critical user journeys (auth, create task, etc.)   |
 
 ### Testing Utilities
 
@@ -504,21 +561,21 @@ These are non-negotiable rules for migrating the legacy HomeBase app:
 
 ### Essential Libraries
 
-| Purpose | Library |
-|---------|---------|
-| Framework | Next.js 16 (App Router) |
-| UI | React 19 |
-| Styling | Tailwind CSS |
-| Components | Radix UI + CVA |
-| Server cache | TanStack React Query |
-| Global state | Zustand |
-| Forms | React Hook Form |
-| Validation | Zod |
-| HTTP client | Axios (or fetch wrapper) |
-| Auth | Firebase Auth + react-query-auth |
-| Testing | Vitest + Testing Library + Playwright + MSW |
-| Linting | ESLint 9 + Prettier |
-| Monorepo | Turborepo + pnpm |
+| Purpose      | Library                                     |
+| ------------ | ------------------------------------------- |
+| Framework    | Next.js 16 (App Router)                     |
+| UI           | React 19                                    |
+| Styling      | Tailwind CSS                                |
+| Components   | Radix UI + CVA                              |
+| Server cache | TanStack React Query                        |
+| Global state | Zustand                                     |
+| Forms        | React Hook Form                             |
+| Validation   | Zod                                         |
+| HTTP client  | Axios (or fetch wrapper)                    |
+| Auth         | Firebase Auth + react-query-auth            |
+| Testing      | Vitest + Testing Library + Playwright + MSW |
+| Linting      | ESLint 9 + Prettier                         |
+| Monorepo     | Turborepo + pnpm                            |
 
 ### File Checklist for a New Feature
 
