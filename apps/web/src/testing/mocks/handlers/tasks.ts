@@ -2,7 +2,8 @@ import { http, HttpResponse } from "msw";
 
 let nextId = 1;
 
-const tasks = [
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const tasks: Record<string, any>[] = [
   {
     id: "task-1",
     userId: "test-user-id",
