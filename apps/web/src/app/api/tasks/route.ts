@@ -10,8 +10,8 @@ import { rateLimitByIp } from "@/lib/api-rate-limit";
 import { handleApiError, ApiError } from "@/lib/api-error";
 import { validateOrigin } from "@/lib/api-utils";
 
-export async function GET() {
-  const user = await getAuthUser();
+export async function GET(request: Request) {
+  const user = await getAuthUser(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

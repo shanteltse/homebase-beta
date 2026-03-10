@@ -21,6 +21,7 @@ import {
   useJoinHousehold,
   useLeaveHousehold,
 } from "../../hooks/use-household";
+import { HouseholdSkeleton, MemberSkeleton } from "../../components/household-skeleton";
 
 const serifFont = Platform.select({
   ios: "Georgia",
@@ -219,11 +220,10 @@ function HouseholdView({
       <Text style={styles.sectionLabel}>Members</Text>
 
       {membersLoading ? (
-        <ActivityIndicator
-          color="#b08068"
-          size="small"
-          style={{ marginTop: 12 }}
-        />
+        <>
+          <MemberSkeleton />
+          <MemberSkeleton />
+        </>
       ) : (
         (members ?? []).map((member) => (
           <View key={member.id} style={styles.memberCard}>
@@ -295,9 +295,7 @@ export default function HouseholdScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator color="#b08068" size="large" />
-        </View>
+        <HouseholdSkeleton />
       ) : household ? (
         <HouseholdView household={household} refreshing={refreshing} onRefresh={onRefresh} />
       ) : (

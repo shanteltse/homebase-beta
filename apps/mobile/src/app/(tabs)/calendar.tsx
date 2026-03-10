@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
-  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -298,7 +297,9 @@ export default function CalendarScreen() {
               : formatMonthYear(currentMonth)}
           </Text>
           {isLoading && (
-            <ActivityIndicator size="small" color="#b08068" style={styles.headerSpinner} />
+            <View style={styles.headerSpinner}>
+              <View style={styles.loadingDot} />
+            </View>
           )}
         </View>
         <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
@@ -542,6 +543,14 @@ const styles = StyleSheet.create({
   },
   headerSpinner: {
     marginLeft: 8,
+    justifyContent: "center",
+  },
+  loadingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#b08068",
+    opacity: 0.6,
   },
   todayButton: {
     backgroundColor: "#f0e6de",

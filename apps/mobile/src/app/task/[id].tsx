@@ -5,7 +5,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
   Platform,
   StyleSheet,
@@ -14,6 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useTasks, useUpdateTask, useDeleteTask } from "../../hooks/use-tasks";
+import { TaskDetailSkeleton } from "../../components/task-detail-skeleton";
 import type { Task } from "@repo/shared/types/task";
 
 const serifFont = Platform.select({
@@ -152,8 +152,14 @@ export default function TaskDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#b08068" />
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.headerButton} hitSlop={8}>
+            <Ionicons name="chevron-back" size={24} color="#4a3f3a" />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }} />
+        </View>
+        <TaskDetailSkeleton />
       </View>
     );
   }

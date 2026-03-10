@@ -6,8 +6,8 @@ import { db } from "@/db";
 import { notifications } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
-export async function GET() {
-  const user = await getAuthUser();
+export async function GET(request: Request) {
+  const user = await getAuthUser(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

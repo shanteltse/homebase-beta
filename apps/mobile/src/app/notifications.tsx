@@ -16,6 +16,7 @@ import {
   useMarkNotificationRead,
   useMarkAllRead,
 } from "../hooks/use-notifications";
+import { NotificationSkeleton } from "../components/notification-skeleton";
 
 const serifFont = Platform.select({
   ios: "Georgia",
@@ -122,7 +123,13 @@ export default function NotificationsScreen() {
           />
         }
         ListEmptyComponent={
-          isLoading ? null : (
+          isLoading ? (
+            <View>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <NotificationSkeleton key={i} />
+              ))}
+            </View>
+          ) : (
             <View style={styles.emptyContainer}>
               <Ionicons name="notifications-off-outline" size={48} color="#e2d9d0" />
               <Text style={styles.emptyText}>No notifications</Text>

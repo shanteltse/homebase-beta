@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import { useAuth } from "../../lib/auth-context";
 import { useTasks } from "../../hooks/use-tasks";
 import { useAchievements } from "../../hooks/use-achievements";
+import { ProfileSkeleton } from "../../components/profile-skeleton";
 import { ACHIEVEMENTS } from "@repo/shared/constants/achievements";
 
 const serifFont = Platform.select({
@@ -27,8 +28,8 @@ const serifFont = Platform.select({
 export default function ProfileScreen() {
   const { signOut, user } = useAuth();
   const router = useRouter();
-  const { data: tasks, refetch: refetchTasks } = useTasks();
-  const { data: unlockedAchievements, refetch: refetchAchievements } = useAchievements();
+  const { data: tasks, isLoading: tasksLoading, refetch: refetchTasks } = useTasks();
+  const { data: unlockedAchievements, isLoading: achievementsLoading, refetch: refetchAchievements } = useAchievements();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -91,6 +92,9 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      {tasksLoading && achievementsLoading ? (
+        <ProfileSkeleton />
+      ) : (
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -175,6 +179,7 @@ export default function ProfileScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
