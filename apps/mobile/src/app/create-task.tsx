@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import * as Haptics from "expo-haptics";
 import { useCreateTask } from "../../hooks/use-tasks";
 import type { TaskPriority } from "@repo/shared/types/task";
 
@@ -63,6 +64,7 @@ export default function CreateTaskScreen() {
 
     createTask.mutate(input, {
       onSuccess: () => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.back();
       },
       onError: (err) => {

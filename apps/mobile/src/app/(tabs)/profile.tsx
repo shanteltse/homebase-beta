@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   FlatList,
   Alert,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,8 +27,15 @@ const serifFont = Platform.select({
 export default function ProfileScreen() {
   const { signOut, user } = useAuth();
   const router = useRouter();
-  const { data: tasks } = useTasks();
-  const { data: unlockedAchievements } = useAchievements();
+  const { data: tasks, refetch: refetchTasks } = useTasks();
+  const { data: unlockedAchievements, refetch: refetchAchievements } = useAchievements();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([refetchTasks(), refetchAchievements()]);
+    setRefreshing(false);
+  }, [refetchTasks, refetchAchievements]);
 
   const unlockedMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -87,6 +95,9 @@ export default function ProfileScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#b08068" />
+        }
       >
         {/* Profile Header */}
         <View style={styles.header}>

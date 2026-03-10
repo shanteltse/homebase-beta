@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   Share,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -31,7 +32,7 @@ const serifFont = Platform.select({
 // No-household view
 // ---------------------------------------------------------------------------
 
-function NoHouseholdView() {
+function NoHouseholdView({ refreshing, onRefresh }: { refreshing: boolean; onRefresh: () => void }) {
   const [householdName, setHouseholdName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const createHousehold = useCreateHousehold();
@@ -59,6 +60,9 @@ function NoHouseholdView() {
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#b08068" />
+      }
     >
       {/* Header */}
       <View style={styles.emptyHeader}>
@@ -143,8 +147,12 @@ function NoHouseholdView() {
 
 function HouseholdView({
   household,
+  refreshing,
+  onRefresh,
 }: {
   household: { id: string; name: string; inviteCode: string };
+  refreshing: boolean;
+  onRefresh: () => void;
 }) {
   const { data: members, isLoading: membersLoading } = useHouseholdMembers();
   const leaveHousehold = useLeaveHousehold();
@@ -184,6 +192,9 @@ function HouseholdView({
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#b08068" />
+      }
     >
       {/* Household title */}
       <Text style={styles.title}>{household.name}</Text>
@@ -271,8 +282,15 @@ function HouseholdView({
 // ---------------------------------------------------------------------------
 
 export default function HouseholdScreen() {
-  const { data: households, isLoading } = useHousehold();
+  const { data: households, isLoading, refetch: refetchHousehold } = useHousehold();
   const household = households?.[0];
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetchHousehold();
+    setRefreshing(false);
+  }, [refetchHousehold]);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -281,9 +299,9 @@ export default function HouseholdScreen() {
           <ActivityIndicator color="#b08068" size="large" />
         </View>
       ) : household ? (
-        <HouseholdView household={household} />
+        <HouseholdView household={household} refreshing={refreshing} onRefresh={onRefresh} />
       ) : (
-        <NoHouseholdView />
+        <NoHouseholdView refreshing={refreshing} onRefresh={onRefresh} />
       )}
     </SafeAreaView>
   );

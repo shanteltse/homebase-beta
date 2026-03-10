@@ -93,6 +93,37 @@ function formatMonthYear(date: Date): string {
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
+function getWeekDays(referenceDate: Date): CalendarDay[] {
+  const dow = referenceDate.getDay(); // 0=Sun
+  const start = new Date(referenceDate);
+  start.setDate(start.getDate() - dow);
+  const days: CalendarDay[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    days.push({ date: d, isCurrentMonth: true });
+  }
+  return days;
+}
+
+function formatWeekRange(referenceDate: Date): string {
+  const dow = referenceDate.getDay();
+  const start = new Date(referenceDate);
+  start.setDate(start.getDate() - dow);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const startStr = start.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const endStr = end.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `${startStr} \u2013 ${endStr}`;
+}
+
 function getTasksForDate(tasks: Task[], date: Date): Task[] {
   return tasks.filter((task) => {
     if (!task.dueDate) return false;
@@ -164,6 +195,8 @@ export default function CalendarScreen() {
     () => new Date(today.getFullYear(), today.getMonth(), 1)
   );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [viewMode, setViewMode] = useState<"month" | "week">("month");
+  const [weekAnchor, setWeekAnchor] = useState<Date>(() => new Date());
   const { data: tasks, isLoading } = useTasks();
 
   const allTasks = tasks ?? [];
@@ -173,26 +206,58 @@ export default function CalendarScreen() {
     [currentMonth]
   );
 
+  const weekDays = useMemo(() => getWeekDays(weekAnchor), [weekAnchor]);
+
   const selectedDayTasks = useMemo(() => {
     if (!selectedDate) return [];
     return getTasksForDate(allTasks, selectedDate);
   }, [selectedDate, allTasks]);
 
+  const tasksByDateKeyForWeek = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    for (const task of allTasks) {
+      if (!task.dueDate) continue;
+      const due = new Date(task.dueDate);
+      const key = `${due.getFullYear()}-${due.getMonth()}-${due.getDate()}`;
+      const existing = map.get(key) ?? [];
+      existing.push(task);
+      map.set(key, existing);
+    }
+    return map;
+  }, [allTasks]);
+
   const goToPrevMonth = useCallback(() => {
-    setCurrentMonth(
-      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-    );
-  }, []);
+    if (viewMode === "week") {
+      setWeekAnchor((prev) => {
+        const d = new Date(prev);
+        d.setDate(d.getDate() - 7);
+        return d;
+      });
+    } else {
+      setCurrentMonth(
+        (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+      );
+    }
+  }, [viewMode]);
 
   const goToNextMonth = useCallback(() => {
-    setCurrentMonth(
-      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-    );
-  }, []);
+    if (viewMode === "week") {
+      setWeekAnchor((prev) => {
+        const d = new Date(prev);
+        d.setDate(d.getDate() + 7);
+        return d;
+      });
+    } else {
+      setCurrentMonth(
+        (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+      );
+    }
+  }, [viewMode]);
 
   const goToToday = useCallback(() => {
     const now = new Date();
     setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+    setWeekAnchor(now);
     setSelectedDate(now);
   }, []);
 
@@ -227,7 +292,11 @@ export default function CalendarScreen() {
           <Ionicons name="chevron-back" size={22} color="#4a3f3a" />
         </TouchableOpacity>
         <View style={styles.headerTitleRow}>
-          <Text style={styles.headerTitle}>{formatMonthYear(currentMonth)}</Text>
+          <Text style={styles.headerTitle}>
+            {viewMode === "week"
+              ? formatWeekRange(weekAnchor)
+              : formatMonthYear(currentMonth)}
+          </Text>
           {isLoading && (
             <ActivityIndicator size="small" color="#b08068" style={styles.headerSpinner} />
           )}
@@ -240,6 +309,50 @@ export default function CalendarScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* View mode toggle */}
+      <View style={styles.viewToggleRow}>
+        <TouchableOpacity
+          style={[
+            styles.viewTogglePill,
+            viewMode === "month"
+              ? styles.viewTogglePillActive
+              : styles.viewTogglePillInactive,
+          ]}
+          onPress={() => setViewMode("month")}
+        >
+          <Text
+            style={[
+              styles.viewToggleText,
+              viewMode === "month"
+                ? styles.viewToggleTextActive
+                : styles.viewToggleTextInactive,
+            ]}
+          >
+            Month
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.viewTogglePill,
+            viewMode === "week"
+              ? styles.viewTogglePillActive
+              : styles.viewTogglePillInactive,
+          ]}
+          onPress={() => setViewMode("week")}
+        >
+          <Text
+            style={[
+              styles.viewToggleText,
+              viewMode === "week"
+                ? styles.viewToggleTextActive
+                : styles.viewToggleTextInactive,
+            ]}
+          >
+            Week
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Weekday header */}
       <View style={styles.weekdayRow}>
         {WEEKDAY_LABELS.map((label, i) => (
@@ -249,24 +362,86 @@ export default function CalendarScreen() {
         ))}
       </View>
 
-      {/* Calendar grid */}
-      <View style={styles.calendarGrid}>
-        {rows.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.calendarRow}>
-            {row.map((day, colIndex) => {
+      {/* Month view */}
+      {viewMode === "month" && (
+        <View style={styles.calendarGrid}>
+          {rows.map((row, rowIndex) => (
+            <View key={rowIndex} style={styles.calendarRow}>
+              {row.map((day, colIndex) => {
+                const isToday = isSameDay(day.date, today);
+                const isSelected =
+                  selectedDate != null && isSameDay(day.date, selectedDate);
+                const dateKey = `${day.date.getFullYear()}-${day.date.getMonth()}-${day.date.getDate()}`;
+                const dayPriorities = tasksByDateKey.get(dateKey) ?? [];
+
+                return (
+                  <TouchableOpacity
+                    key={colIndex}
+                    style={[
+                      styles.dayCell,
+                      isSelected && styles.dayCellSelected,
+                      !day.isCurrentMonth && styles.dayCellOutside,
+                    ]}
+                    onPress={() => handleDayPress(day.date)}
+                    activeOpacity={0.6}
+                  >
+                    <View style={styles.dayNumberContainer}>
+                      {isToday ? (
+                        <View style={styles.todayCircle}>
+                          <Text style={styles.todayNumber}>
+                            {day.date.getDate()}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.dayNumber}>
+                          {day.date.getDate()}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.dotsRow}>
+                      {dayPriorities.slice(0, 2).map((priority, di) => (
+                        <View
+                          key={di}
+                          style={[
+                            styles.dot,
+                            {
+                              backgroundColor:
+                                PRIORITY_COLORS[priority] ?? "#7c9a8e",
+                            },
+                          ]}
+                        />
+                      ))}
+                      {dayPriorities.length > 2 && (
+                        <Text style={styles.moreText}>
+                          +{dayPriorities.length - 2}
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Week view */}
+      {viewMode === "week" && (
+        <View style={styles.calendarGrid}>
+          <View style={styles.calendarRow}>
+            {weekDays.map((day, colIndex) => {
               const isToday = isSameDay(day.date, today);
               const isSelected =
                 selectedDate != null && isSameDay(day.date, selectedDate);
               const dateKey = `${day.date.getFullYear()}-${day.date.getMonth()}-${day.date.getDate()}`;
-              const dayPriorities = tasksByDateKey.get(dateKey) ?? [];
+              const dayTasks = tasksByDateKeyForWeek.get(dateKey) ?? [];
 
               return (
                 <TouchableOpacity
                   key={colIndex}
                   style={[
-                    styles.dayCell,
+                    styles.weekDayCell,
                     isSelected && styles.dayCellSelected,
-                    !day.isCurrentMonth && styles.dayCellOutside,
                   ]}
                   onPress={() => handleDayPress(day.date)}
                   activeOpacity={0.6}
@@ -284,22 +459,20 @@ export default function CalendarScreen() {
                       </Text>
                     )}
                   </View>
-                  <View style={styles.dotsRow}>
-                    {dayPriorities.slice(0, 2).map((priority, di) => (
-                      <View
-                        key={di}
-                        style={[
-                          styles.dot,
-                          {
-                            backgroundColor:
-                              PRIORITY_COLORS[priority] ?? "#7c9a8e",
-                          },
-                        ]}
-                      />
+                  <View style={styles.weekTaskList}>
+                    {dayTasks.slice(0, 3).map((task) => (
+                      <View key={task.id} style={styles.weekTaskCard}>
+                        <Text
+                          style={styles.weekTaskCardText}
+                          numberOfLines={1}
+                        >
+                          {task.title}
+                        </Text>
+                      </View>
                     ))}
-                    {dayPriorities.length > 2 && (
-                      <Text style={styles.moreText}>
-                        +{dayPriorities.length - 2}
+                    {dayTasks.length > 3 && (
+                      <Text style={styles.weekTaskMore}>
+                        +{dayTasks.length - 3} more
                       </Text>
                     )}
                   </View>
@@ -307,8 +480,8 @@ export default function CalendarScreen() {
               );
             })}
           </View>
-        ))}
-      </View>
+        </View>
+      )}
 
       {/* Selected day tasks */}
       {selectedDate != null && (
@@ -381,6 +554,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#b08068",
+  },
+  viewToggleRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    paddingBottom: 8,
+  },
+  viewTogglePill: {
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+  },
+  viewTogglePillActive: {
+    backgroundColor: "#b08068",
+  },
+  viewTogglePillInactive: {
+    backgroundColor: "#f0e6de",
+  },
+  viewToggleText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  viewToggleTextActive: {
+    color: "#ffffff",
+  },
+  viewToggleTextInactive: {
+    color: "#4a3f3a",
   },
   weekdayRow: {
     flexDirection: "row",
@@ -456,6 +656,40 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: "#8a7f78",
     fontWeight: "600",
+  },
+  weekDayCell: {
+    flex: 1,
+    minHeight: 80,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2d9d0",
+    paddingTop: 4,
+    paddingHorizontal: 2,
+    alignItems: "center",
+  },
+  weekTaskList: {
+    width: "100%",
+    paddingHorizontal: 1,
+    marginTop: 2,
+  },
+  weekTaskCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#e2d9d0",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginBottom: 2,
+  },
+  weekTaskCardText: {
+    fontSize: 12,
+    color: "#4a3f3a",
+  },
+  weekTaskMore: {
+    fontSize: 10,
+    color: "#8a7f78",
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 1,
   },
   taskListContainer: {
     flex: 1,
