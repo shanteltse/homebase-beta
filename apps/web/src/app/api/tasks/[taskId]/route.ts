@@ -3,6 +3,10 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { tasks } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
+import { updateTaskInputSchema } from "@/types/task";
+import { rateLimitByIp } from "@/lib/api-rate-limit";
+import { handleApiError, ApiError } from "@/lib/api-error";
+import { validateOrigin } from "@/lib/api-utils";
 
 type Params = { params: Promise<{ taskId: string }> };
 
@@ -28,108 +32,155 @@ export async function GET(_request: Request, { params }: Params) {
 }
 
 export async function PATCH(request: Request, { params }: Params) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    if (!validateOrigin(request)) {
+      throw new ApiError(403, "Forbidden");
+    }
 
-  const { taskId } = await params;
-  const body = await request.json();
+    const { allowed, retryAfterMs } = rateLimitByIp(request);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil(retryAfterMs / 1000)),
+          },
+        },
+      );
+    }
 
-  const updates: Record<string, unknown> = { updatedAt: new Date() };
+    const session = await auth();
+    if (!session?.user?.id) {
+      throw new ApiError(401, "Unauthorized");
+    }
 
-  if (body.title !== undefined) updates.title = body.title;
-  if (body.category !== undefined) updates.category = body.category;
-  if (body.subcategory !== undefined) updates.subcategory = body.subcategory;
-  if (body.priority !== undefined) updates.priority = body.priority;
-  if (body.notes !== undefined) updates.notes = body.notes;
-  if (body.assignee !== undefined) updates.assignee = body.assignee;
-  if (body.subtasks !== undefined) updates.subtasks = body.subtasks;
-  if (body.tags !== undefined) updates.tags = body.tags;
-  if (body.links !== undefined) updates.links = body.links;
-  if (body.starred !== undefined) updates.starred = body.starred;
-  if (body.recurring !== undefined) updates.recurring = body.recurring;
+    const { taskId } = await params;
+    const body = await request.json();
 
-  if (body.dueDate !== undefined) {
-    updates.dueDate = body.dueDate ? new Date(body.dueDate) : null;
-  }
+    // Validate input — inject the taskId as `id` for the schema
+    const validated = updateTaskInputSchema.parse({ ...body, id: taskId });
 
-  if (body.completed === true) {
-    updates.completed = true;
-    updates.completedAt = new Date();
-    updates.status = "completed";
-  } else if (body.completed === false) {
-    updates.completed = false;
-    updates.completedAt = null;
-    updates.status = "active";
-  }
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
 
-  const [task] = await db
-    .update(tasks)
-    .set(updates)
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, session.user.id)))
-    .returning();
+    if (validated.title !== undefined) updates.title = validated.title;
+    if (validated.category !== undefined) updates.category = validated.category;
+    if (validated.subcategory !== undefined)
+      updates.subcategory = validated.subcategory;
+    if (validated.priority !== undefined) updates.priority = validated.priority;
+    if (validated.notes !== undefined) updates.notes = validated.notes;
+    if (validated.assignee !== undefined) updates.assignee = validated.assignee;
+    if (validated.subtasks !== undefined) updates.subtasks = validated.subtasks;
+    if (validated.tags !== undefined) updates.tags = validated.tags;
+    if (validated.links !== undefined) updates.links = validated.links;
+    if (validated.starred !== undefined) updates.starred = validated.starred;
+    if (validated.recurring !== undefined)
+      updates.recurring = validated.recurring;
 
-  if (!task) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+    if (validated.dueDate !== undefined) {
+      updates.dueDate = validated.dueDate ? new Date(validated.dueDate) : null;
+    }
 
-  // Auto-generate next occurrence for recurring tasks
-  if (body.completed === true && task.recurring) {
-    const recurring = task.recurring as {
-      frequency: string;
-      interval?: number;
-      daysOfWeek?: number[];
-    };
+    if (validated.completed === true) {
+      updates.completed = true;
+      updates.completedAt = new Date();
+      updates.status = "completed";
+    } else if (validated.completed === false) {
+      updates.completed = false;
+      updates.completedAt = null;
+      updates.status = "active";
+    }
 
-    const baseDate = task.dueDate ? new Date(task.dueDate) : new Date();
-    const nextDueDate = calculateNextDueDate(baseDate, recurring);
-
-    const [nextTask] = await db
-      .insert(tasks)
-      .values({
-        userId: session.user.id,
-        title: task.title,
-        category: task.category,
-        subcategory: task.subcategory,
-        priority: task.priority,
-        dueDate: nextDueDate,
-        subtasks: (task.subtasks as { id: string; title: string; completed: boolean }[]).map(
-          (s) => ({ ...s, completed: false }),
-        ),
-        tags: task.tags as string[],
-        assignee: task.assignee,
-        recurring: task.recurring,
-        notes: task.notes,
-        links: task.links as string[],
-        starred: task.starred,
-      })
+    const [task] = await db
+      .update(tasks)
+      .set(updates)
+      .where(and(eq(tasks.id, taskId), eq(tasks.userId, session.user.id)))
       .returning();
 
-    return NextResponse.json({ ...task, nextTask });
-  }
+    if (!task) {
+      throw new ApiError(404, "Not found");
+    }
 
-  return NextResponse.json(task);
+    // Auto-generate next occurrence for recurring tasks
+    if (validated.completed === true && task.recurring) {
+      const recurring = task.recurring as {
+        frequency: string;
+        interval?: number;
+        daysOfWeek?: number[];
+      };
+
+      const baseDate = task.dueDate ? new Date(task.dueDate) : new Date();
+      const nextDueDate = calculateNextDueDate(baseDate, recurring);
+
+      const [nextTask] = await db
+        .insert(tasks)
+        .values({
+          userId: session.user.id,
+          title: task.title,
+          category: task.category,
+          subcategory: task.subcategory,
+          priority: task.priority,
+          dueDate: nextDueDate,
+          subtasks: (
+            task.subtasks as { id: string; title: string; completed: boolean }[]
+          ).map((s) => ({ ...s, completed: false })),
+          tags: task.tags as string[],
+          assignee: task.assignee,
+          recurring: task.recurring,
+          notes: task.notes,
+          links: task.links as string[],
+          starred: task.starred,
+        })
+        .returning();
+
+      return NextResponse.json({ ...task, nextTask });
+    }
+
+    return NextResponse.json(task);
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function DELETE(request: Request, { params }: Params) {
+  try {
+    if (!validateOrigin(request)) {
+      throw new ApiError(403, "Forbidden");
+    }
+
+    const { allowed, retryAfterMs } = rateLimitByIp(request);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil(retryAfterMs / 1000)),
+          },
+        },
+      );
+    }
+
+    const session = await auth();
+    if (!session?.user?.id) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    const { taskId } = await params;
+
+    const [task] = await db
+      .delete(tasks)
+      .where(and(eq(tasks.id, taskId), eq(tasks.userId, session.user.id)))
+      .returning({ id: tasks.id });
+
+    if (!task) {
+      throw new ApiError(404, "Not found");
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleApiError(error);
   }
-
-  const { taskId } = await params;
-
-  const [task] = await db
-    .delete(tasks)
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, session.user.id)))
-    .returning({ id: tasks.id });
-
-  if (!task) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ success: true });
 }
 
 function calculateNextDueDate(
@@ -143,7 +194,6 @@ function calculateNextDueDate(
       next.setDate(next.getDate() + 1);
       break;
     case "weekly": {
-      // Advance by 7 days by default; if daysOfWeek specified, find the next matching day
       if (recurring.daysOfWeek && recurring.daysOfWeek.length > 0) {
         const currentDay = next.getDay();
         const sorted = [...recurring.daysOfWeek].sort();
@@ -151,7 +201,6 @@ function calculateNextDueDate(
         if (nextDay !== undefined) {
           next.setDate(next.getDate() + (nextDay - currentDay));
         } else {
-          // Wrap to next week
           next.setDate(next.getDate() + (7 - currentDay + sorted[0]!));
         }
       } else {

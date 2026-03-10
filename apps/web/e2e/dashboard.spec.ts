@@ -39,4 +39,14 @@ test.describe("Dashboard", () => {
     await page.waitForURL("/tasks*");
     await expect(page).toHaveURL(/\/tasks/);
   });
+
+  test("stat cards link to filtered task views", async ({ page }) => {
+    // Wait for stats to load
+    await expect(page.getByText("Due Today")).toBeVisible();
+
+    // Click the "Due Today" stat card
+    await page.getByRole("link", { name: /Due Today/ }).click();
+    await page.waitForURL("/tasks*");
+    await expect(page).toHaveURL(/\/tasks\?view=today/);
+  });
 });

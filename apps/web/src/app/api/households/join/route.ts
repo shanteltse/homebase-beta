@@ -1,27 +1,35 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { z } from "zod/v4";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { households, householdMembers } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { handleApiError, ApiError } from "@/lib/api-error";
+import { validateOrigin } from "@/lib/api-utils";
+
+const joinHouseholdSchema = z.object({
+  code: z
+    .string()
+    .length(6, "Invite code must be exactly 6 characters")
+    .regex(/^[A-Za-z0-9]+$/, "Invite code must be alphanumeric"),
+});
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
-    const body = await request.json();
-    const code = body.code?.trim()?.toUpperCase();
-
-    if (!code) {
-      return NextResponse.json(
-        { error: "Invite code is required" },
-        { status: 400 },
-      );
+    if (!validateOrigin(request)) {
+      throw new ApiError(403, "Forbidden");
     }
+
+    const session = await auth();
+    if (!session?.user?.id) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    const body = await request.json();
+    const validated = joinHouseholdSchema.parse(body);
+    const code = validated.code.trim().toUpperCase();
 
     // Check if user already belongs to a household
     const existing = await db
@@ -31,10 +39,7 @@ export async function POST(request: Request) {
       .limit(1);
 
     if (existing.length > 0) {
-      return NextResponse.json(
-        { error: "You already belong to a household" },
-        { status: 400 },
-      );
+      throw new ApiError(400, "You already belong to a household");
     }
 
     // Find household by code
@@ -45,10 +50,7 @@ export async function POST(request: Request) {
       .limit(1);
 
     if (!household) {
-      return NextResponse.json(
-        { error: "Invalid invite code" },
-        { status: 404 },
-      );
+      throw new ApiError(404, "Invalid invite code");
     }
 
     await db.insert(householdMembers).values({
@@ -59,10 +61,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(household, { status: 201 });
   } catch (error) {
-    console.error("Failed to join household:", error);
-    return NextResponse.json(
-      { error: "Failed to join household" },
-      { status: 500 },
-    );
+    return handleApiError(error);
   }
 }

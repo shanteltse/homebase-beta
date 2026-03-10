@@ -8,6 +8,7 @@ import { Spinner } from "@repo/ui/spinner";
 import { TaskCard } from "@/features/tasks/components/task-card";
 import { SmartTaskInput } from "@/features/ai/components/smart-task-input";
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog";
+import { StatsCard } from "@/features/gamification/components/stats-card";
 import type { Task } from "@/types/task";
 import type { ParsedTask } from "@/features/ai/api/parse-task";
 
@@ -106,6 +107,9 @@ export default function DashboardPage() {
           </p>
         </Link>
       </div>
+
+      {/* Gamification stats */}
+      <StatsCard />
 
       {isLoading ? (
         <div className="flex justify-center py-8">

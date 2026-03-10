@@ -132,6 +132,19 @@ export const tasks = pgTable("tasks", {
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
 
+// ─── Achievements ───
+
+export const achievements = pgTable("achievements", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  unlockedAt: timestamp("unlocked_at", { mode: "date" }).defaultNow().notNull(),
+});
+
 // ─── Notifications ───
 
 export const notifications = pgTable("notifications", {

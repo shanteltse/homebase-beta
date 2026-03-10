@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import localFont from "next/font/local";
 import { Providers } from "./providers";
+import { PwaInit } from "@/components/pwa-init";
 import "./globals.css";
 
 const inter = localFont({
@@ -17,6 +18,13 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "HomeBase",
   description: "Your personal command center for home and family life.",
+  manifest: "/manifest.json",
+  themeColor: "#b08068",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "HomeBase",
+  },
 };
 
 export default function RootLayout({
@@ -26,7 +34,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#b08068" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="HomeBase" />
+        <link rel="apple-touch-icon" href="/icon-192.svg" />
+      </head>
       <body className={`${inter.variable} ${geistMono.variable} font-sans`}>
+        <PwaInit />
         <Providers>{children}</Providers>
       </body>
     </html>

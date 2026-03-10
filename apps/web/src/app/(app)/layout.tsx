@@ -3,6 +3,8 @@ import { MobileNav } from "@/components/layouts/mobile-nav";
 import { AuthGuard } from "@/features/auth/components/auth-guard";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { NotificationProvider } from "@/features/notifications/components/notification-provider";
+import { CompletionCelebration } from "@/features/gamification/components/completion-celebration";
+import { OfflineBanner } from "@/components/offline-banner";
 import type { ReactNode } from "react";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +13,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGuard>
       <NotificationProvider>
+        <OfflineBanner />
         <div className="flex min-h-screen bg-background">
           <Sidebar />
           <main className="flex-1">
@@ -25,6 +28,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <MobileNav />
           </main>
         </div>
+        <CompletionCelebration />
       </NotificationProvider>
     </AuthGuard>
   );

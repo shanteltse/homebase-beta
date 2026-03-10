@@ -11,7 +11,10 @@
         "AUTH_SECRET",
         "AUTH_GOOGLE_ID",
         "AUTH_GOOGLE_SECRET",
-        "ANTHROPIC_API_KEY"
+        "ANTHROPIC_API_KEY",
+        "CRON_SECRET",
+        "NODE_ENV",
+        "NEXTAUTH_URL"
       ]
     },
     "lint": {
@@ -21,7 +24,10 @@
         "AUTH_SECRET",
         "AUTH_GOOGLE_ID",
         "AUTH_GOOGLE_SECRET",
-        "ANTHROPIC_API_KEY"
+        "ANTHROPIC_API_KEY",
+        "CRON_SECRET",
+        "NODE_ENV",
+        "NEXTAUTH_URL"
       ]
     },
     "check-types": {
@@ -31,7 +37,10 @@
         "AUTH_SECRET",
         "AUTH_GOOGLE_ID",
         "AUTH_GOOGLE_SECRET",
-        "ANTHROPIC_API_KEY"
+        "ANTHROPIC_API_KEY",
+        "CRON_SECRET",
+        "NODE_ENV",
+        "NEXTAUTH_URL"
       ]
     },
     "test": {

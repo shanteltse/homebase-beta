@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@repo
 import { useRouter } from "next/navigation";
 import { HouseholdSettings } from "@/features/household/components/household-settings";
 import { NotificationSettings } from "@/features/notifications/components/notification-settings";
+import { AchievementsGrid } from "@/features/gamification/components/achievements-grid";
 
 export default function SettingsPage() {
   const { data: user, isLoading } = useUser();
@@ -67,6 +68,17 @@ export default function SettingsPage() {
 
         {/* Notifications */}
         <NotificationSettings />
+
+        {/* Achievements */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Achievements</CardTitle>
+            <CardDescription>Track your progress and unlock badges.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AchievementsGrid />
+          </CardContent>
+        </Card>
 
         {/* Appearance */}
         <Card>
