@@ -61,6 +61,7 @@ export default function RegisterScreen() {
         <TextInput
           style={[styles.input, styles.inputMarginSmall]}
           placeholder="Name"
+          placeholderTextColor="#8a7f78"
           value={name}
           onChangeText={setName}
           autoComplete="name"
@@ -69,6 +70,7 @@ export default function RegisterScreen() {
         <TextInput
           style={[styles.input, styles.inputMarginSmall]}
           placeholder="Email"
+          placeholderTextColor="#8a7f78"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -79,6 +81,7 @@ export default function RegisterScreen() {
         <TextInput
           style={[styles.input, styles.inputMarginLarge]}
           placeholder="Password"
+          placeholderTextColor="#8a7f78"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -91,7 +94,7 @@ export default function RegisterScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="white" />
+            <ActivityIndicator color="#ffffff" />
           ) : (
             <Text style={styles.buttonText}>
               Create Account
@@ -115,7 +118,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#faf7f4",
   },
   content: {
     flex: 1,
@@ -126,13 +129,14 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: "bold",
     textAlign: "center",
-    color: "#2563eb",
+    color: "#b08068",
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     textAlign: "center",
-    color: "#6b7280",
+    color: "#8a7f78",
     marginBottom: 40,
   },
   errorBox: {
@@ -144,17 +148,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
-    color: "#dc2626",
+    color: "#dc3545",
     fontSize: 14,
     textAlign: "center",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: "#e2d9d0",
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
+    backgroundColor: "#ffffff",
+    color: "#4a3f3a",
   },
   inputMarginSmall: {
     marginBottom: 12,
@@ -163,7 +169,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   button: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#b08068",
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: "center",
@@ -178,7 +184,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   linkText: {
-    color: "#2563eb",
+    color: "#b08068",
     fontSize: 14,
   },
 });

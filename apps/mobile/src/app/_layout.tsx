@@ -17,7 +17,17 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <StatusBar style="auto" />
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="register" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="create-task"
+            options={{ presentation: "modal" }}
+          />
+          <Stack.Screen name="task/[id]" />
+        </Stack>
       </AuthProvider>
     </QueryClientProvider>
   );
