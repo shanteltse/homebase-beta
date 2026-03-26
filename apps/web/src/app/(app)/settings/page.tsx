@@ -2,6 +2,7 @@
 
 import { useUser } from "@/features/auth/api/get-user";
 import { useLogout } from "@/features/auth/api/logout";
+import { useUserProfile } from "@/features/auth/api/get-user-profile";
 import { Button } from "@repo/ui/button";
 import { Spinner } from "@repo/ui/spinner";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@repo/ui/card";
@@ -9,9 +10,13 @@ import { useRouter } from "next/navigation";
 import { HouseholdSettings } from "@/features/household/components/household-settings";
 import { NotificationSettings } from "@/features/notifications/components/notification-settings";
 import { AchievementsGrid } from "@/features/gamification/components/achievements-grid";
+import { GoogleCalendarSettings } from "@/features/calendar/components/google-calendar-settings";
+import { Suspense } from "react";
+import { Wand2 } from "lucide-react";
 
 export default function SettingsPage() {
   const { data: user, isLoading } = useUser();
+  const { data: profile } = useUserProfile();
   const logout = useLogout();
   const router = useRouter();
 
@@ -39,6 +44,29 @@ export default function SettingsPage() {
       </div>
 
       <div className="flex flex-col gap-6">
+        {/* Setup Wizard */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wand2 className="h-5 w-5" />
+              {profile?.onboardingCompleted ? "Setup Wizard" : profile && profile.onboardingStep > 0 ? "Resume Setup" : "Setup Wizard"}
+            </CardTitle>
+            <CardDescription>
+              {profile?.onboardingCompleted
+                ? "Personalize your household, notifications, and starter tasks."
+                : profile && profile.onboardingStep > 0
+                  ? "You're partway through setup — pick up where you left off."
+                  : "Set up your household in just a few minutes to personalize your experience."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" onClick={() => router.push("/onboarding")} className="gap-2">
+              <Wand2 className="h-4 w-4" />
+              {profile?.onboardingCompleted ? "Re-run Setup" : profile && profile.onboardingStep > 0 ? "Resume Setup" : "Start Setup"}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Profile */}
         <Card>
           <CardHeader>
@@ -65,6 +93,11 @@ export default function SettingsPage() {
 
         {/* Household */}
         <HouseholdSettings />
+
+        {/* Google Calendar */}
+        <Suspense fallback={null}>
+          <GoogleCalendarSettings />
+        </Suspense>
 
         {/* Notifications */}
         <NotificationSettings />

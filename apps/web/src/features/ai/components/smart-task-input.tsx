@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Sparkles, Check, Pencil, X, Loader2 } from "lucide-react";
 import { Input } from "@repo/ui/input";
 import { Button } from "@repo/ui/button";
@@ -9,6 +9,7 @@ import { useParseTask, type ParsedTask } from "../api/parse-task";
 import { useCreateTask } from "@/features/tasks/api/create-task";
 import { DEFAULT_CATEGORIES } from "@/types/category";
 import { cn } from "@/utils/cn";
+import { VoiceInput, useVoiceShortcut } from "@/features/voice/components/voice-input";
 
 type SmartTaskInputProps = {
   onOpenCreateDialog?: (prefill: ParsedTask) => void;
@@ -19,6 +20,24 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
   const [preview, setPreview] = useState<ParsedTask | null>(null);
   const parseTask = useParseTask();
   const createTask = useCreateTask();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleVoiceTranscript = useCallback((transcript: string) => {
+    setText(transcript);
+    setPreview(null);
+    // Auto-trigger AI parsing after voice input
+    parseTask.mutate(transcript, {
+      onSuccess: (parsed) => setPreview(parsed),
+      onError: () => handleFallbackCreate(transcript),
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const focusInput = useCallback(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useVoiceShortcut(focusInput);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -112,6 +131,7 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
       <form onSubmit={handleSubmit} className="flex gap-2">
         <div className="relative flex-1">
           <Input
+            ref={inputRef}
             placeholder="Describe a task... e.g. &quot;dentist appointment next Tuesday 3pm high priority&quot;"
             value={text}
             onChange={(e) => {
@@ -122,6 +142,10 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
             className="pr-10"
           />
         </div>
+        <VoiceInput
+          onTranscript={handleVoiceTranscript}
+          disabled={isProcessing}
+        />
         <Button
           type="submit"
           disabled={isProcessing || !text.trim()}

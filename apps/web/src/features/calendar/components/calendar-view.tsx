@@ -14,6 +14,7 @@ import {
 import { MonthView } from "./month-view";
 import { WeekView } from "./week-view";
 import { DayView } from "./day-view";
+import { GoogleCalendarWidget } from "./google-calendar-widget";
 
 const VIEW_OPTIONS: { value: CalendarViewType; label: string }[] = [
   { value: "month", label: "Month" },
@@ -40,52 +41,56 @@ function CalendarViewInner() {
   return (
     <div className="flex flex-col gap-6">
       {/* Toolbar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* Navigation */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={goToday}
-          >
-            Today
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={goPrev}
-            aria-label="Previous"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={goNext}
-            aria-label="Next"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <h3 className="heading-xs text-foreground ml-2">{label}</h3>
+      <div className="flex flex-col gap-3">
+        {/* Row 1: navigation + view toggle */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Navigation */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={goToday}>
+              Today
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={goPrev}
+              aria-label="Previous"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={goNext}
+              aria-label="Next"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <h3 className="heading-xs text-foreground ml-2">{label}</h3>
+          </div>
+
+          {/* View toggle */}
+          <div className="flex items-center rounded-lg border border-border p-0.5 self-start sm:self-auto">
+            {VIEW_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setView(opt.value)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  view === opt.value
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* View toggle */}
-        <div className="flex items-center rounded-lg border border-border p-0.5">
-          {VIEW_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setView(opt.value)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                view === opt.value
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
+        {/* Row 2: Google Calendar widget */}
+        <div className="flex items-center justify-end">
+          <GoogleCalendarWidget />
         </div>
       </div>
 

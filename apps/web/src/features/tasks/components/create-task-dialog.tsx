@@ -27,6 +27,7 @@ import { useCreateTask } from "../api/create-task";
 import { TagPicker } from "./tag-picker";
 import { RecurringPicker } from "./recurring-picker";
 import { AssigneePicker } from "@/features/household/components/assignee-picker";
+import { VoiceInput } from "@/features/voice/components/voice-input";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -117,13 +118,25 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-4"
         >
-          <Input
-            id="title"
-            label="Title"
-            placeholder="What needs to be done?"
-            error={errors.title?.message}
-            {...register("title")}
-          />
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="title" className="text-sm font-medium text-foreground">
+              Title
+            </label>
+            <div className="flex items-start gap-2">
+              <div className="flex-1">
+                <Input
+                  id="title"
+                  placeholder="What needs to be done?"
+                  error={errors.title?.message}
+                  {...register("title")}
+                />
+              </div>
+              <VoiceInput
+                onTranscript={(text) => setValue("title", text, { shouldValidate: true })}
+                className="mt-0.5"
+              />
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
