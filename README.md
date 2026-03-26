@@ -14,7 +14,7 @@ A household task management app with shared task lists, calendar views, AI-power
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
-- [Database Setup (Neon Postgres)](#database-setup-neon-postgres)
+- [External Services Setup](#external-services-setup)
 - [Running the App](#running-the-app)
 - [Running the Mobile App](#running-the-mobile-app)
 - [Available Commands](#available-commands)
@@ -24,7 +24,6 @@ A household task management app with shared task lists, calendar views, AI-power
 - [API Routes](#api-routes)
 - [Testing](#testing)
 - [Deployment](#deployment)
-- [CI/CD Pipeline](#cicd-pipeline)
 - [Key Design Decisions](#key-design-decisions)
 - [Extending the App](#extending-the-app)
 - [Common Tasks](#common-tasks)
@@ -189,49 +188,143 @@ CRON_SECRET=""
 
 ---
 
-## Database Setup (Neon Postgres)
+## External Services Setup
 
-This app uses [Neon](https://neon.tech) — a cloud-hosted PostgreSQL database. There is no local database to set up.
+This app depends on a few external services. **You'll need to create your own accounts** — the previous owner's accounts are not included with this repo. All of these have free tiers.
 
-### Creating a Neon Database
+### Neon Postgres (Database) — Required
 
-1. Sign up at [neon.tech](https://neon.tech) (free tier available)
-2. Create a new project
-3. Copy the connection string — it looks like `postgresql://user:password@ep-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require`
+[Neon](https://neon.tech) is a cloud-hosted PostgreSQL database. There is no local database to install — everything runs in the cloud.
+
+**Setup guide:** [Neon Getting Started Docs](https://neon.tech/docs/get-started/signing-up)
+
+**Step-by-step:**
+
+1. Sign up at [neon.tech](https://neon.tech) (free tier gives you 1 project with 0.5 GB storage)
+2. Click **New Project** — pick a name (e.g., "homebase") and a region close to you
+3. On the project dashboard, find the **Connection string** — it looks like:
+   ```
+   postgresql://user:password@ep-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+   ```
 4. Paste it as `DATABASE_URL` in your `apps/web/.env`
+5. Create the tables by running:
+   ```bash
+   pnpm --filter web db:push
+   ```
+6. Optionally, populate sample data:
+   ```bash
+   pnpm --filter web db:seed
+   ```
 
-### Setting Up the Schema
-
-Once your `DATABASE_URL` is configured:
-
-```bash
-# Push the schema to your database (creates all tables)
-pnpm --filter web db:push
-
-# Optionally, seed with sample data
-pnpm --filter web db:seed
-```
-
-### Neon Branching (Environments)
-
-Neon supports database branching (similar to git branches). The project uses:
+**Branching (optional but recommended):** Neon supports database branching — like git branches but for your database. This lets you have separate copies of your data for different environments without paying for multiple databases. Create branches in the Neon dashboard; each gets its own connection string.
 
 | Environment | Neon Branch | Purpose |
 |-------------|-------------|---------|
 | Production | `main` | Live user data |
-| Development | `preview/dev` | Testing new features |
+| Development | `preview/dev` | Testing new features safely |
 | CI | `ci` | Automated test runs |
 
-You can create branches in the Neon dashboard. Each branch gets its own connection string.
+**Browsing your data:** Run `pnpm --filter web db:studio` to open a visual database browser in your web browser.
 
-### Viewing Your Data
+**Helpful docs:**
+- [Neon free tier limits](https://neon.tech/docs/introduction/plans#free-plan)
+- [Database branching](https://neon.tech/docs/introduction/branching)
+- [Connection string explained](https://neon.tech/docs/connect/connect-from-any-app)
 
-```bash
-# Open Drizzle Studio — a visual database browser
-pnpm --filter web db:studio
-```
+---
 
-This opens a web interface where you can browse tables and data.
+### Vercel (Web Hosting) — Required for Production
+
+[Vercel](https://vercel.com) hosts the web app and automatically deploys when you push to GitHub. It also handles serverless API routes and cron jobs.
+
+**Setup guide:** [Vercel Getting Started Docs](https://vercel.com/docs/getting-started-with-vercel)
+
+**Step-by-step:**
+
+1. Sign up at [vercel.com](https://vercel.com) (free "Hobby" plan available)
+2. Click **Add New Project** and import your GitHub repository
+3. Set the **Root Directory** to `apps/web` (this is important — the monorepo has multiple apps)
+4. Set the **Framework Preset** to Next.js (usually auto-detected)
+5. Add your environment variables (Settings > Environment Variables):
+   | Variable | Required | Value |
+   |----------|----------|-------|
+   | `DATABASE_URL` | Yes | Your Neon connection string |
+   | `AUTH_SECRET` | Yes | Generate with `openssl rand -base64 32` |
+   | `AUTH_GOOGLE_ID` | Optional | From Google Cloud Console |
+   | `AUTH_GOOGLE_SECRET` | Optional | From Google Cloud Console |
+   | `ANTHROPIC_API_KEY` | Optional | From Anthropic Console |
+   | `CRON_SECRET` | Optional | Generate with `openssl rand -base64 32` |
+6. Click **Deploy**
+
+Once connected, Vercel will automatically deploy every push to `main` and create preview deployments for pull requests.
+
+**After deploying**, update the mobile app's API URL in `apps/mobile/app.json` to point to your new Vercel URL (replace the existing `apiUrl` value under `expo.extra`).
+
+**Helpful docs:**
+- [Vercel Hobby plan limits](https://vercel.com/docs/accounts/plans/hobby)
+- [Environment variables](https://vercel.com/docs/projects/environment-variables)
+- [Custom domains](https://vercel.com/docs/projects/domains/add-a-domain)
+- [Vercel Cron Jobs](https://vercel.com/docs/cron-jobs) (used for notification generation and email digests)
+
+---
+
+### Google OAuth (Sign in with Google) — Optional
+
+Lets users log in with their Google account instead of email/password.
+
+**Setup guide:** [Google OAuth Docs](https://developers.google.com/identity/protocols/oauth2)
+
+**Step-by-step:**
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a project (or select an existing one)
+3. Go to **APIs & Services > Credentials**
+4. Click **Create Credentials > OAuth 2.0 Client ID**
+5. Choose **Web application** as the type
+6. Under **Authorized redirect URIs**, add:
+   - `http://localhost:3000/api/auth/callback/google` (for local dev)
+   - `https://your-vercel-domain.com/api/auth/callback/google` (for production)
+7. Copy the **Client ID** → `AUTH_GOOGLE_ID` in your `.env`
+8. Copy the **Client Secret** → `AUTH_GOOGLE_SECRET` in your `.env`
+
+If you skip this, email/password login still works — Google sign-in just won't appear.
+
+---
+
+### Anthropic API (AI Features) — Optional
+
+Powers the AI smart task input (natural language → structured task) and link suggestions.
+
+**Setup guide:** [Anthropic API Docs](https://docs.anthropic.com/en/docs/initial-setup)
+
+**Step-by-step:**
+
+1. Sign up at [console.anthropic.com](https://console.anthropic.com/)
+2. Go to **API Keys** and create a new key
+3. Copy it → `ANTHROPIC_API_KEY` in your `.env`
+
+If you skip this, the app works fine — AI features just won't be available. The app costs a few cents per AI request (Claude Haiku model).
+
+**Helpful docs:**
+- [Anthropic pricing](https://www.anthropic.com/pricing)
+- [API rate limits](https://docs.anthropic.com/en/docs/about-claude/models)
+
+---
+
+### GitHub Actions (CI/CD) — Optional
+
+Automated checks (lint, type checking, tests) run on every push and pull request.
+
+**Setup guide:** [GitHub Actions Docs](https://docs.github.com/en/actions/quickstart)
+
+This is already configured in `.github/workflows/ci.yml`. To enable it for your repo, add these secrets in **GitHub > Settings > Secrets and variables > Actions**:
+
+| Secret | What It's For | How to Get It |
+|--------|--------------|---------------|
+| `CI_DATABASE_URL` | Database for test runs | Create a `ci` branch in Neon, copy its connection string |
+| `AUTH_SECRET` | Auth token signing in CI | Generate with `openssl rand -base64 32` |
+
+If you don't set these up, CI just won't run — local development is unaffected.
 
 ---
 
@@ -518,65 +611,11 @@ features/tasks/components/__tests__/task-card.test.tsx
 
 ## Deployment
 
-### Vercel (Web App)
+Deployment details for each service are covered in [External Services Setup](#external-services-setup) above. Quick summary:
 
-The web app is deployed to [Vercel](https://vercel.com/). Deployment is automatic:
-
-- **Push to `main`** → deploys to production
-- **Open a pull request** → creates a preview deployment
-
-#### Vercel Project Settings
-
-- **Root directory:** `apps/web` (set in Vercel project settings, not in config files)
-- **Framework:** Next.js (auto-detected)
-- **Node.js version:** 22
-
-#### Environment Variables in Vercel
-
-Add these in your Vercel project settings (Settings > Environment Variables):
-
-| Variable | Required | Environment |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | All |
-| `AUTH_SECRET` | Yes | All |
-| `AUTH_GOOGLE_ID` | Optional | All |
-| `AUTH_GOOGLE_SECRET` | Optional | All |
-| `ANTHROPIC_API_KEY` | Optional | All |
-| `CRON_SECRET` | Optional | Production |
-
-### Mobile App
-
-The mobile app is not yet published to app stores. Currently it runs via Expo Go for development and testing. To publish:
-
-1. Create an [Expo account](https://expo.dev/)
-2. Run `eas build` to create iOS/Android builds
-3. Submit to App Store / Google Play via `eas submit`
-
-See the [Expo docs on publishing](https://docs.expo.dev/distribution/introduction/) for full instructions.
-
----
-
-## CI/CD Pipeline
-
-Every push to `main` and every pull request runs these automated checks via GitHub Actions:
-
-| Check | What It Does | Must Pass? |
-|-------|-------------|------------|
-| **Lint** | Checks code style and formatting | Yes |
-| **Type Check** | Ensures no TypeScript errors | Yes |
-| **Unit Tests** | Runs Vitest test suite | Yes |
-| **E2E Tests** | Runs Playwright browser tests | Yes |
-
-The CI config is in `.github/workflows/ci.yml`.
-
-### GitHub Secrets Needed
-
-For CI to work, add these secrets in your GitHub repo (Settings > Secrets and variables > Actions):
-
-| Secret | What It's For |
-|--------|--------------|
-| `CI_DATABASE_URL` | Connection string for the CI Neon branch |
-| `AUTH_SECRET` | Auth token signing (same format as local) |
+- **Web app:** Deployed automatically via Vercel on every push to `main`
+- **Mobile app:** Not yet published to app stores. Runs via Expo Go for development. See the [Expo docs on publishing](https://docs.expo.dev/distribution/introduction/) for app store submission.
+- **CI/CD:** GitHub Actions runs lint, type check, and tests on every push/PR. Config is in `.github/workflows/ci.yml`.
 
 ---
 
