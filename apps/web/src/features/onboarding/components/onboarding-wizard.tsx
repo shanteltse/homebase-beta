@@ -28,15 +28,6 @@ const DISPLAY_STEPS = 5; // steps 2-6 shown in progress bar (step 1 is welcome)
 
 const MANAGE_CATEGORIES = [
   {
-    group: "Work & Career",
-    items: [
-      { id: "client-projects", label: "Client projects & deadlines" },
-      { id: "team-management", label: "Team management" },
-      { id: "professional-development", label: "Professional development" },
-      { id: "business-expenses", label: "Business expenses" },
-    ],
-  },
-  {
     group: "Family & Home",
     items: [
       { id: "kids-activities", label: "Kids' activities & school" },

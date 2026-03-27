@@ -50,25 +50,35 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    console.log("[POST /api/tasks] STEP A — raw body:", JSON.stringify(body));
+    console.log("[POST /api/tasks] STEP A — dueDate in body:", body.dueDate ?? "(not present)");
+
     const validated = createTaskInputSchema.parse(body);
+    console.log("[POST /api/tasks] STEP B — after Zod parse:", JSON.stringify(validated));
+    console.log("[POST /api/tasks] STEP B — dueDate after Zod:", validated.dueDate ?? "(not present)");
+
+    const insertValues = {
+      userId: user.id,
+      title: validated.title,
+      category: validated.category,
+      subcategory: validated.subcategory,
+      priority: validated.priority,
+      dueDate: validated.dueDate ? new Date(validated.dueDate) : null,
+      subtasks: validated.subtasks,
+      tags: validated.tags,
+      assignee: validated.assignee,
+      notes: validated.notes,
+      links: validated.links,
+      recurring: validated.recurring ?? null,
+    };
+    console.log("[POST /api/tasks] STEP C — DB insert dueDate value:", insertValues.dueDate);
 
     const [task] = await db
       .insert(tasks)
-      .values({
-        userId: user.id,
-        title: validated.title,
-        category: validated.category,
-        subcategory: validated.subcategory,
-        priority: validated.priority,
-        dueDate: validated.dueDate ? new Date(validated.dueDate) : null,
-        subtasks: validated.subtasks,
-        tags: validated.tags,
-        assignee: validated.assignee,
-        notes: validated.notes,
-        links: validated.links,
-        recurring: validated.recurring ?? null,
-      })
+      .values(insertValues)
       .returning();
+
+    console.log("[POST /api/tasks] STEP D — inserted task dueDate:", (task as { dueDate?: unknown } | undefined)?.dueDate ?? "(null)");
 
     return NextResponse.json(task, { status: 201 });
   } catch (error) {

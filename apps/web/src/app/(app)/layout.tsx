@@ -7,6 +7,7 @@ import { CompletionCelebration } from "@/features/gamification/components/comple
 import { OfflineBanner } from "@/components/offline-banner";
 import { SetupBanner } from "@/features/onboarding/components/setup-banner";
 import { WelcomeModal } from "@/features/onboarding/components/welcome-modal";
+import { VoiceFab } from "@/features/voice/components/voice-fab";
 import type { ReactNode } from "react";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <CompletionCelebration />
         {/* Welcome modal — shown once to brand-new users */}
         <WelcomeModal />
+        {/* Global voice-to-task FAB */}
+        <VoiceFab />
       </NotificationProvider>
     </AuthGuard>
   );

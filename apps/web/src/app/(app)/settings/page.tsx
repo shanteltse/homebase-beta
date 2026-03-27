@@ -2,7 +2,8 @@
 
 import { useUser } from "@/features/auth/api/get-user";
 import { useLogout } from "@/features/auth/api/logout";
-import { useUserProfile } from "@/features/auth/api/get-user-profile";
+import { useUserProfile, useUpdateUserProfile } from "@/features/auth/api/get-user-profile";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@repo/ui/button";
 import { Spinner } from "@repo/ui/spinner";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@repo/ui/card";
@@ -17,8 +18,15 @@ import { Wand2 } from "lucide-react";
 export default function SettingsPage() {
   const { data: user, isLoading } = useUser();
   const { data: profile } = useUserProfile();
+  const { update: updateProfile } = useUpdateUserProfile();
+  const queryClient = useQueryClient();
   const logout = useLogout();
   const router = useRouter();
+
+  async function handleToggleStats(enabled: boolean) {
+    await updateProfile({ showStatsOnDashboard: enabled });
+    await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+  }
 
   function handleSignOut() {
     logout.mutate(undefined, {
@@ -88,6 +96,28 @@ export default function SettingsPage() {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Dashboard */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Dashboard</CardTitle>
+            <CardDescription>Customize what appears on your dashboard.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <label className="flex items-center justify-between cursor-pointer gap-4">
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-medium text-foreground">Show Stats on Dashboard</p>
+                <p className="text-xs text-muted-foreground">Display your task streak and achievement count on the dashboard.</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={profile?.showStatsOnDashboard ?? false}
+                onChange={(e) => void handleToggleStats(e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+              />
+            </label>
           </CardContent>
         </Card>
 

@@ -48,6 +48,8 @@ export const users = pgTable("users", {
   voiceInputEnabled: boolean("voice_input_enabled").notNull().default(true),
   voiceInputLanguage: text("voice_input_language").notNull().default("en-US"),
   voiceInputAutoSubmit: boolean("voice_input_auto_submit").notNull().default(false),
+  // Dashboard preferences
+  showStatsOnDashboard: boolean("show_stats_on_dashboard").notNull().default(false),
 });
 
 export const accounts = pgTable(

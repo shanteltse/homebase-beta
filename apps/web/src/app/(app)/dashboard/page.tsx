@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useTasks } from "@/features/tasks/api/get-tasks";
 import { useUpdateTask } from "@/features/tasks/api/update-task";
+import { useUserProfile } from "@/features/auth/api/get-user-profile";
 import { Spinner } from "@repo/ui/spinner";
 import { TaskCard } from "@/features/tasks/components/task-card";
 import { SmartTaskInput } from "@/features/ai/components/smart-task-input";
@@ -17,14 +18,25 @@ function getDateString(date: string | Date | null | undefined): string {
   return new Date(date).toISOString().split("T")[0] ?? "";
 }
 
+type DashboardView = "today" | "this-week";
+
 export default function DashboardPage() {
   const { data: tasks, isLoading } = useTasks();
   const updateTask = useUpdateTask();
+  const { data: profile } = useUserProfile();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogPrefill, setDialogPrefill] = useState<ParsedTask | undefined>();
+  const [dashboardView, setDashboardView] = useState<DashboardView>("today");
 
   const allTasks = (tasks ?? []) as Task[];
-  const today = getDateString(new Date());
+  const now = new Date();
+  const today = getDateString(now);
+  // End of this week = this Sunday (day 0). If today is Sunday, it's today.
+  const daysUntilSunday = now.getDay() === 0 ? 0 : 7 - now.getDay();
+  const weekEnd = new Date(now);
+  weekEnd.setDate(now.getDate() + daysUntilSunday);
+  const weekEndStr = getDateString(weekEnd);
+
   const activeTasks = allTasks.filter((t) => !t.completed);
   const overdueTasks = activeTasks.filter(
     (t) => t.dueDate && getDateString(t.dueDate) < today,
@@ -32,11 +44,18 @@ export default function DashboardPage() {
   const todayTasks = activeTasks.filter(
     (t) => t.dueDate && getDateString(t.dueDate) === today,
   );
-  const upcomingTasks = activeTasks
-    .filter((t) => t.dueDate && getDateString(t.dueDate) > today)
+  const thisWeekTasksAll = activeTasks.filter((t) => {
+    if (!t.dueDate) return false;
+    const due = getDateString(t.dueDate);
+    return due >= today && due <= weekEndStr;
+  });
+  const thisWeekTasks = thisWeekTasksAll
     .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
     .slice(0, 5);
   const completedCount = allTasks.filter((t) => t.completed).length;
+
+  const summaryTasks = dashboardView === "today" ? todayTasks : thisWeekTasks;
+  const summaryView = dashboardView === "today" ? "today" : "this-week";
 
   function handleToggleComplete(taskId: string, completed: boolean) {
     updateTask.mutate({ id: taskId, completed });
@@ -83,18 +102,18 @@ export default function DashboardPage() {
           href="/tasks?view=today"
           className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
         >
-          <p className="label text-muted-foreground">Due Today</p>
+          <p className="label text-muted-foreground">Today</p>
           <p className="stat text-foreground">
             {isLoading ? "—" : todayTasks.length}
           </p>
         </Link>
         <Link
-          href="/tasks?view=upcoming"
+          href="/tasks?view=this-week"
           className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
         >
-          <p className="label text-muted-foreground">Upcoming</p>
+          <p className="label text-muted-foreground">This Week</p>
           <p className="stat text-foreground">
-            {isLoading ? "—" : upcomingTasks.length}
+            {isLoading ? "—" : thisWeekTasksAll.length}
           </p>
         </Link>
         <Link
@@ -108,8 +127,8 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Gamification stats */}
-      <StatsCard />
+      {/* Gamification stats — only shown when user enables it in Settings */}
+      {profile?.showStatsOnDashboard && <StatsCard />}
 
       {isLoading ? (
         <div className="flex justify-center py-8">
@@ -135,47 +154,54 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {todayTasks.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <h3 className="heading-xs text-foreground">Due Today</h3>
-                <Link href="/tasks?view=today" className="caption text-primary hover:underline">
-                  View all
-                </Link>
+          {/* Today / This Week toggle section */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex gap-1 rounded-lg border border-border p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setDashboardView("today")}
+                  className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                    dashboardView === "today"
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDashboardView("this-week")}
+                  className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                    dashboardView === "this-week"
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  This Week
+                </button>
               </div>
-              {todayTasks.map((task) => (
+              <Link href={`/tasks?view=${summaryView}`} className="caption text-primary hover:underline">
+                View all
+              </Link>
+            </div>
+
+            {summaryTasks.length > 0 ? (
+              summaryTasks.map((task) => (
                 <TaskCard
                   key={task.id}
                   task={task}
                   onToggleComplete={handleToggleComplete}
                 />
-              ))}
-            </div>
-          )}
-
-          {upcomingTasks.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <h3 className="heading-xs text-foreground">Coming Up</h3>
-                <Link href="/tasks?view=upcoming" className="caption text-primary hover:underline">
-                  View all
-                </Link>
+              ))
+            ) : (
+              <div className="rounded-lg border border-border bg-muted/50 p-8 text-center body text-muted-foreground">
+                {dashboardView === "today"
+                  ? "Nothing scheduled for today."
+                  : "Nothing else scheduled this week."}
               </div>
-              {upcomingTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onToggleComplete={handleToggleComplete}
-                />
-              ))}
-            </div>
-          )}
-
-          {overdueTasks.length === 0 && todayTasks.length === 0 && upcomingTasks.length === 0 && (
-            <div className="rounded-lg border border-border bg-muted/50 p-12 text-center body text-muted-foreground">
-              You&apos;re all caught up! No tasks due today.
-            </div>
-          )}
+            )}
+          </div>
         </>
       )}
     </div>

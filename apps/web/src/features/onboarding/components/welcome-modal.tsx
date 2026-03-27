@@ -43,12 +43,12 @@ export function WelcomeModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-label="Welcome to HomeBase"
     >
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-7 shadow-xl animate-in zoom-in-95 duration-200 flex flex-col gap-5">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-7 shadow-xl animate-in zoom-in-95 duration-200 flex flex-col gap-5">
         <div className="flex flex-col items-center gap-3 text-center">
           <span className="text-4xl">🏡</span>
           <h2 className="heading-sm text-foreground">Welcome to HomeBase!</h2>

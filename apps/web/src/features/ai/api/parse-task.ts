@@ -11,6 +11,7 @@ export type ParsedTask = {
 };
 
 async function parseTask(text: string): Promise<ParsedTask> {
+  console.log("[parseTask] CLIENT — submitting text:", JSON.stringify(text));
   const res = await fetch("/api/ai/parse-task", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -21,6 +22,8 @@ async function parseTask(text: string): Promise<ParsedTask> {
     throw new Error(err.error ?? "Failed to parse task");
   }
   const data = await res.json();
+  console.log("[parseTask] CLIENT — received parsed:", JSON.stringify(data.parsed));
+  console.log("[parseTask] CLIENT — dueDate received:", data.parsed?.dueDate ?? "(not present)");
   return data.parsed;
 }
 

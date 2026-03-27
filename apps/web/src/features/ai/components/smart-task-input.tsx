@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
-import { Sparkles, Check, Pencil, X, Loader2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Sparkles, Check, Pencil, X, Loader2, Mic, MicOff } from "lucide-react";
 import { Input } from "@repo/ui/input";
 import { Button } from "@repo/ui/button";
 import { Badge } from "@repo/ui/badge";
@@ -9,7 +9,32 @@ import { useParseTask, type ParsedTask } from "../api/parse-task";
 import { useCreateTask } from "@/features/tasks/api/create-task";
 import { DEFAULT_CATEGORIES } from "@/types/category";
 import { cn } from "@/utils/cn";
-import { VoiceInput, useVoiceShortcut } from "@/features/voice/components/voice-input";
+
+// ── Minimal Speech API types (no global augmentation to avoid conflicts) ─────
+type InlineSpeechRecognition = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onstart: (() => void) | null;
+  onend: (() => void) | null;
+  onresult: ((event: InlineSpeechResultEvent) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+type InlineSpeechResultEvent = {
+  resultIndex: number;
+  results: {
+    [index: number]: { [index: number]: { transcript: string } | undefined; isFinal: boolean; length: number } | undefined;
+    length: number;
+  };
+};
+function getInlineSpeechAPI(): (new () => InlineSpeechRecognition) | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as { SpeechRecognition?: new () => InlineSpeechRecognition; webkitSpeechRecognition?: new () => InlineSpeechRecognition };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
 
 type SmartTaskInputProps = {
   onOpenCreateDialog?: (prefill: ParsedTask) => void;
@@ -18,26 +43,66 @@ type SmartTaskInputProps = {
 export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
   const [text, setText] = useState("");
   const [preview, setPreview] = useState<ParsedTask | null>(null);
+  const [isInlineMicListening, setIsInlineMicListening] = useState(false);
   const parseTask = useParseTask();
   const createTask = useCreateTask();
   const inputRef = useRef<HTMLInputElement>(null);
+  const inlineRecognitionRef = useRef<InlineSpeechRecognition | null>(null);
 
-  const handleVoiceTranscript = useCallback((transcript: string) => {
-    setText(transcript);
-    setPreview(null);
-    // Auto-trigger AI parsing after voice input
-    parseTask.mutate(transcript, {
-      onSuccess: (parsed) => setPreview(parsed),
-      onError: () => handleFallbackCreate(transcript),
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  function handleInlineMicClick() {
+    if (isInlineMicListening) {
+      inlineRecognitionRef.current?.stop();
+      return;
+    }
+    const SpeechAPI = getInlineSpeechAPI();
+    if (!SpeechAPI) return;
 
-  const focusInput = useCallback(() => {
-    inputRef.current?.focus();
-  }, []);
+    const recognition = new SpeechAPI();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    recognition.maxAlternatives = 1;
 
-  useVoiceShortcut(focusInput);
+    let final = "";
+
+    recognition.onstart = () => {
+      setIsInlineMicListening(true);
+      final = "";
+    };
+
+    recognition.onresult = (event: InlineSpeechResultEvent) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (!result) continue;
+        const alt = result[0];
+        if (!alt) continue;
+        if (result.isFinal) final += alt.transcript;
+      }
+      setText(final || text);
+    };
+
+    recognition.onend = () => {
+      setIsInlineMicListening(false);
+      inlineRecognitionRef.current = null;
+      const trimmed = final.trim();
+      if (!trimmed) return;
+      setText(trimmed);
+      setPreview(null);
+      // Auto-trigger AI parse
+      parseTask.mutate(trimmed, {
+        onSuccess: (parsed) => setPreview(parsed),
+        onError: () => handleFallbackCreate(trimmed),
+      });
+    };
+
+    recognition.onerror = () => {
+      setIsInlineMicListening(false);
+      inlineRecognitionRef.current = null;
+    };
+
+    inlineRecognitionRef.current = recognition;
+    recognition.start();
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,18 +129,22 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
 
   function handleAccept() {
     if (!preview) return;
+    const payload = {
+      title: preview.title ?? text.trim(),
+      category: preview.category ?? "personal",
+      subcategory: preview.subcategory,
+      priority: preview.priority ?? "medium",
+      dueDate: preview.dueDate,
+      tags: preview.tags ?? [],
+      notes: preview.notes,
+      subtasks: [] as [],
+      links: [] as [],
+    };
+    console.log("[SmartTaskInput] handleAccept — preview:", JSON.stringify(preview));
+    console.log("[SmartTaskInput] handleAccept — dueDate in payload:", payload.dueDate ?? "(not present)");
+    console.log("[SmartTaskInput] handleAccept — full payload:", JSON.stringify(payload));
     createTask.mutate(
-      {
-        title: preview.title ?? text.trim(),
-        category: preview.category ?? "personal",
-        subcategory: preview.subcategory,
-        priority: preview.priority ?? "medium",
-        dueDate: preview.dueDate,
-        tags: preview.tags ?? [],
-        notes: preview.notes,
-        subtasks: [],
-        links: [],
-      },
+      payload,
       {
         onSuccess: () => {
           setText("");
@@ -124,6 +193,13 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
     return cat?.subcategories.find((s) => s.id === subId)?.name ?? subId;
   }
 
+  // Auto-focus the input when the preview appears so pressing Enter immediately accepts
+  useEffect(() => {
+    if (preview) {
+      inputRef.current?.focus();
+    }
+  }, [preview]);
+
   const isProcessing = parseTask.isPending || createTask.isPending;
 
   return (
@@ -138,14 +214,27 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
               setText(e.target.value);
               if (preview) setPreview(null);
             }}
-            disabled={isProcessing}
-            className="pr-10"
+            disabled={isProcessing || isInlineMicListening}
+            className="pr-9"
           />
+          {getInlineSpeechAPI() && (
+            <button
+              type="button"
+              onClick={handleInlineMicClick}
+              disabled={isProcessing}
+              aria-label={isInlineMicListening ? "Stop listening" : "Dictate task"}
+              title={isInlineMicListening ? "Stop listening" : "Dictate task"}
+              className={cn(
+                "absolute right-2 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full transition-colors",
+                isInlineMicListening
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {isInlineMicListening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+            </button>
+          )}
         </div>
-        <VoiceInput
-          onTranscript={handleVoiceTranscript}
-          disabled={isProcessing}
-        />
         <Button
           type="submit"
           disabled={isProcessing || !text.trim()}
@@ -165,7 +254,7 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
       {preview && (
         <div
           className={cn(
-            "rounded-lg border border-border bg-muted/50 p-4",
+            "rounded-lg border border-primary/40 bg-primary/5 p-4",
             "flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200",
           )}
         >
@@ -230,12 +319,13 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
+              variant="primary"
               onClick={handleAccept}
               disabled={createTask.isPending}
-              className="gap-1"
+              className="gap-1.5"
             >
               <Check className="h-3.5 w-3.5" />
-              {createTask.isPending ? "Creating..." : "Accept"}
+              {createTask.isPending ? "Adding..." : "Add Task"}
             </Button>
             {onOpenCreateDialog && (
               <Button
@@ -251,6 +341,9 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
             <Button size="sm" variant="ghost" onClick={handleDismiss}>
               Dismiss
             </Button>
+            <span className="ml-auto caption text-muted-foreground hidden sm:inline">
+              ↵ Enter to add
+            </span>
           </div>
         </div>
       )}
