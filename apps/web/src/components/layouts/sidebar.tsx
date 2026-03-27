@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { navItems } from "@/config/navigation";
 import { NavLink } from "./nav-link";
@@ -19,7 +20,9 @@ export function Sidebar() {
   return (
     <aside className="hidden w-60 flex-col border-r border-border bg-background md:flex">
       <div className="p-6">
-        <h1 className="heading-sm text-foreground">HomeBase</h1>
+        <Link href="/dashboard">
+          <h1 className="heading-sm text-foreground hover:text-primary transition-colors">HomeBase</h1>
+        </Link>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-3">
         {navItems.map((item) => (
