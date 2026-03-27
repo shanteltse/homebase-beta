@@ -56,7 +56,8 @@ export function HouseholdSettings() {
 
   function handleCopyCode() {
     if (!household?.code) return;
-    navigator.clipboard.writeText(household.code);
+    const message = `Join my HomeBase household! Sign up at https://homebase-beta-web.vercel.app/ and use code ${household.code} to get started. 🏡`;
+    navigator.clipboard.writeText(message);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }

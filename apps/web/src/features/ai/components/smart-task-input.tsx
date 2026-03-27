@@ -204,11 +204,13 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
 
   return (
     <div className="flex flex-col gap-2">
+      <div className="rounded-xl border-2 border-primary/25 bg-background shadow-sm hover:border-primary/40 focus-within:border-primary/50 focus-within:shadow-md transition-all duration-200 p-3 flex flex-col gap-2">
+        <p className="text-xs font-semibold text-primary uppercase tracking-widest select-none">Add a Task</p>
       <form onSubmit={handleSubmit} className="flex gap-2">
         <div className="relative flex-1">
           <Input
             ref={inputRef}
-            placeholder="Describe a task... e.g. &quot;dentist appointment next Tuesday 3pm high priority&quot;"
+            placeholder="e.g. dentist appointment next Tuesday 3pm high priority"
             value={text}
             onChange={(e) => {
               setText(e.target.value);
@@ -249,6 +251,7 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
           {parseTask.isPending ? "Parsing..." : "Smart Add"}
         </Button>
       </form>
+      </div>
 
       {/* Preview card */}
       {preview && (

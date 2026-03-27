@@ -18,7 +18,7 @@ function getDateString(date: string | Date | null | undefined): string {
   return new Date(date).toISOString().split("T")[0] ?? "";
 }
 
-type DashboardView = "today" | "this-week";
+type DashboardView = "all" | "today" | "this-week";
 
 export default function DashboardPage() {
   const { data: tasks, isLoading } = useTasks();
@@ -54,8 +54,14 @@ export default function DashboardPage() {
     .slice(0, 5);
   const completedCount = allTasks.filter((t) => t.completed).length;
 
-  const summaryTasks = dashboardView === "today" ? todayTasks : thisWeekTasks;
-  const summaryView = dashboardView === "today" ? "today" : "this-week";
+  const summaryTasks =
+    dashboardView === "all"
+      ? activeTasks.slice(0, 5)
+      : dashboardView === "today"
+        ? todayTasks
+        : thisWeekTasks;
+  const summaryView =
+    dashboardView === "all" ? "all" : dashboardView === "today" ? "today" : "this-week";
 
   function handleToggleComplete(taskId: string, completed: boolean) {
     updateTask.mutate({ id: taskId, completed });
@@ -87,8 +93,8 @@ export default function DashboardPage() {
         prefill={dialogPrefill}
       />
 
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Stats — only shown when user enables it in Settings */}
+      {profile?.showTaskSummaryOnDashboard && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           href="/tasks?view=overdue"
           className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
@@ -125,7 +131,7 @@ export default function DashboardPage() {
             {isLoading ? "—" : completedCount}
           </p>
         </Link>
-      </div>
+      </div>}
 
       {/* Gamification stats — only shown when user enables it in Settings */}
       {profile?.showStatsOnDashboard && <StatsCard />}
@@ -154,32 +160,24 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Today / This Week toggle section */}
+          {/* All / Today / This Week toggle section */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="flex gap-1 rounded-lg border border-border p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setDashboardView("today")}
-                  className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                    dashboardView === "today"
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Today
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDashboardView("this-week")}
-                  className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                    dashboardView === "this-week"
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  This Week
-                </button>
+                {(["all", "today", "this-week"] as DashboardView[]).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setDashboardView(v)}
+                    className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                      dashboardView === v
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {v === "all" ? "All" : v === "today" ? "Today" : "This Week"}
+                  </button>
+                ))}
               </div>
               <Link href={`/tasks?view=${summaryView}`} className="caption text-primary hover:underline">
                 View all
@@ -196,9 +194,11 @@ export default function DashboardPage() {
               ))
             ) : (
               <div className="rounded-lg border border-border bg-muted/50 p-8 text-center body text-muted-foreground">
-                {dashboardView === "today"
-                  ? "Nothing scheduled for today."
-                  : "Nothing else scheduled this week."}
+                {dashboardView === "all"
+                  ? "No active tasks."
+                  : dashboardView === "today"
+                    ? "Nothing scheduled for today."
+                    : "Nothing scheduled this week."}
               </div>
             )}
           </div>

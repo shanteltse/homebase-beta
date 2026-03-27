@@ -50,6 +50,7 @@ export const users = pgTable("users", {
   voiceInputAutoSubmit: boolean("voice_input_auto_submit").notNull().default(false),
   // Dashboard preferences
   showStatsOnDashboard: boolean("show_stats_on_dashboard").notNull().default(false),
+  showTaskSummaryOnDashboard: boolean("show_task_summary_on_dashboard").notNull().default(false),
 });
 
 export const accounts = pgTable(

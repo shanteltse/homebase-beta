@@ -260,12 +260,12 @@ export function VoiceFab() {
   const showBubble = isListening || isProcessing || isSuccess || hasError;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-2">
-      {/* Status bubble */}
+    <div className="fixed bottom-[80px] right-[20px] z-50 flex flex-col items-center gap-2">
+      {/* Status bubble — drops below the button */}
       {showBubble && (
         <div
           className={cn(
-            "mb-1 rounded-xl border px-4 py-2 text-sm shadow-lg max-w-[220px] text-center animate-in fade-in slide-in-from-bottom-2 duration-200",
+            "rounded-xl border px-4 py-2 text-sm shadow-lg max-w-[220px] text-center animate-in fade-in slide-in-from-bottom-2 duration-200",
             hasError
               ? "border-destructive/30 bg-destructive/10 text-destructive"
               : isSuccess
@@ -317,15 +317,13 @@ export function VoiceFab() {
             <Mic className="h-7 w-7" />
           )}
 
-          {/* Pulse ring when listening */}
           {isListening && (
             <span className="absolute h-16 w-16 rounded-full border-2 border-primary animate-ping opacity-40" />
           )}
         </button>
 
-        {/* Visible label */}
         <span className="text-xs font-medium text-muted-foreground whitespace-nowrap select-none">
-          {isListening ? "Tap to stop" : isProcessing ? "Creating…" : isSuccess ? "Done!" : "Add Task"}
+          {isListening ? "Tap to stop" : isProcessing ? "Creating…" : isSuccess ? "Done!" : "Add Task!"}
         </span>
       </div>
     </div>

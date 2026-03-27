@@ -38,7 +38,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <CompletionCelebration />
         {/* Welcome modal — shown once to brand-new users */}
         <WelcomeModal />
-        {/* Global voice-to-task FAB */}
+        {/* Voice-to-task FAB — fixed top-right, below the notification bell */}
         <VoiceFab />
       </NotificationProvider>
     </AuthGuard>
