@@ -36,27 +36,29 @@ export function TaskFilters({
   onFilterChange,
 }: TaskFiltersProps) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:flex-wrap">
-      <div className="flex gap-1">
+    <div className="flex flex-col gap-3">
+      {/* View tabs — scrolls horizontally on narrow screens rather than overflowing */}
+      <div className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {VIEWS.map((v) => (
           <Button
             key={v.value}
             variant={view === v.value ? "primary" : "ghost"}
             size="sm"
             onClick={() => onFilterChange("view", v.value === "all" ? "" : v.value)}
-            className={cn(view === v.value && "pointer-events-none")}
+            className={cn("shrink-0", view === v.value && "pointer-events-none")}
           >
             {v.label}
           </Button>
         ))}
       </div>
 
-      <div className="flex gap-2">
+      {/* Filter selects — wrap onto a second line on narrow screens */}
+      <div className="flex flex-wrap gap-2">
         <Select
           value={category}
           onValueChange={(val) => onFilterChange("category", val === "all" ? "" : val)}
         >
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="flex-1 min-w-[9rem] max-w-[12rem]">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -75,7 +77,7 @@ export function TaskFilters({
             onFilterChange("priority", val === "all" ? "" : val)
           }
         >
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="flex-1 min-w-[8rem] max-w-[10rem]">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -90,7 +92,7 @@ export function TaskFilters({
           value={sort}
           onValueChange={(val) => onFilterChange("sort", val === "due-date" ? "" : val)}
         >
-          <SelectTrigger className="w-36">
+          <SelectTrigger className="flex-1 min-w-[9rem] max-w-[11rem]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>

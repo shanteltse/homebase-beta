@@ -100,7 +100,7 @@ export function HouseholdSettings() {
               <h4 className="label font-medium text-foreground">
                 Create a Household
               </h4>
-              <div className="flex items-end gap-2">
+              <div className="flex flex-wrap items-end gap-2">
                 <Input
                   id="household-name"
                   label="Household name"
@@ -137,7 +137,7 @@ export function HouseholdSettings() {
               <h4 className="label font-medium text-foreground">
                 Join a Household
               </h4>
-              <div className="flex items-end gap-2">
+              <div className="flex flex-wrap items-end gap-2">
                 <Input
                   id="invite-code"
                   label="Invite code"
