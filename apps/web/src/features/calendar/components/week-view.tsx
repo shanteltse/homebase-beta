@@ -27,7 +27,8 @@ export function WeekView({
   const days = getWeekDays(currentDate);
 
   return (
-    <div className="grid grid-cols-7 divide-x divide-border border border-border rounded-lg overflow-hidden">
+    <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div className="grid grid-cols-7 divide-x divide-border border border-border rounded-lg overflow-hidden min-w-[560px]">
       {days.map((day, i) => {
         const dayTasks = getTasksForDate(tasks, day);
         const today = isToday(day);
@@ -80,6 +81,7 @@ export function WeekView({
           </div>
         );
       })}
+    </div>
     </div>
   );
 }

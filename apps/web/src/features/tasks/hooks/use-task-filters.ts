@@ -81,19 +81,32 @@ export function useTaskFilters() {
         });
       }
 
-      // Hide recurring task instances due beyond the current week (Mon–Sun).
-      // They'll re-appear once they fall within the week, or can be seen via "upcoming".
-      if (view !== "upcoming" && view !== "this-week" && view !== "completed") {
-        const weekEnd = new Date();
-        // Days until Sunday: Sun=0 → +0, Mon=1 → +6, Tue=2 → +5, …, Sat=6 → +1
-        const daysUntilSunday = (7 - weekEnd.getDay()) % 7;
-        weekEnd.setDate(weekEnd.getDate() + daysUntilSunday);
-        weekEnd.setHours(23, 59, 59, 999);
-        const weekEndStr = weekEnd.toISOString().split("T")[0]!;
+      // Recurring tasks: only show the earliest upcoming instance per title,
+      // and never show any instance more than 7 days out.
+      if (view !== "completed") {
+        const now = new Date();
+        const sevenDaysOut = new Date(now);
+        sevenDaysOut.setDate(now.getDate() + 7);
+        const sevenDaysStr = sevenDaysOut.toISOString().split("T")[0]!;
+
+        // Find the earliest due date for each recurring task title
+        const earliestByTitle = new Map<string, string>();
+        for (const t of filtered) {
+          if (!t.recurring || !t.dueDate) continue;
+          const due = t.dueDate.split("T")[0]!;
+          const existing = earliestByTitle.get(t.title);
+          if (!existing || due < existing) {
+            earliestByTitle.set(t.title, due);
+          }
+        }
+
         filtered = filtered.filter((t) => {
           if (!t.recurring || !t.dueDate) return true;
           const due = t.dueDate.split("T")[0]!;
-          return due <= weekEndStr;
+          // Never show more than 7 days out
+          if (due > sevenDaysStr) return false;
+          // Only show the earliest instance per title
+          return due === earliestByTitle.get(t.title);
         });
       }
 

@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const { data: profile } = useUserProfile();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogPrefill, setDialogPrefill] = useState<ParsedTask | undefined>();
-  const [dashboardView, setDashboardView] = useState<DashboardView>("today");
+  const [dashboardView, setDashboardView] = useState<DashboardView>("all");
 
   const allTasks = (tasks ?? []) as Task[];
   const now = new Date();
@@ -37,7 +37,26 @@ export default function DashboardPage() {
   weekEnd.setDate(now.getDate() + daysUntilSunday);
   const weekEndStr = getDateString(weekEnd);
 
-  const activeTasks = allTasks.filter((t) => !t.completed);
+  const rawActiveTasks = allTasks.filter((t) => !t.completed);
+
+  // Recurring tasks: only show the earliest instance per title, never more than 7 days out.
+  const sevenDaysOut = new Date(now);
+  sevenDaysOut.setDate(now.getDate() + 7);
+  const sevenDaysStr = getDateString(sevenDaysOut);
+  const earliestRecurringByTitle = new Map<string, string>();
+  for (const t of rawActiveTasks) {
+    if (!t.recurring || !t.dueDate) continue;
+    const due = getDateString(t.dueDate);
+    const existing = earliestRecurringByTitle.get(t.title);
+    if (!existing || due < existing) earliestRecurringByTitle.set(t.title, due);
+  }
+  const activeTasks = rawActiveTasks.filter((t) => {
+    if (!t.recurring || !t.dueDate) return true;
+    const due = getDateString(t.dueDate);
+    if (due > sevenDaysStr) return false;
+    return due === earliestRecurringByTitle.get(t.title);
+  });
+
   const overdueTasks = activeTasks.filter(
     (t) => t.dueDate && getDateString(t.dueDate) < today,
   );

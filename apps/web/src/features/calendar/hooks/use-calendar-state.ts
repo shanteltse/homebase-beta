@@ -14,7 +14,12 @@ export function useCalendarState() {
 
   const currentDate = useMemo(() => {
     const dateParam = searchParams.get("date");
-    return dateParam ? new Date(dateParam) : new Date();
+    if (dateParam) {
+      // Parse as local time to avoid UTC-offset shifting the displayed day
+      const [y, m, d] = dateParam.split("-").map(Number);
+      return new Date(y!, m! - 1, d!);
+    }
+    return new Date();
   }, [searchParams]);
 
   const setParams = useCallback(
