@@ -89,8 +89,9 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
   function onSubmit(data: FormValues) {
     const input: CreateTaskInput = {
       ...data,
-      // Convert empty string from the unset datetime-local input to undefined
-      dueDate: data.dueDate || undefined,
+      // Convert datetime-local string to UTC ISO so the user's local time is
+      // preserved regardless of server timezone. Empty string becomes undefined.
+      dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
       subtasks: [],
       tags,
       links: [],

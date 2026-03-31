@@ -117,13 +117,21 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
     DEFAULT_CATEGORIES.find((c) => c.id === selectedCategory)?.subcategories ??
     [];
 
+  // recurring, tags, and assignee are managed outside react-hook-form, so
+  // isDirty won't catch their changes. Track them manually.
+  const isExtraDirty =
+    JSON.stringify(recurring ?? null) !== JSON.stringify(task.recurring ?? null) ||
+    JSON.stringify(tags) !== JSON.stringify(task.tags ?? []) ||
+    (assignee ?? null) !== (task.assignee ?? null);
+
   function onSubmit(data: EditFormValues) {
     updateTask.mutate(
       {
         id: taskId,
         ...data,
-        // Convert empty string from unset datetime-local input to undefined
-        dueDate: data.dueDate || undefined,
+        // Convert datetime-local string to UTC ISO so the user's local time is
+        // preserved regardless of server timezone. Empty string becomes undefined.
+        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
         tags,
         recurring,
         assignee,
@@ -381,7 +389,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={!isDirty || updateTask.isPending}>
+          <Button type="submit" disabled={(!isDirty && !isExtraDirty) || updateTask.isPending}>
             {updateTask.isPending ? "Saving..." : "Save changes"}
           </Button>
         </div>
