@@ -31,7 +31,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </div>
             {/* Onboarding setup banner — only shows when setup is incomplete */}
             <SetupBanner />
-            <div className="flex-1 min-w-0 p-6 pb-28 md:pb-6">{children}</div>
+            <div className="flex-1 min-w-0 p-6 pb-36 md:pb-6">{children}</div>
             <MobileNav />
           </main>
         </div>

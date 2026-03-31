@@ -24,11 +24,12 @@ export function WeekView({
   onDayClick,
   onToggleComplete,
 }: WeekViewProps) {
-  const days = getWeekDays(currentDate);
+  const allDays = getWeekDays(currentDate);
+  // Mon–Sun order: move Sunday (index 0) to the end
+  const days = [...allDays.slice(1), allDays[0]!];
 
   return (
-    <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-    <div className="grid grid-cols-7 divide-x divide-border border border-border rounded-lg overflow-hidden min-w-[560px]">
+    <div className="flex flex-col divide-y divide-border border border-border rounded-lg overflow-hidden">
       {days.map((day, i) => {
         const dayTasks = getTasksForDate(tasks, day);
         const today = isToday(day);
@@ -37,35 +38,36 @@ export function WeekView({
           <div
             key={i}
             className={cn(
-              "flex min-h-[400px] flex-col",
+              "flex items-start gap-3 p-3",
               today && "bg-primary/5",
             )}
           >
-            {/* Day header */}
+            {/* Day label — click to open day view */}
             <button
               type="button"
               onClick={() => onDayClick(day)}
-              className="flex flex-col items-center gap-0.5 border-b border-border px-2 py-3 transition-colors hover:bg-muted/50"
+              className="flex flex-col items-center w-12 shrink-0 gap-0.5 hover:opacity-75 transition-opacity"
             >
-              <span className="caption font-medium text-muted-foreground">
-                {DAY_NAMES[i]}
+              <span className="text-xs font-medium text-muted-foreground">
+                {DAY_NAMES[day.getDay()]}
               </span>
               <span
                 className={cn(
-                  "inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium",
-                  today && "bg-primary text-primary-foreground",
-                  !today && "text-foreground",
+                  "inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
+                  today
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground",
                 )}
               >
                 {day.getDate()}
               </span>
             </button>
 
-            {/* Tasks */}
-            <div className="flex flex-1 flex-col gap-1 p-1.5">
+            {/* Tasks displayed horizontally */}
+            <div className="flex flex-wrap gap-1.5 flex-1 min-h-[2rem] items-start pt-0.5">
               {dayTasks.length === 0 ? (
-                <span className="mt-4 text-center text-xs text-muted-foreground">
-                  No tasks
+                <span className="text-xs text-muted-foreground/50 self-center">
+                  —
                 </span>
               ) : (
                 dayTasks.map((task) => (
@@ -81,7 +83,6 @@ export function WeekView({
           </div>
         );
       })}
-    </div>
     </div>
   );
 }

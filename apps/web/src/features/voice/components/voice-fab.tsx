@@ -45,42 +45,8 @@ function getSpeechRecognitionConstructor(): (new () => SpeechRecognitionInstance
   return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null;
 }
 
-async function checkMicPermission(): Promise<{ ok: boolean; error?: string }> {
-  if (navigator.permissions?.query) {
-    try {
-      const status = await navigator.permissions.query({ name: "microphone" as PermissionName });
-      if (status.state === "granted") return { ok: true };
-      if (status.state === "denied") {
-        // Fallback: try getUserMedia anyway (localhost quirk)
-        if (navigator.mediaDevices?.getUserMedia) {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach((t) => t.stop());
-            return { ok: true };
-          } catch {
-            // both failed
-          }
-        }
-        return { ok: false, error: "Microphone access denied — allow it in your browser settings" };
-      }
-    } catch {
-      // permissions API unavailable, fall through
-    }
-  }
-  if (!navigator.mediaDevices?.getUserMedia) return { ok: true };
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach((t) => t.stop());
-    return { ok: true };
-  } catch (err) {
-    const name = err instanceof DOMException ? err.name : String(err);
-    if (name === "NotAllowedError" || name === "PermissionDeniedError")
-      return { ok: false, error: "Microphone access denied — allow it in your browser settings" };
-    if (name === "NotFoundError" || name === "DevicesNotFoundError")
-      return { ok: false, error: "No microphone found on this device" };
-    return { ok: true };
-  }
-}
+// localStorage key for persisting mic preference across sessions
+const MIC_PREF_KEY = "homebase_mic_pref";
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -126,22 +92,20 @@ export function VoiceFab() {
     setInterimText("");
   }, [clearSilenceTimer]);
 
-  const startListening = useCallback(async () => {
+  const startListening = useCallback(() => {
     const SpeechRecognitionAPI = getSpeechRecognitionConstructor();
     if (!SpeechRecognitionAPI) {
       showError("Speech recognition not supported in this browser");
       return;
     }
 
-    const perm = await checkMicPermission();
-    if (!perm.ok) {
-      showError(perm.error ?? "Microphone unavailable");
-      return;
-    }
-
+    // Don't pre-check mic permission with getUserMedia — that triggers a
+    // separate iOS permission prompt before SpeechRecognition's own prompt,
+    // causing two prompts per session on iOS PWA. Let SpeechRecognition
+    // handle permission natively; errors surface via onerror.
     try {
       const recognition = new SpeechRecognitionAPI();
-      recognition.continuous = true;  // keep listening until we call .stop()
+      recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = "en-US";
       recognition.maxAlternatives = 1;
@@ -149,6 +113,8 @@ export function VoiceFab() {
       let finalTranscript = "";
 
       recognition.onstart = () => {
+        // Remember that the user has granted mic access
+        try { localStorage.setItem(MIC_PREF_KEY, "granted"); } catch { /* ignore */ }
         setFabState("listening");
         setInterimText("");
         finalTranscript = "";
@@ -229,6 +195,12 @@ export function VoiceFab() {
           setInterimText("");
           return;
         }
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          try { localStorage.setItem(MIC_PREF_KEY, "denied"); } catch { /* ignore */ }
+          showError("Microphone access denied — allow it in Settings > Safari > Microphone");
+          setInterimText("");
+          return;
+        }
         showError(`Mic error: ${event.error}`);
         setInterimText("");
       };
@@ -240,6 +212,7 @@ export function VoiceFab() {
       showError(msg);
     }
   }, [clearSilenceTimer, showError, parseTask, createTask]);
+
 
   // Cleanup on unmount
   useEffect(() => {
@@ -291,7 +264,7 @@ export function VoiceFab() {
           type="button"
           onClick={() => {
             if (isListening) stopListening();
-            else void startListening();
+            else startListening();
           }}
           disabled={isProcessing || isSuccess}
           aria-label={isListening ? "Stop voice input" : "Add task by voice"}

@@ -80,7 +80,13 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           subcategory: task.subcategory ?? undefined,
           priority: task.priority,
           dueDate: task.dueDate
-            ? new Date(task.dueDate).toISOString().slice(0, 16)
+            ? (() => {
+                // Use local time methods so the datetime-local input shows the
+                // correct local time, not the UTC time from toISOString()
+                const d = new Date(task.dueDate);
+                const pad = (n: number) => String(n).padStart(2, "0");
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+              })()
             : undefined,
           notes: task.notes ?? undefined,
         }
@@ -113,7 +119,15 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
 
   function onSubmit(data: EditFormValues) {
     updateTask.mutate(
-      { id: taskId, ...data, tags, recurring, assignee },
+      {
+        id: taskId,
+        ...data,
+        // Convert empty string from unset datetime-local input to undefined
+        dueDate: data.dueDate || undefined,
+        tags,
+        recurring,
+        assignee,
+      },
       { onSuccess: () => router.push("/tasks") },
     );
   }
@@ -269,6 +283,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
             id="dueDate"
             label="Due date"
             type="datetime-local"
+            step={60}
             {...register("dueDate")}
           />
         </div>

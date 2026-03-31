@@ -89,6 +89,8 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
   function onSubmit(data: FormValues) {
     const input: CreateTaskInput = {
       ...data,
+      // Convert empty string from the unset datetime-local input to undefined
+      dueDate: data.dueDate || undefined,
       subtasks: [],
       tags,
       links: [],
@@ -215,6 +217,7 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
               id="dueDate"
               label="Due date"
               type="datetime-local"
+              step={60}
               {...register("dueDate")}
             />
           </div>
