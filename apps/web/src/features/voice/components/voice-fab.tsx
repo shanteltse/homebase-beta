@@ -6,7 +6,7 @@ import { cn } from "@/utils/cn";
 import { useParseTask } from "@/features/ai/api/parse-task";
 import { useCreateTask } from "@/features/tasks/api/create-task";
 
-type FabState = "idle" | "listening" | "processing" | "success" | "error";
+type FabState = "idle" | "requesting" | "listening" | "processing" | "success" | "error";
 
 // ── Web Speech API minimal typings ──────────────────────────────────────────
 
@@ -103,6 +103,14 @@ export function VoiceFab() {
     // separate iOS permission prompt before SpeechRecognition's own prompt,
     // causing two prompts per session on iOS PWA. Let SpeechRecognition
     // handle permission natively; errors surface via onerror.
+    //
+    // Show a "requesting" state while waiting for the OS permission dialog,
+    // so the user knows something is happening before the prompt appears.
+    const hadPrior = (() => {
+      try { return localStorage.getItem(MIC_PREF_KEY); } catch { return null; }
+    })();
+    if (!hadPrior) setFabState("requesting");
+
     try {
       const recognition = new SpeechRecognitionAPI();
       recognition.continuous = true;
@@ -226,11 +234,12 @@ export function VoiceFab() {
   // Don't render until we know if speech is supported
   if (isSupported === null || !isSupported) return null;
 
+  const isRequesting = fabState === "requesting";
   const isListening = fabState === "listening";
   const isProcessing = fabState === "processing";
   const isSuccess = fabState === "success";
   const hasError = fabState === "error";
-  const showBubble = isListening || isProcessing || isSuccess || hasError;
+  const showBubble = isRequesting || isListening || isProcessing || isSuccess || hasError;
 
   return (
     <div className="fixed right-[20px] z-50 flex flex-col items-center gap-2" style={{ bottom: "calc(max(env(safe-area-inset-bottom), 20px) + 60px)" }}>
@@ -252,9 +261,11 @@ export function VoiceFab() {
               ? "Task created!"
               : isProcessing
                 ? "Creating task…"
-                : interimText
-                  ? <span className="italic">{interimText}</span>
-                  : "Listening…"}
+                : isRequesting
+                  ? "Allow microphone when prompted…"
+                  : interimText
+                    ? <span className="italic">{interimText}</span>
+                    : "Listening…"}
         </div>
       )}
 
@@ -266,7 +277,7 @@ export function VoiceFab() {
             if (isListening) stopListening();
             else startListening();
           }}
-          disabled={isProcessing || isSuccess}
+          disabled={isRequesting || isProcessing || isSuccess}
           aria-label={isListening ? "Stop voice input" : "Add task by voice"}
           className={cn(
             "relative flex h-16 w-16 items-center justify-center rounded-full shadow-lg transition-all duration-200",
@@ -296,7 +307,7 @@ export function VoiceFab() {
         </button>
 
         <span className="text-xs font-medium text-muted-foreground whitespace-nowrap select-none">
-          {isListening ? "Tap to stop" : isProcessing ? "Creating…" : isSuccess ? "Done!" : "Add Task!"}
+          {isListening ? "Tap to stop" : isProcessing ? "Creating…" : isSuccess ? "Done!" : isRequesting ? "Waiting…" : "Add Task!"}
         </span>
       </div>
     </div>

@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, type UseFormRegister, type UseFormWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { ArrowLeft, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { Textarea } from "@repo/ui/textarea";
@@ -42,6 +42,7 @@ const editFormSchema = z.object({
   priority: z.enum(["high", "medium", "low"]),
   dueDate: z.string().optional(),
   notes: z.string().optional(),
+  contact: z.string().optional(),
 });
 
 type EditFormValues = z.infer<typeof editFormSchema>;
@@ -49,6 +50,54 @@ type EditFormValues = z.infer<typeof editFormSchema>;
 type TaskDetailProps = {
   taskId: string;
 };
+
+function detectContactType(value: string): "email" | "phone" | "address" | null {
+  if (!value.trim()) return null;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "email";
+  if (/^[+\d][\d\s\-().]{6,}$/.test(value)) return "phone";
+  // Anything with a number followed by words is likely an address
+  if (/\d/.test(value) && value.trim().split(/\s+/).length >= 2) return "address";
+  return null;
+}
+
+function getContactHref(value: string, type: "email" | "phone" | "address"): string {
+  if (type === "email") return `mailto:${value}`;
+  if (type === "phone") return `tel:${value.replace(/\s/g, "")}`;
+  return `https://maps.apple.com/?q=${encodeURIComponent(value)}`;
+}
+
+type ContactFieldProps = {
+  register: UseFormRegister<EditFormValues>;
+  watch: UseFormWatch<EditFormValues>;
+};
+
+function ContactField({ register, watch }: ContactFieldProps) {
+  const value = watch("contact") ?? "";
+  const type = detectContactType(value);
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor="contact" className="label text-foreground">
+        Contact
+      </label>
+      <Input
+        id="contact"
+        placeholder="Email, phone, or address"
+        {...register("contact")}
+      />
+      {type && value && (
+        <a
+          href={getContactHref(value, type)}
+          target={type === "address" ? "_blank" : undefined}
+          rel={type === "address" ? "noopener noreferrer" : undefined}
+          className="flex items-center gap-1 text-xs text-primary hover:underline w-fit"
+        >
+          <ExternalLink className="h-3 w-3" />
+          {type === "email" ? "Send email" : type === "phone" ? "Call" : "Open in Maps"}
+        </a>
+      )}
+    </div>
+  );
+}
 
 export function TaskDetail({ taskId }: TaskDetailProps) {
   const router = useRouter();
@@ -89,6 +138,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
               })()
             : undefined,
           notes: task.notes ?? undefined,
+          contact: task.contact ?? undefined,
         }
       : undefined,
   });
@@ -132,8 +182,11 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         // Convert datetime-local string to UTC ISO so the user's local time is
         // preserved regardless of server timezone. Empty string becomes undefined.
         dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
+        // Use null (not undefined) so clearing these fields is persisted to DB.
+        // undefined is stripped by JSON.stringify; null explicitly writes NULL.
+        recurring: recurring ?? null,
+        contact: data.contact || null,
         tags,
-        recurring,
         assignee,
       },
       { onSuccess: () => router.push("/tasks") },
@@ -299,6 +352,8 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         <AssigneePicker value={assignee} onChange={setAssignee} />
 
         <Textarea id="notes" label="Notes" {...register("notes")} />
+
+        <ContactField register={register} watch={watch} />
 
         <TagPicker value={tags} onChange={setTags} />
 

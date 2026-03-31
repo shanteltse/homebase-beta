@@ -68,6 +68,7 @@ export async function POST(request: Request) {
       tags: validated.tags,
       assignee: validated.assignee,
       notes: validated.notes,
+      contact: validated.contact ?? null,
       links: validated.links,
       recurring: validated.recurring ?? null,
     };

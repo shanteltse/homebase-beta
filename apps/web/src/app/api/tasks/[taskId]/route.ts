@@ -74,8 +74,10 @@ export async function PATCH(request: Request, { params }: Params) {
     if (validated.tags !== undefined) updates.tags = validated.tags;
     if (validated.links !== undefined) updates.links = validated.links;
     if (validated.starred !== undefined) updates.starred = validated.starred;
+    // null = explicitly remove recurring; undefined = not sent (leave unchanged)
     if (validated.recurring !== undefined)
       updates.recurring = validated.recurring;
+    if (validated.contact !== undefined) updates.contact = validated.contact;
 
     if (validated.dueDate !== undefined) {
       updates.dueDate = validated.dueDate ? new Date(validated.dueDate) : null;

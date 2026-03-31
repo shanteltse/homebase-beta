@@ -156,6 +156,7 @@ export const tasks = pgTable("tasks", {
     daysOfWeek?: number[];
   }>(),
   notes: text("notes"),
+  contact: text("contact"),
   links: jsonb("links").$type<string[]>().notNull().default([]),
   starred: boolean("starred").notNull().default(false),
   isStarter: boolean("is_starter").notNull().default(false),

@@ -35,6 +35,7 @@ export const taskSchema = z.object({
   assignee: z.string().optional(),
   recurring: recurringPatternSchema.optional(),
   notes: z.string().optional(),
+  contact: z.string().optional(),
   links: z.array(z.string().url()).default([]),
   starred: z.boolean().default(false),
   createdBy: z.string(),
@@ -56,6 +57,7 @@ export const createTaskInputSchema = z.object({
   assignee: z.string().optional(),
   recurring: recurringPatternSchema.optional(),
   notes: z.string().optional(),
+  contact: z.string().optional(),
   links: z.array(z.string().url()).default([]),
 });
 export type CreateTaskInput = z.infer<typeof createTaskInputSchema>;
@@ -65,5 +67,9 @@ export const updateTaskInputSchema = createTaskInputSchema.partial().extend({
   completed: z.boolean().optional(),
   starred: z.boolean().optional(),
   status: taskStatusSchema.optional(),
+  // Allow explicit null to clear recurring (undefined = not sent, null = remove it)
+  recurring: z.union([recurringPatternSchema, z.null()]).optional(),
+  // Allow explicit null to clear contact
+  contact: z.string().nullable().optional(),
 });
 export type UpdateTaskInput = z.infer<typeof updateTaskInputSchema>;
