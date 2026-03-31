@@ -192,6 +192,20 @@ export function GoogleCalendarSettings() {
               <div className="border-t border-border pt-4 flex flex-col gap-4">
                 <p className="text-sm font-medium text-foreground">Sync Settings</p>
 
+                {/* Show GCal events toggle */}
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <p className="text-sm text-foreground">Show Google Calendar Events</p>
+                    <p className="text-xs text-muted-foreground">Display imported Google Calendar events in the calendar view</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={profile?.showGcalEvents ?? true}
+                    onChange={(e) => updateSetting("showGcalEvents", e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                </label>
+
                 {/* Enable sync toggle */}
                 <label className="flex items-center justify-between cursor-pointer">
                   <div>
@@ -256,22 +270,6 @@ export function GoogleCalendarSettings() {
                     <p className="text-sm text-muted-foreground">Assignee</p>
                   </label>
                 </div>
-              </div>
-
-              {/* Show GCal events toggle */}
-              <div className="border-t border-border pt-4">
-                <label className="flex items-center justify-between cursor-pointer">
-                  <div>
-                    <p className="text-sm text-foreground">Show Google Calendar events</p>
-                    <p className="text-xs text-muted-foreground">Display imported Google Calendar events in the HomeBase calendar view</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={profile?.showGcalEvents ?? true}
-                    onChange={(e) => updateSetting("showGcalEvents", e.target.checked)}
-                    className="h-4 w-4 rounded border-border accent-primary"
-                  />
-                </label>
               </div>
 
               <div className="rounded-lg bg-muted/50 border border-border p-3">

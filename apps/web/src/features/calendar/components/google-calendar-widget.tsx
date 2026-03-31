@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useUserProfile } from "@/features/auth/api/get-user-profile";
 import { useQueryClient } from "@tanstack/react-query";
@@ -57,6 +59,16 @@ export function GoogleCalendarWidget() {
     const t = setTimeout(() => setSyncMessage(null), 3000);
     return () => clearTimeout(t);
   }, [syncMessage]);
+
+  async function handleToggleGcalEvents() {
+    const next = !(profile?.showGcalEvents ?? true);
+    await fetch("/api/user/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ showGcalEvents: next }),
+    });
+    queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+  }
 
   async function handleSyncNow() {
     setIsSyncing(true);
@@ -168,6 +180,27 @@ export function GoogleCalendarWidget() {
           <RefreshCw className="h-3 w-3" />
         )}
         {isSyncing ? "Syncing…" : "Sync Now"}
+      </button>
+
+      {/* Show/hide GCal events toggle */}
+      <button
+        type="button"
+        onClick={handleToggleGcalEvents}
+        title={profile?.showGcalEvents ?? true ? "Hide Google Calendar events" : "Show Google Calendar events"}
+        className={cn(
+          "inline-flex items-center gap-1 rounded-md border border-border",
+          "bg-background px-2.5 py-1 text-xs font-medium transition-colors",
+          profile?.showGcalEvents ?? true
+            ? "text-foreground hover:bg-muted"
+            : "text-muted-foreground hover:bg-muted",
+        )}
+      >
+        {profile?.showGcalEvents ?? true ? (
+          <Eye className="h-3 w-3" />
+        ) : (
+          <EyeOff className="h-3 w-3" />
+        )}
+        {profile?.showGcalEvents ?? true ? "Showing" : "Hidden"}
       </button>
 
       {/* Settings link */}
