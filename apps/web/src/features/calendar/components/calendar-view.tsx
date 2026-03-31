@@ -30,11 +30,13 @@ function CalendarViewInner() {
   const { data: tasks, isLoading } = useTasks();
   const updateTask = useUpdateTask();
   const { data: profile } = useUserProfile();
-  const { data: gcalEvents = [] } = useGCalEvents(
+  const showGcal = profile?.showGcalEvents ?? true;
+  const { data: gcalEventsRaw = [] } = useGCalEvents(
     profile?.gcalConnected ?? false,
     profile?.gcalSyncEnabled ?? false,
     profile?.gcalSyncFrequency,
   );
+  const gcalEvents = showGcal ? gcalEventsRaw : [];
 
   function handleToggleComplete(taskId: string, completed: boolean) {
     updateTask.mutate({ id: taskId, completed });

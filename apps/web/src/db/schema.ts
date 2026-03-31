@@ -51,6 +51,8 @@ export const users = pgTable("users", {
   // Dashboard preferences
   showStatsOnDashboard: boolean("show_stats_on_dashboard").notNull().default(false),
   showTaskSummaryOnDashboard: boolean("show_task_summary_on_dashboard").notNull().default(false),
+  // Google Calendar display preference
+  showGcalEvents: boolean("show_gcal_events").notNull().default(true),
 });
 
 export const accounts = pgTable(

@@ -258,6 +258,22 @@ export function GoogleCalendarSettings() {
                 </div>
               </div>
 
+              {/* Show GCal events toggle */}
+              <div className="border-t border-border pt-4">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <p className="text-sm text-foreground">Show Google Calendar events</p>
+                    <p className="text-xs text-muted-foreground">Display imported Google Calendar events in the HomeBase calendar view</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={profile?.showGcalEvents ?? true}
+                    onChange={(e) => updateSetting("showGcalEvents", e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                </label>
+              </div>
+
               <div className="rounded-lg bg-muted/50 border border-border p-3">
                 <p className="text-xs text-muted-foreground">
                   <strong>Two-way sync:</strong> Changes in HomeBase sync to Google Calendar and vice versa.

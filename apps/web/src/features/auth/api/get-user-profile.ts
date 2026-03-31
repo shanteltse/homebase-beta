@@ -23,6 +23,7 @@ export type UserProfile = {
   voiceInputAutoSubmit: boolean;
   showStatsOnDashboard: boolean;
   showTaskSummaryOnDashboard: boolean;
+  showGcalEvents: boolean;
 };
 
 async function fetchUserProfile(): Promise<UserProfile> {

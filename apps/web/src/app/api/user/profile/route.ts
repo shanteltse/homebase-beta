@@ -37,6 +37,7 @@ export async function GET(request: Request) {
       voiceInputAutoSubmit: users.voiceInputAutoSubmit,
       showStatsOnDashboard: users.showStatsOnDashboard,
       showTaskSummaryOnDashboard: users.showTaskSummaryOnDashboard,
+      showGcalEvents: users.showGcalEvents,
     })
     .from(users)
     .where(eq(users.id, user.id))
@@ -77,6 +78,7 @@ export async function PATCH(request: Request) {
     if (typeof body.voiceInputAutoSubmit === "boolean") updatable.voiceInputAutoSubmit = body.voiceInputAutoSubmit;
     if (typeof body.showStatsOnDashboard === "boolean") updatable.showStatsOnDashboard = body.showStatsOnDashboard;
     if (typeof body.showTaskSummaryOnDashboard === "boolean") updatable.showTaskSummaryOnDashboard = body.showTaskSummaryOnDashboard;
+    if (typeof body.showGcalEvents === "boolean") updatable.showGcalEvents = body.showGcalEvents;
 
     if (Object.keys(updatable).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
