@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Repeat, Star } from "lucide-react";
+import { Mail, Phone, Repeat, Star } from "lucide-react";
 import { Checkbox } from "@repo/ui/checkbox";
 import { Badge } from "@repo/ui/badge";
 import { cn } from "@/utils/cn";
@@ -33,6 +33,15 @@ function isOverdue(dueDate: string | undefined): boolean {
   return new Date(dueDate) < new Date(new Date().toDateString());
 }
 
+function getContactMeta(contact: string | null | undefined): { type: "email" | "phone"; href: string } | null {
+  if (!contact) return null;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact))
+    return { type: "email", href: `mailto:${contact}` };
+  if (/^[+\d][\d\s\-().]{6,}$/.test(contact))
+    return { type: "phone", href: `tel:${contact.replace(/\s/g, "")}` };
+  return null;
+}
+
 export function TaskCard({ task, onToggleComplete, onToggleStar }: TaskCardProps) {
   const { data: members } = useHouseholdMembers();
   const assignedMember = task.assignee
@@ -44,6 +53,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar }: TaskCardProps
     task.category;
 
   const overdue = isOverdue(task.dueDate);
+  const contactMeta = getContactMeta(task.contact);
 
   return (
     <div
@@ -74,7 +84,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar }: TaskCardProps
         </button>
       )}
 
-      <div className="flex flex-1 flex-col gap-1.5">
+      <div className="flex flex-1 flex-col gap-1.5 min-w-0">
         <Link
           href={`/tasks/${task.id}`}
           className={cn(
@@ -155,6 +165,20 @@ export function TaskCard({ task, onToggleComplete, onToggleStar }: TaskCardProps
           )}
         </div>
       </div>
+
+      {contactMeta && (
+        <a
+          href={contactMeta.href}
+          aria-label={contactMeta.type === "email" ? `Email ${task.contact}` : `Call ${task.contact}`}
+          title={task.contact ?? undefined}
+          onClick={(e) => e.stopPropagation()}
+          className="mt-0.5 shrink-0 text-muted-foreground/60 hover:text-primary transition-colors"
+        >
+          {contactMeta.type === "email"
+            ? <Mail className="h-4 w-4" />
+            : <Phone className="h-4 w-4" />}
+        </a>
+      )}
     </div>
   );
 }

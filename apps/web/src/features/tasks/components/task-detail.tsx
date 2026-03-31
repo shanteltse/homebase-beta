@@ -349,11 +349,11 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           />
         </div>
 
+        <ContactField register={register} watch={watch} />
+
         <AssigneePicker value={assignee} onChange={setAssignee} />
 
         <Textarea id="notes" label="Notes" {...register("notes")} />
-
-        <ContactField register={register} watch={watch} />
 
         <TagPicker value={tags} onChange={setTags} />
 

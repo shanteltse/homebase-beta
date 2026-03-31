@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { MIC_PREF_KEY, MIC_DENIED_EVENT, MIC_GRANTED_EVENT } from "./mic-permission-banner";
 
 type VoiceInputState = "idle" | "listening" | "processing" | "error";
 
@@ -52,105 +53,8 @@ function getSpeechRecognitionConstructor():
   | (new () => SpeechRecognitionInstance)
   | null {
   if (typeof window === "undefined") return null;
-  // Prefer the unprefixed standard API; fall back to webkit prefix (Chrome/Safari)
   return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null;
 }
-
-/**
- * Check microphone permission and request it only if needed.
- *
- * Strategy:
- * 1. Use navigator.permissions.query to check the current state.
- *    - "granted"  → skip getUserMedia entirely; Speech API will work fine.
- *    - "denied"   → return error immediately; no point calling getUserMedia.
- *    - "prompt"   → call getUserMedia to trigger the browser permission dialog.
- * 2. If Permissions API is unavailable, fall back to getUserMedia directly.
- *
- * Calling getUserMedia unconditionally when permission is already granted can
- * itself throw NotAllowedError in Chrome when executed in an async context,
- * even if the browser mic permission shows as granted in site settings.
- */
-async function checkMicPermission(): Promise<{
-  ok: boolean;
-  error?: string;
-}> {
-  // Step 1: Check current permission state if the Permissions API is available
-  if (navigator.permissions?.query) {
-    try {
-      const status = await navigator.permissions.query({ name: "microphone" as PermissionName });
-      console.log("[VoiceInput] permissions.query state:", status.state);
-
-      if (status.state === "granted") {
-        // Already granted — no need to call getUserMedia at all
-        console.log("[VoiceInput] Permission granted — skipping getUserMedia");
-        return { ok: true };
-      }
-
-      if (status.state === "denied") {
-        // On localhost, permissions API can report "denied" even when the browser
-        // has actually granted access. Try getUserMedia as a fallback before giving up.
-        console.warn("[VoiceInput] permissions.query says denied — attempting getUserMedia fallback");
-        if (navigator.mediaDevices?.getUserMedia) {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach((t) => t.stop());
-            console.log("[VoiceInput] getUserMedia succeeded despite denied permissions.query state");
-            return { ok: true };
-          } catch (fallbackErr) {
-            const fallbackName = fallbackErr instanceof DOMException ? fallbackErr.name : String(fallbackErr);
-            console.error("[VoiceInput] getUserMedia fallback also failed:", fallbackName);
-          }
-        }
-        return {
-          ok: false,
-          error: "Microphone access denied — click the lock icon in your address bar to allow it",
-        };
-      }
-
-      console.log("[VoiceInput] Permission state is prompt — will call getUserMedia");
-      // state === "prompt" — fall through to getUserMedia below
-    } catch {
-      // permissions.query may throw on some browsers; fall through to getUserMedia
-      console.warn("[VoiceInput] permissions.query unavailable, falling back to getUserMedia");
-    }
-  }
-
-  // Step 2: Permission is "prompt" (or Permissions API unavailable) — request it
-  if (!navigator.mediaDevices?.getUserMedia) {
-    console.warn("[VoiceInput] getUserMedia not available");
-    return { ok: true }; // let Speech API try on its own
-  }
-
-  try {
-    console.log("[VoiceInput] Requesting mic permission via getUserMedia…");
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach((t) => t.stop());
-    console.log("[VoiceInput] getUserMedia granted");
-    return { ok: true };
-  } catch (err) {
-    const name = err instanceof DOMException ? err.name : String(err);
-    console.error("[VoiceInput] getUserMedia failed:", name, err);
-    if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-      return {
-        ok: false,
-        error: "Microphone access denied — click the lock icon in your address bar to allow it",
-      };
-    }
-    if (name === "NotFoundError" || name === "DevicesNotFoundError") {
-      return { ok: false, error: "No microphone found on this device" };
-    }
-    console.warn("[VoiceInput] Non-blocking getUserMedia error:", name);
-    return { ok: true };
-  }
-}
-
-const SPEECH_ERROR_MESSAGES: Record<string, string> = {
-  "not-allowed": "Microphone permission denied — allow it in your browser settings",
-  "audio-capture": "No microphone found on this device",
-  network: "Network error — speech recognition requires internet access",
-  "service-not-allowed": "Speech service blocked — try reloading the page",
-  "bad-grammar": "Grammar error in recognition config",
-};
 
 export function VoiceInput({
   onTranscript,
@@ -169,9 +73,7 @@ export function VoiceInput({
 
   // Detect API support client-side only (avoids SSR mismatch)
   useEffect(() => {
-    const supported = getSpeechRecognitionConstructor() !== null;
-    console.log("[VoiceInput] Browser speech recognition supported:", supported);
-    setIsSupported(supported);
+    setIsSupported(getSpeechRecognitionConstructor() !== null);
   }, []);
 
   const clearSilenceTimer = useCallback(() => {
@@ -182,52 +84,39 @@ export function VoiceInput({
   }, []);
 
   const showError = useCallback((msg: string) => {
-    console.error("[VoiceInput] Showing error to user:", msg);
     setState("error");
     setErrorMessage(msg);
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     errorTimerRef.current = setTimeout(() => {
       setState("idle");
       setErrorMessage(null);
-    }, 5000);
+    }, 4000);
   }, []);
 
   const stopListening = useCallback(() => {
-    console.log("[VoiceInput] stopListening called");
     clearSilenceTimer();
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {
-        console.warn("[VoiceInput] .stop() threw (usually harmless):", e);
-      }
+      try { recognitionRef.current.stop(); } catch { /* ignore */ }
       recognitionRef.current = null;
     }
     setState("idle");
     setInterimText("");
   }, [clearSilenceTimer]);
 
-  const startListening = useCallback(async () => {
-    console.log("[VoiceInput] startListening called");
-
+  const startListening = useCallback(() => {
     const SpeechRecognitionAPI = getSpeechRecognitionConstructor();
     if (!SpeechRecognitionAPI) {
       showError("Speech recognition is not supported in this browser");
       return;
     }
 
-    // Step 1: Check/request mic permission before creating the recognition instance.
-    const primeResult = await checkMicPermission();
-    if (!primeResult.ok) {
-      showError(primeResult.error ?? "Microphone unavailable");
-      return;
-    }
+    // Do NOT call getUserMedia / navigator.permissions.query here.
+    // On iOS PWA, that triggers a second OS permission dialog before
+    // SpeechRecognition's own prompt, causing two prompts per session.
+    // Let SpeechRecognition handle permission natively; onerror surfaces denials.
 
-    // Step 2: Create recognition instance and wire up handlers
     try {
-      console.log("[VoiceInput] Creating SpeechRecognition instance…");
       const recognition = new SpeechRecognitionAPI();
-
       recognition.continuous = false;
       recognition.interimResults = true;
       recognition.lang = language;
@@ -236,7 +125,9 @@ export function VoiceInput({
       let finalTranscript = "";
 
       recognition.onstart = () => {
-        console.log("[VoiceInput] ✓ onstart — recording");
+        // Record that the user granted mic access; notify the app-level banner
+        try { localStorage.setItem(MIC_PREF_KEY, "granted"); } catch { /* ignore */ }
+        window.dispatchEvent(new CustomEvent(MIC_GRANTED_EVENT));
         setState("listening");
         setInterimText("");
         setErrorMessage(null);
@@ -254,7 +145,6 @@ export function VoiceInput({
           if (!alt) continue;
           if (result.isFinal) {
             finalTranscript += alt.transcript;
-            console.log("[VoiceInput] Final segment:", JSON.stringify(alt.transcript));
           } else {
             interim += alt.transcript;
           }
@@ -264,17 +154,11 @@ export function VoiceInput({
 
         // Auto-stop after 2.5 s of silence
         silenceTimerRef.current = setTimeout(() => {
-          console.log("[VoiceInput] Silence timeout — stopping");
-          try {
-            recognition.stop();
-          } catch {
-            // already stopped
-          }
+          try { recognition.stop(); } catch { /* already stopped */ }
         }, 2500);
       };
 
       recognition.onend = () => {
-        console.log("[VoiceInput] onend — final transcript:", JSON.stringify(finalTranscript));
         clearSilenceTimer();
         recognitionRef.current = null;
         setState("idle");
@@ -288,7 +172,6 @@ export function VoiceInput({
       };
 
       recognition.onerror = (event: { error: string }) => {
-        console.error("[VoiceInput] onerror code:", event.error);
         clearSilenceTimer();
 
         if (event.error === "aborted" || event.error === "no-speech") {
@@ -298,28 +181,33 @@ export function VoiceInput({
           return;
         }
 
-        const msg =
-          SPEECH_ERROR_MESSAGES[event.error] ??
-          `Speech error: ${event.error}`;
-        showError(msg);
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          // Record denial; dispatch event so the app-level banner shows
+          try { localStorage.setItem(MIC_PREF_KEY, "denied"); } catch { /* ignore */ }
+          window.dispatchEvent(new CustomEvent(MIC_DENIED_EVENT));
+          showError(
+            "Tap the mic to enable voice input — you may need to allow microphone access in Safari",
+          );
+          setInterimText("");
+          return;
+        }
+
+        if (event.error === "audio-capture") {
+          showError("No microphone found on this device");
+          return;
+        }
+
+        showError(`Speech error: ${event.error}`);
         setInterimText("");
       };
 
       recognitionRef.current = recognition;
-
-      // Step 3: Start — wrapped in its own try/catch because start() can throw
-      // synchronously on some browser/OS combinations
-      console.log("[VoiceInput] Calling recognition.start()…");
       recognition.start();
-      console.log("[VoiceInput] recognition.start() returned (async result via onstart/onerror)");
     } catch (err) {
-      console.error("[VoiceInput] Exception during recognition setup/start:", err);
       const msg =
-        err instanceof DOMException
-          ? `Browser error: ${err.name} — ${err.message}`
-          : err instanceof Error
-            ? err.message
-            : "Failed to start microphone — try reloading the page";
+        err instanceof Error
+          ? err.message
+          : "Failed to start microphone — try reloading the page";
       showError(msg);
     }
   }, [language, onTranscript, clearSilenceTimer, showError]);
@@ -329,11 +217,7 @@ export function VoiceInput({
     return () => {
       clearSilenceTimer();
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-      try {
-        recognitionRef.current?.stop();
-      } catch {
-        // ignore
-      }
+      try { recognitionRef.current?.stop(); } catch { /* ignore */ }
     };
   }, [clearSilenceTimer]);
 
@@ -353,11 +237,10 @@ export function VoiceInput({
       <button
         type="button"
         onClick={() => {
-          console.log("[VoiceInput] Button clicked — current state:", state);
           if (isListening) {
             stopListening();
           } else {
-            void startListening();
+            startListening();
           }
         }}
         disabled={disabled || isProcessing}
@@ -400,7 +283,7 @@ export function VoiceInput({
         <div
           className={cn(
             "absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10",
-            "w-max max-w-xs rounded-lg border px-3 py-1.5 shadow-sm text-xs whitespace-nowrap",
+            "w-max max-w-xs rounded-lg border px-3 py-1.5 shadow-sm text-xs",
             hasError
               ? "border-destructive/30 bg-destructive/10 text-destructive"
               : "border-border bg-popover text-muted-foreground",

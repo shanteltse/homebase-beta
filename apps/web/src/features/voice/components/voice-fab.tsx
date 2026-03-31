@@ -5,6 +5,7 @@ import { Mic, MicOff, Loader2, Check } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useParseTask } from "@/features/ai/api/parse-task";
 import { useCreateTask } from "@/features/tasks/api/create-task";
+import { MIC_PREF_KEY, MIC_DENIED_EVENT, MIC_GRANTED_EVENT } from "./mic-permission-banner";
 
 type FabState = "idle" | "requesting" | "listening" | "processing" | "success" | "error";
 
@@ -44,9 +45,6 @@ function getSpeechRecognitionConstructor(): (new () => SpeechRecognitionInstance
   if (typeof window === "undefined") return null;
   return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null;
 }
-
-// localStorage key for persisting mic preference across sessions
-const MIC_PREF_KEY = "homebase_mic_pref";
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -121,8 +119,9 @@ export function VoiceFab() {
       let finalTranscript = "";
 
       recognition.onstart = () => {
-        // Remember that the user has granted mic access
+        // Remember that the user has granted mic access; notify the banner
         try { localStorage.setItem(MIC_PREF_KEY, "granted"); } catch { /* ignore */ }
+        window.dispatchEvent(new CustomEvent(MIC_GRANTED_EVENT));
         setFabState("listening");
         setInterimText("");
         finalTranscript = "";
@@ -205,7 +204,10 @@ export function VoiceFab() {
         }
         if (event.error === "not-allowed" || event.error === "service-not-allowed") {
           try { localStorage.setItem(MIC_PREF_KEY, "denied"); } catch { /* ignore */ }
-          showError("Microphone access denied — allow it in Settings > Safari > Microphone");
+          // Dispatch event so the app-level banner shows (one-time, dismissible)
+          window.dispatchEvent(new CustomEvent(MIC_DENIED_EVENT));
+          // Show brief helpful hint in the FAB bubble, then return to idle
+          showError("Tap the mic to enable voice input — you may need to allow microphone access in Safari");
           setInterimText("");
           return;
         }

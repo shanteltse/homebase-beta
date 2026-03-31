@@ -46,14 +46,15 @@ export async function refreshAccessToken(
 export async function listEvents(
   accessToken: string,
   calendarId = "primary",
-  opts?: { timeMin?: string; maxResults?: number },
+  opts?: { timeMin?: string; timeMax?: string; maxResults?: number },
 ): Promise<GCalEvent[]> {
   const params = new URLSearchParams({
-    maxResults: String(opts?.maxResults ?? 100),
+    maxResults: String(opts?.maxResults ?? 250),
     singleEvents: "true",
     orderBy: "startTime",
   });
   if (opts?.timeMin) params.set("timeMin", opts.timeMin);
+  if (opts?.timeMax) params.set("timeMax", opts.timeMax);
 
   const res = await fetch(
     `${GCAL_BASE}/calendars/${encodeURIComponent(calendarId)}/events?${params}`,

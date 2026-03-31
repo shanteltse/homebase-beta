@@ -8,6 +8,8 @@ import { cn } from "@/utils/cn";
 import type { Task, TaskPriority } from "@/types/task";
 import { getTasksForDate, isToday } from "../hooks/use-calendar-state";
 import { CalendarTaskItem } from "./calendar-task-item";
+import { GCalEventItem } from "./gcal-event-item";
+import { getGCalEventsForDate, type GCalExternalEvent } from "../api/get-gcal-events";
 
 const PRIORITY_ORDER: TaskPriority[] = ["high", "medium", "low"];
 
@@ -26,6 +28,7 @@ const PRIORITY_INDICATOR: Record<TaskPriority, string> = {
 type DayViewProps = {
   currentDate: Date;
   tasks: Task[];
+  gcalEvents: GCalExternalEvent[];
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onQuickAdd?: (title: string, date: Date) => void;
 };
@@ -33,11 +36,13 @@ type DayViewProps = {
 export function DayView({
   currentDate,
   tasks,
+  gcalEvents,
   onToggleComplete,
   onQuickAdd,
 }: DayViewProps) {
   const [quickAddTitle, setQuickAddTitle] = useState("");
   const dayTasks = getTasksForDate(tasks, currentDate);
+  const dayGcal = getGCalEventsForDate(gcalEvents, currentDate);
   const today = isToday(currentDate);
 
   const grouped = PRIORITY_ORDER.map((priority) => ({
@@ -45,7 +50,7 @@ export function DayView({
     tasks: dayTasks.filter((t) => t.priority === priority),
   })).filter((g) => g.tasks.length > 0);
 
-  const noTasks = dayTasks.length === 0;
+  const noContent = dayTasks.length === 0 && dayGcal.length === 0;
 
   function handleQuickAdd() {
     const title = quickAddTitle.trim();
@@ -101,13 +106,31 @@ export function DayView({
         </form>
       )}
 
-      {/* Tasks by priority */}
-      {noTasks ? (
+      {noContent ? (
         <div className="rounded-lg border border-border bg-muted/50 p-12 text-center body text-muted-foreground">
-          No tasks scheduled for this day.
+          No tasks or events scheduled for this day.
         </div>
       ) : (
         <div className="flex flex-col gap-6">
+          {/* Google Calendar events — shown first, visually distinct */}
+          {dayGcal.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                <h4 className="label text-foreground">Google Calendar</h4>
+                <span className="caption text-muted-foreground">
+                  ({dayGcal.length})
+                </span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {dayGcal.map((event) => (
+                  <GCalEventItem key={event.id} event={event} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* HomeBase tasks grouped by priority */}
           {grouped.map(({ priority, tasks: groupTasks }) => (
             <div key={priority} className="flex flex-col gap-2">
               <div className="flex items-center gap-2">

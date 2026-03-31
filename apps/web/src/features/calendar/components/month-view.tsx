@@ -8,13 +8,16 @@ import {
   isToday,
 } from "../hooks/use-calendar-state";
 import { CalendarTaskItem } from "./calendar-task-item";
+import { GCalEventItem } from "./gcal-event-item";
+import { getGCalEventsForDate, type GCalExternalEvent } from "../api/get-gcal-events";
 
 const DAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MAX_VISIBLE_TASKS = 3;
+const MAX_VISIBLE = 3;
 
 type MonthViewProps = {
   currentDate: Date;
   tasks: Task[];
+  gcalEvents: GCalExternalEvent[];
   onDayClick: (date: Date) => void;
   onToggleComplete: (taskId: string, completed: boolean) => void;
 };
@@ -22,6 +25,7 @@ type MonthViewProps = {
 export function MonthView({
   currentDate,
   tasks,
+  gcalEvents,
   onDayClick,
   onToggleComplete,
 }: MonthViewProps) {
@@ -46,9 +50,13 @@ export function MonthView({
       <div className="grid grid-cols-7">
         {days.map((day, i) => {
           const dayTasks = getTasksForDate(tasks, day);
+          const dayGcal = getGCalEventsForDate(gcalEvents, day);
           const isCurrentMonth = day.getMonth() === currentMonth;
           const today = isToday(day);
-          const overflow = dayTasks.length - MAX_VISIBLE_TASKS;
+
+          // Interleave tasks first, then GCal events; cap total visible
+          const totalCount = dayTasks.length + dayGcal.length;
+          const overflow = totalCount - MAX_VISIBLE;
 
           return (
             <button
@@ -73,7 +81,8 @@ export function MonthView({
               </span>
 
               <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
-                {dayTasks.slice(0, MAX_VISIBLE_TASKS).map((task) => (
+                {/* Tasks shown first */}
+                {dayTasks.slice(0, MAX_VISIBLE).map((task) => (
                   <CalendarTaskItem
                     key={task.id}
                     task={task}
@@ -81,6 +90,12 @@ export function MonthView({
                     compact
                   />
                 ))}
+                {/* GCal events fill remaining visible slots */}
+                {dayGcal
+                  .slice(0, Math.max(0, MAX_VISIBLE - dayTasks.length))
+                  .map((event) => (
+                    <GCalEventItem key={event.id} event={event} compact />
+                  ))}
                 {overflow > 0 && (
                   <span className="px-1.5 text-xs text-muted-foreground">
                     +{overflow} more

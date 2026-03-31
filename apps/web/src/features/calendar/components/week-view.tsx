@@ -8,12 +8,15 @@ import {
   isToday,
 } from "../hooks/use-calendar-state";
 import { CalendarTaskItem } from "./calendar-task-item";
+import { GCalEventItem } from "./gcal-event-item";
+import { getGCalEventsForDate, type GCalExternalEvent } from "../api/get-gcal-events";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type WeekViewProps = {
   currentDate: Date;
   tasks: Task[];
+  gcalEvents: GCalExternalEvent[];
   onDayClick: (date: Date) => void;
   onToggleComplete: (taskId: string, completed: boolean) => void;
 };
@@ -21,6 +24,7 @@ type WeekViewProps = {
 export function WeekView({
   currentDate,
   tasks,
+  gcalEvents,
   onDayClick,
   onToggleComplete,
 }: WeekViewProps) {
@@ -32,7 +36,9 @@ export function WeekView({
     <div className="flex flex-col divide-y divide-border border border-border rounded-lg overflow-hidden">
       {days.map((day, i) => {
         const dayTasks = getTasksForDate(tasks, day);
+        const dayGcal = getGCalEventsForDate(gcalEvents, day);
         const today = isToday(day);
+        const hasItems = dayTasks.length > 0 || dayGcal.length > 0;
 
         return (
           <div
@@ -63,21 +69,26 @@ export function WeekView({
               </span>
             </button>
 
-            {/* Tasks displayed horizontally */}
+            {/* Tasks and GCal events displayed horizontally */}
             <div className="flex flex-wrap gap-1.5 flex-1 min-h-[2rem] items-start pt-0.5">
-              {dayTasks.length === 0 ? (
+              {!hasItems ? (
                 <span className="text-xs text-muted-foreground/50 self-center">
                   —
                 </span>
               ) : (
-                dayTasks.map((task) => (
-                  <CalendarTaskItem
-                    key={task.id}
-                    task={task}
-                    onToggleComplete={onToggleComplete}
-                    compact
-                  />
-                ))
+                <>
+                  {dayTasks.map((task) => (
+                    <CalendarTaskItem
+                      key={task.id}
+                      task={task}
+                      onToggleComplete={onToggleComplete}
+                      compact
+                    />
+                  ))}
+                  {dayGcal.map((event) => (
+                    <GCalEventItem key={event.id} event={event} compact />
+                  ))}
+                </>
               )}
             </div>
           </div>

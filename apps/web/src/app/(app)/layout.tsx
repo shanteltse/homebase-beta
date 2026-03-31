@@ -8,6 +8,7 @@ import { OfflineBanner } from "@/components/offline-banner";
 import { SetupBanner } from "@/features/onboarding/components/setup-banner";
 import { WelcomeModal } from "@/features/onboarding/components/welcome-modal";
 import { VoiceFab } from "@/features/voice/components/voice-fab";
+import { MicPermissionBanner } from "@/features/voice/components/mic-permission-banner";
 import type { ReactNode } from "react";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </div>
             {/* Onboarding setup banner — only shows when setup is incomplete */}
             <SetupBanner />
+            {/* Microphone permission banner — one-time, shown when mic is denied */}
+            <MicPermissionBanner />
             <div className="flex-1 min-w-0 p-6 pb-36 md:pb-6">{children}</div>
             <MobileNav />
           </main>

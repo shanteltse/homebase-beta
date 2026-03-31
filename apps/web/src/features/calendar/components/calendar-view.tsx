@@ -7,6 +7,8 @@ import { Spinner } from "@repo/ui/spinner";
 import { cn } from "@/utils/cn";
 import { useTasks } from "@/features/tasks/api/get-tasks";
 import { useUpdateTask } from "@/features/tasks/api/update-task";
+import { useUserProfile } from "@/features/auth/api/get-user-profile";
+import { useGCalEvents } from "../api/get-gcal-events";
 import {
   useCalendarState,
   type CalendarView as CalendarViewType,
@@ -27,6 +29,12 @@ function CalendarViewInner() {
     useCalendarState();
   const { data: tasks, isLoading } = useTasks();
   const updateTask = useUpdateTask();
+  const { data: profile } = useUserProfile();
+  const { data: gcalEvents = [] } = useGCalEvents(
+    profile?.gcalConnected ?? false,
+    profile?.gcalSyncEnabled ?? false,
+    profile?.gcalSyncFrequency,
+  );
 
   function handleToggleComplete(taskId: string, completed: boolean) {
     updateTask.mutate({ id: taskId, completed });
@@ -105,6 +113,7 @@ function CalendarViewInner() {
             <MonthView
               currentDate={currentDate}
               tasks={tasks ?? []}
+              gcalEvents={gcalEvents}
               onDayClick={handleDayClick}
               onToggleComplete={handleToggleComplete}
             />
@@ -113,6 +122,7 @@ function CalendarViewInner() {
             <WeekView
               currentDate={currentDate}
               tasks={tasks ?? []}
+              gcalEvents={gcalEvents}
               onDayClick={handleDayClick}
               onToggleComplete={handleToggleComplete}
             />
@@ -121,6 +131,7 @@ function CalendarViewInner() {
             <DayView
               currentDate={currentDate}
               tasks={tasks ?? []}
+              gcalEvents={gcalEvents}
               onToggleComplete={handleToggleComplete}
             />
           )}
