@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { useLogin, useGoogleLogin } from "../api/login";
@@ -48,15 +49,22 @@ export function LoginForm() {
         {...register("email")}
       />
 
-      <Input
-        id="password"
-        label="Password"
-        type="password"
-        placeholder="Enter your password"
-        autoComplete="current-password"
-        error={errors.password?.message}
-        {...register("password")}
-      />
+      <div className="flex flex-col gap-1">
+        <Input
+          id="password"
+          label="Password"
+          type="password"
+          placeholder="Enter your password"
+          autoComplete="current-password"
+          error={errors.password?.message}
+          {...register("password")}
+        />
+        <div className="flex justify-end">
+          <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Forgot password?
+          </Link>
+        </div>
+      </div>
 
       {error && (
         <p className="body text-destructive">

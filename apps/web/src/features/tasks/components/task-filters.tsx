@@ -11,6 +11,7 @@ import {
 import { DEFAULT_CATEGORIES } from "@/types/category";
 import { cn } from "@/utils/cn";
 import type { TaskView, TaskSort } from "../hooks/use-task-filters";
+import type { HouseholdMember } from "@/features/household/api/get-members";
 
 type TaskFiltersProps = {
   view: TaskView;
@@ -18,6 +19,11 @@ type TaskFiltersProps = {
   priority: string;
   sort: TaskSort;
   onFilterChange: (key: string, value: string) => void;
+  onSortChange: (value: TaskSort) => void;
+  members?: HouseholdMember[];
+  currentUserId?: string;
+  assigneeFilter?: string;
+  onAssigneeFilterChange?: (value: string) => void;
 };
 
 const VIEWS: { value: TaskView; label: string }[] = [
@@ -34,7 +40,15 @@ export function TaskFilters({
   priority,
   sort,
   onFilterChange,
+  onSortChange,
+  members,
+  currentUserId,
+  assigneeFilter,
+  onAssigneeFilterChange,
 }: TaskFiltersProps) {
+  const showMemberFilter =
+    onAssigneeFilterChange && members && members.length > 1;
+
   return (
     <div className="flex flex-col gap-3">
       {/* View tabs — scrolls horizontally on narrow screens rather than overflowing */}
@@ -51,6 +65,27 @@ export function TaskFilters({
           </Button>
         ))}
       </div>
+
+      {/* Member filter — only shown when household has >1 member */}
+      {showMemberFilter && (
+        <div className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {[{ id: "", label: "All" }, { id: "mine", label: "Mine" }, ...members.map((m) => ({ id: m.id, label: m.name ?? m.email }))].map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => onAssigneeFilterChange(assigneeFilter === opt.id ? "" : opt.id)}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-0.5 text-xs font-medium transition-colors",
+                assigneeFilter === opt.id
+                  ? "bg-foreground text-background"
+                  : "bg-muted text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Filter selects — wrap onto a second line on narrow screens */}
       <div className="flex flex-wrap gap-2">
@@ -90,16 +125,16 @@ export function TaskFilters({
 
         <Select
           value={sort}
-          onValueChange={(val) => onFilterChange("sort", val === "due-date" ? "" : val)}
+          onValueChange={(val) => onSortChange(val as TaskSort)}
         >
           <SelectTrigger className="flex-1 min-w-[9rem] max-w-[11rem]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="due-date">Due date</SelectItem>
+            <SelectItem value="due-date">Due Date</SelectItem>
             <SelectItem value="priority">Priority</SelectItem>
-            <SelectItem value="created">Newest first</SelectItem>
-            <SelectItem value="alphabetical">A-Z</SelectItem>
+            <SelectItem value="assignee">Assignee</SelectItem>
+            <SelectItem value="created">Date Created</SelectItem>
           </SelectContent>
         </Select>
       </div>

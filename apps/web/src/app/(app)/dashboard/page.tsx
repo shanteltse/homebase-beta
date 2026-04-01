@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTasks } from "@/features/tasks/api/get-tasks";
 import { useUpdateTask } from "@/features/tasks/api/update-task";
 import { useUserProfile } from "@/features/auth/api/get-user-profile";
+import { useUser } from "@/features/auth/api/get-user";
+import { useHouseholdMembers } from "@/features/household/api/get-members";
 import { Spinner } from "@repo/ui/spinner";
 import { TaskCard } from "@/features/tasks/components/task-card";
 import { SmartTaskInput } from "@/features/ai/components/smart-task-input";
@@ -12,7 +14,16 @@ import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog
 import { ImportTasksDialog } from "@/features/tasks/components/import-tasks-dialog";
 import { StatsCard } from "@/features/gamification/components/stats-card";
 import { Upload } from "lucide-react";
+import { cn } from "@/utils/cn";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/select";
 import type { Task } from "@/types/task";
+import type { TaskSort } from "@/features/tasks/hooks/use-task-filters";
 import type { ParsedTask } from "@/features/ai/api/parse-task";
 
 function getDateString(date: string | Date | null | undefined): string {
@@ -22,14 +33,76 @@ function getDateString(date: string | Date | null | undefined): string {
 
 type DashboardView = "all" | "today" | "this-week";
 
+const ASSIGNEE_FILTER_KEY = "hb_assignee_filter";
+const SORT_KEY = "hb_sort";
+
 export default function DashboardPage() {
   const { data: tasks, isLoading } = useTasks();
   const updateTask = useUpdateTask();
   const { data: profile } = useUserProfile();
+  const { data: user } = useUser();
+  const { data: members } = useHouseholdMembers();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogPrefill, setDialogPrefill] = useState<ParsedTask | undefined>();
   const [importOpen, setImportOpen] = useState(false);
   const [dashboardView, setDashboardView] = useState<DashboardView>("all");
+  const [assigneeFilter, setAssigneeFilterState] = useState<string>("");
+  const [sort, setSortState] = useState<TaskSort>("due-date");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(ASSIGNEE_FILTER_KEY) ?? "";
+    setAssigneeFilterState(stored);
+    const storedSort = localStorage.getItem(SORT_KEY) as TaskSort | null;
+    if (storedSort) setSortState(storedSort);
+  }, []);
+
+  function setAssigneeFilter(value: string) {
+    setAssigneeFilterState(value);
+    if (value) {
+      localStorage.setItem(ASSIGNEE_FILTER_KEY, value);
+    } else {
+      localStorage.removeItem(ASSIGNEE_FILTER_KEY);
+    }
+  }
+
+  function setSort(value: TaskSort) {
+    setSortState(value);
+    localStorage.setItem(SORT_KEY, value);
+  }
+
+  function sortTasks(taskList: Task[]): Task[] {
+    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    const memberNameById = new Map(
+      (members ?? []).map((m) => [m.id, m.name ?? m.email]),
+    );
+    return [...taskList].sort((a, b) => {
+      if (sort === "priority") {
+        const diff = (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1);
+        if (diff !== 0) return diff;
+        if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+        if (a.dueDate) return -1;
+        if (b.dueDate) return 1;
+        return 0;
+      }
+      if (sort === "assignee") {
+        const nameA = a.assignee ? (memberNameById.get(a.assignee) ?? "") : "";
+        const nameB = b.assignee ? (memberNameById.get(b.assignee) ?? "") : "";
+        if (!nameA && nameB) return 1;
+        if (nameA && !nameB) return -1;
+        return nameA.localeCompare(nameB);
+      }
+      if (sort === "created") {
+        return b.createdAt.localeCompare(a.createdAt);
+      }
+      // due-date: no due date goes last
+      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      return b.createdAt.localeCompare(a.createdAt);
+    });
+  }
+
+  const showMemberFilter = members && members.length > 1;
 
   const allTasks = (tasks ?? []) as Task[];
   const now = new Date();
@@ -42,10 +115,7 @@ export default function DashboardPage() {
 
   const rawActiveTasks = allTasks.filter((t) => !t.completed);
 
-  // Recurring tasks: only show the earliest instance per title, never more than 7 days out.
-  const sevenDaysOut = new Date(now);
-  sevenDaysOut.setDate(now.getDate() + 7);
-  const sevenDaysStr = getDateString(sevenDaysOut);
+  // Recurring tasks: deduplicate by title (keep earliest instance per title).
   const earliestRecurringByTitle = new Map<string, string>();
   for (const t of rawActiveTasks) {
     if (!t.recurring || !t.dueDate) continue;
@@ -53,32 +123,43 @@ export default function DashboardPage() {
     const existing = earliestRecurringByTitle.get(t.title);
     if (!existing || due < existing) earliestRecurringByTitle.set(t.title, due);
   }
-  const activeTasks = rawActiveTasks.filter((t) => {
+  // allActiveTasks: deduplicated recurring, no date cutoff — used for "All" view
+  const allActiveTasks = rawActiveTasks.filter((t) => {
     if (!t.recurring || !t.dueDate) return true;
-    const due = getDateString(t.dueDate);
-    if (due > sevenDaysStr) return false;
-    return due === earliestRecurringByTitle.get(t.title);
+    return getDateString(t.dueDate) === earliestRecurringByTitle.get(t.title);
+  });
+  // activeTasks: additionally capped at 7 days out — used for overdue/today/week views
+  const sevenDaysOut = new Date(now);
+  sevenDaysOut.setDate(now.getDate() + 7);
+  const sevenDaysStr = getDateString(sevenDaysOut);
+  const activeTasks = allActiveTasks.filter((t) => {
+    if (!t.recurring || !t.dueDate) return true;
+    return getDateString(t.dueDate) <= sevenDaysStr;
   });
 
-  const overdueTasks = activeTasks.filter(
+  function applyAssigneeFilter(taskList: Task[]): Task[] {
+    if (assigneeFilter === "mine") return taskList.filter((t) => t.assignee === user?.id);
+    if (assigneeFilter) return taskList.filter((t) => t.assignee === assigneeFilter);
+    return taskList;
+  }
+
+  const overdueTasks = sortTasks(applyAssigneeFilter(activeTasks.filter(
     (t) => t.dueDate && getDateString(t.dueDate) < today,
-  );
-  const todayTasks = activeTasks.filter(
+  )));
+  const todayTasks = sortTasks(applyAssigneeFilter(activeTasks.filter(
     (t) => t.dueDate && getDateString(t.dueDate) === today,
-  );
-  const thisWeekTasksAll = activeTasks.filter((t) => {
+  )));
+  const thisWeekTasksAll = applyAssigneeFilter(activeTasks.filter((t) => {
     if (!t.dueDate) return false;
     const due = getDateString(t.dueDate);
     return due >= today && due <= weekEndStr;
-  });
-  const thisWeekTasks = thisWeekTasksAll
-    .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
-    .slice(0, 5);
+  }));
+  const thisWeekTasks = sortTasks(thisWeekTasksAll).slice(0, 5);
   const completedCount = allTasks.filter((t) => t.completed).length;
 
   const summaryTasks =
     dashboardView === "all"
-      ? activeTasks.slice(0, 5)
+      ? sortTasks(applyAssigneeFilter(allActiveTasks))
       : dashboardView === "today"
         ? todayTasks
         : thisWeekTasks;
@@ -128,6 +209,27 @@ export default function DashboardPage() {
       />
 
       <ImportTasksDialog open={importOpen} onOpenChange={setImportOpen} />
+
+      {/* Member filter — only shown when household has >1 member */}
+      {showMemberFilter && (
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {[{ id: "", label: "All" }, { id: "mine", label: "Mine" }, ...members.map((m) => ({ id: m.id, label: m.name ?? m.email }))].map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setAssigneeFilter(assigneeFilter === opt.id ? "" : opt.id)}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                assigneeFilter === opt.id
+                  ? "bg-foreground text-background"
+                  : "bg-muted text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Stats — only shown when user enables it in Settings */}
       {profile?.showTaskSummaryOnDashboard && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -198,8 +300,8 @@ export default function DashboardPage() {
 
           {/* All / Today / This Week toggle section */}
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex gap-1 rounded-lg border border-border p-0.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex gap-1 rounded-lg border border-border p-0.5 shrink-0">
                 {(["all", "today", "this-week"] as DashboardView[]).map((v) => (
                   <button
                     key={v}
@@ -215,9 +317,22 @@ export default function DashboardPage() {
                   </button>
                 ))}
               </div>
-              <Link href={`/tasks?view=${summaryView}`} className="caption text-primary hover:underline">
-                View all
-              </Link>
+              <div className="flex items-center gap-2">
+                <Select value={sort} onValueChange={(val) => setSort(val as TaskSort)}>
+                  <SelectTrigger className="h-8 text-xs w-[9rem]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="due-date">Due Date</SelectItem>
+                    <SelectItem value="priority">Priority</SelectItem>
+                    <SelectItem value="assignee">Assignee</SelectItem>
+                    <SelectItem value="created">Date Created</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Link href={`/tasks?view=${summaryView}`} className="caption text-primary hover:underline shrink-0">
+                  View all
+                </Link>
+              </div>
             </div>
 
             {summaryTasks.length > 0 ? (

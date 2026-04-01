@@ -1,21 +1,52 @@
 "use client";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Task, TaskPriority } from "@/types/task";
+import type { HouseholdMember } from "@/features/household/api/get-members";
 
 export type TaskView = "all" | "overdue" | "today" | "this-week" | "upcoming" | "completed";
-export type TaskSort = "due-date" | "priority" | "created" | "alphabetical";
+export type TaskSort = "due-date" | "priority" | "assignee" | "created";
 
-export function useTaskFilters() {
+const ASSIGNEE_FILTER_KEY = "hb_assignee_filter";
+const SORT_KEY = "hb_sort";
+
+export function useTaskFilters(currentUserId?: string, members?: HouseholdMember[]) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
+  const [assigneeFilter, setAssigneeFilterState] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem(ASSIGNEE_FILTER_KEY) ?? "";
+  });
+
+  const setAssigneeFilter = useCallback((value: string) => {
+    setAssigneeFilterState(value);
+    if (typeof window !== "undefined") {
+      if (value) {
+        localStorage.setItem(ASSIGNEE_FILTER_KEY, value);
+      } else {
+        localStorage.removeItem(ASSIGNEE_FILTER_KEY);
+      }
+    }
+  }, []);
+
+  const [sort, setSortState] = useState<TaskSort>(() => {
+    if (typeof window === "undefined") return "due-date";
+    return (localStorage.getItem(SORT_KEY) as TaskSort) ?? "due-date";
+  });
+
+  const setSort = useCallback((value: TaskSort) => {
+    setSortState(value);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SORT_KEY, value);
+    }
+  }, []);
+
   const view = (searchParams.get("view") as TaskView) || "all";
   const category = searchParams.get("category") || "";
   const priority = (searchParams.get("priority") as TaskPriority) || "";
-  const sort = (searchParams.get("sort") as TaskSort) || "due-date";
 
   const setFilter = useCallback(
     (key: string, value: string) => {
@@ -32,6 +63,9 @@ export function useTaskFilters() {
 
   const filterTasks = useMemo(() => {
     const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    const memberNameById = new Map(
+      (members ?? []).map((m) => [m.id, m.name ?? m.email]),
+    );
 
     return (tasks: Task[]) => {
       let filtered = tasks;
@@ -110,6 +144,12 @@ export function useTaskFilters() {
         });
       }
 
+      if (assigneeFilter === "mine") {
+        filtered = filtered.filter((t) => t.assignee === currentUserId);
+      } else if (assigneeFilter) {
+        filtered = filtered.filter((t) => t.assignee === assigneeFilter);
+      }
+
       if (category) {
         filtered = filtered.filter((t) => t.category === category);
       }
@@ -122,24 +162,34 @@ export function useTaskFilters() {
         if (sort === "priority") {
           const diff = (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1);
           if (diff !== 0) return diff;
+          // tiebreak: due date
+          if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+          if (a.dueDate) return -1;
+          if (b.dueDate) return 1;
+          return 0;
         }
 
-        if (sort === "alphabetical") {
-          return a.title.localeCompare(b.title);
+        if (sort === "assignee") {
+          const nameA = a.assignee ? (memberNameById.get(a.assignee) ?? "") : "";
+          const nameB = b.assignee ? (memberNameById.get(b.assignee) ?? "") : "";
+          // Unassigned tasks go last
+          if (!nameA && nameB) return 1;
+          if (nameA && !nameB) return -1;
+          return nameA.localeCompare(nameB);
         }
 
         if (sort === "created") {
           return b.createdAt.localeCompare(a.createdAt);
         }
 
-        // Default: due-date
+        // Default: due-date — tasks without due date go last
         if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
         if (a.dueDate) return -1;
         if (b.dueDate) return 1;
         return b.createdAt.localeCompare(a.createdAt);
       });
     };
-  }, [view, category, priority, sort]);
+  }, [view, category, priority, sort, assigneeFilter, currentUserId, members]);
 
-  return { view, category, priority, sort, setFilter, filterTasks };
+  return { view, category, priority, sort, setFilter, setSort, filterTasks, assigneeFilter, setAssigneeFilter };
 }

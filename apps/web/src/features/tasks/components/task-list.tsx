@@ -6,12 +6,16 @@ import { TaskFilters } from "./task-filters";
 import { useTaskFilters } from "../hooks/use-task-filters";
 import { useTasks } from "../api/get-tasks";
 import { useUpdateTask } from "../api/update-task";
+import { useUser } from "@/features/auth/api/get-user";
+import { useHouseholdMembers } from "@/features/household/api/get-members";
 
 export function TaskList() {
   const { data: tasks, isLoading } = useTasks();
   const updateTask = useUpdateTask();
-  const { view, category, priority, sort, setFilter, filterTasks } =
-    useTaskFilters();
+  const { data: user } = useUser();
+  const { data: members } = useHouseholdMembers();
+  const { view, category, priority, sort, setFilter, setSort, filterTasks, assigneeFilter, setAssigneeFilter } =
+    useTaskFilters(user?.id, members);
 
   function handleToggleComplete(taskId: string, completed: boolean) {
     updateTask.mutate({ id: taskId, completed });
@@ -39,6 +43,11 @@ export function TaskList() {
         priority={priority}
         sort={sort}
         onFilterChange={setFilter}
+        onSortChange={setSort}
+        members={members}
+        currentUserId={user?.id}
+        assigneeFilter={assigneeFilter}
+        onAssigneeFilterChange={setAssigneeFilter}
       />
 
       {filtered.length === 0 ? (
