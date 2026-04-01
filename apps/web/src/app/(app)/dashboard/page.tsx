@@ -9,7 +9,9 @@ import { Spinner } from "@repo/ui/spinner";
 import { TaskCard } from "@/features/tasks/components/task-card";
 import { SmartTaskInput } from "@/features/ai/components/smart-task-input";
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog";
+import { ImportTasksDialog } from "@/features/tasks/components/import-tasks-dialog";
 import { StatsCard } from "@/features/gamification/components/stats-card";
+import { Upload } from "lucide-react";
 import type { Task } from "@/types/task";
 import type { ParsedTask } from "@/features/ai/api/parse-task";
 
@@ -26,6 +28,7 @@ export default function DashboardPage() {
   const { data: profile } = useUserProfile();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogPrefill, setDialogPrefill] = useState<ParsedTask | undefined>();
+  const [importOpen, setImportOpen] = useState(false);
   const [dashboardView, setDashboardView] = useState<DashboardView>("all");
 
   const allTasks = (tasks ?? []) as Task[];
@@ -101,7 +104,19 @@ export default function DashboardPage() {
       </div>
 
       {/* Smart quick add */}
-      <SmartTaskInput onOpenCreateDialog={handleOpenCreateDialog} />
+      <div className="flex flex-col gap-2">
+        <SmartTaskInput onOpenCreateDialog={handleOpenCreateDialog} />
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Import existing list
+          </button>
+        </div>
+      </div>
 
       <CreateTaskDialog
         open={dialogOpen}
@@ -111,6 +126,8 @@ export default function DashboardPage() {
         }}
         prefill={dialogPrefill}
       />
+
+      <ImportTasksDialog open={importOpen} onOpenChange={setImportOpen} />
 
       {/* Stats — only shown when user enables it in Settings */}
       {profile?.showTaskSummaryOnDashboard && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

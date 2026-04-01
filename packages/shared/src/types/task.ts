@@ -38,7 +38,8 @@ export const taskSchema = z.object({
   contact: z.string().optional(),
   links: z.array(z.string().url()).default([]),
   starred: z.boolean().default(false),
-  createdBy: z.string(),
+  userId: z.string(),
+  householdId: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

@@ -5,6 +5,7 @@ import { getAuthUser } from "@/lib/get-auth-user";
 import { db } from "@/db";
 import { users, tasks, onboardingMembers } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getUserHouseholdId } from "@/lib/get-user-household";
 import { handleApiError, ApiError } from "@/lib/api-error";
 import { validateOrigin } from "@/lib/api-utils";
 
@@ -153,9 +154,11 @@ export async function POST(request: Request) {
     }).slice(0, 10);
 
     if (uniqueTasks.length > 0) {
+      const householdId = await getUserHouseholdId(user.id);
       await db.insert(tasks).values(
         uniqueTasks.map((t) => ({
           userId: user.id,
+          householdId,
           title: t.title,
           category: t.category,
           subcategory: t.subcategory,

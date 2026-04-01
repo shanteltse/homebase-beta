@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { getAuthUser } from "@/lib/get-auth-user";
 import { db } from "@/db";
-import { households, householdMembers } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { households, householdMembers, tasks } from "@/db/schema";
+import { and, eq, isNull } from "drizzle-orm";
 import { handleApiError, ApiError } from "@/lib/api-error";
 import { validateOrigin } from "@/lib/api-utils";
 
@@ -86,6 +86,12 @@ export async function POST(request: Request) {
       userId: user.id,
       role: "owner",
     });
+
+    // Migrate the creator's existing solo tasks into the new household.
+    await db
+      .update(tasks)
+      .set({ householdId: household.id })
+      .where(and(eq(tasks.userId, user.id), isNull(tasks.householdId)));
 
     return NextResponse.json(household, { status: 201 });
   } catch (error) {

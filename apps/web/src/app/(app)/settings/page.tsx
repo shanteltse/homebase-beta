@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useUser } from "@/features/auth/api/get-user";
 import { useLogout } from "@/features/auth/api/logout";
 import { useUserProfile, useUpdateUserProfile } from "@/features/auth/api/get-user-profile";
@@ -12,8 +13,9 @@ import { HouseholdSettings } from "@/features/household/components/household-set
 import { NotificationSettings } from "@/features/notifications/components/notification-settings";
 import { AchievementsGrid } from "@/features/gamification/components/achievements-grid";
 import { GoogleCalendarSettings } from "@/features/calendar/components/google-calendar-settings";
+import { ImportTasksDialog } from "@/features/tasks/components/import-tasks-dialog";
 import { Suspense } from "react";
-import { Wand2 } from "lucide-react";
+import { Wand2, Upload } from "lucide-react";
 
 export default function SettingsPage() {
   const { data: user, isLoading } = useUser();
@@ -22,6 +24,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
   const logout = useLogout();
   const router = useRouter();
+  const [importOpen, setImportOpen] = useState(false);
 
   async function handleToggleStats(enabled: boolean) {
     await updateProfile({ showStatsOnDashboard: enabled });
@@ -139,6 +142,27 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Import Tasks */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Import Tasks
+            </CardTitle>
+            <CardDescription>
+              Already have a to-do list? Paste it and we&apos;ll add all your tasks automatically.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+              <Upload className="h-4 w-4" />
+              Import your list
+            </Button>
+          </CardContent>
+        </Card>
+
+        <ImportTasksDialog open={importOpen} onOpenChange={setImportOpen} />
 
         {/* Household */}
         <HouseholdSettings />

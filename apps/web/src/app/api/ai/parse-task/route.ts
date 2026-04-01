@@ -5,6 +5,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAuthUser } from "@/lib/get-auth-user";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { DEFAULT_CATEGORIES } from "@/types/category";
+import { db } from "@/db";
+import { users, householdMembers } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -78,7 +81,9 @@ const categoryDescription = DEFAULT_CATEGORIES.map(
     `${c.id} (${c.name}) — subcategories: ${c.subcategories.map((s) => s.id).join(", ")}`,
 ).join("\n");
 
-function buildSystemPrompt(): string {
+type HouseholdMemberRef = { id: string; name: string | null; email: string };
+
+function buildSystemPrompt(members: HouseholdMemberRef[] = []): string {
   const now = new Date();
   const todayStr = now.toISOString().split("T")[0]!;
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -131,6 +136,14 @@ Return JSON with these fields (omit if not applicable):
 - dueDate: ISO 8601 datetime string in UTC (e.g. "2026-03-15T15:00:00.000Z")
 - tags: string[] (any relevant tags or labels)
 - notes: string (any additional context not captured in other fields)
+- assignee: string (member ID — only set if the input clearly names a household member)
+
+${members.length > 0
+  ? `Household members (for assignee detection):
+${members.map((m) => `- ${m.name ?? m.email} (id: "${m.id}")`).join("\n")}
+
+If the input says something like "remind John to..." or "ask Sarah to..." and a member name matches, set assignee to their id. If no member matches, omit assignee.`
+  : "No household members — omit assignee."}
 
 Return ONLY valid JSON, no markdown, no explanation.`;
 }
@@ -162,8 +175,29 @@ export async function POST(request: Request) {
     );
   }
 
+  // Fetch household members so the AI can detect assignees by name
+  const members: HouseholdMemberRef[] = [];
   try {
-    const systemPrompt = buildSystemPrompt();
+    const [membership] = await db
+      .select({ householdId: householdMembers.householdId })
+      .from(householdMembers)
+      .where(eq(householdMembers.userId, user.id))
+      .limit(1);
+
+    if (membership) {
+      const rows = await db
+        .select({ id: users.id, name: users.name, email: users.email })
+        .from(householdMembers)
+        .innerJoin(users, eq(householdMembers.userId, users.id))
+        .where(eq(householdMembers.householdId, membership.householdId));
+      members.push(...rows);
+    }
+  } catch {
+    // Non-fatal — continue without member context
+  }
+
+  try {
+    const systemPrompt = buildSystemPrompt(members);
     console.log("[parse-task] STEP 2 — system prompt (date section):", systemPrompt.split("DATE PARSING RULES")[0]?.split("TODAY IS")[1]?.trim().slice(0, 200));
 
     const message = await client.messages.create({

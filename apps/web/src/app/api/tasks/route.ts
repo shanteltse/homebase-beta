@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/get-auth-user";
+import { getUserHouseholdId } from "@/lib/get-user-household";
 import { db } from "@/db";
 import { tasks } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -16,10 +17,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const householdId = await getUserHouseholdId(user.id);
+
   const result = await db
     .select()
     .from(tasks)
-    .where(eq(tasks.userId, user.id))
+    .where(
+      householdId
+        ? eq(tasks.householdId, householdId)
+        : eq(tasks.userId, user.id),
+    )
     .orderBy(desc(tasks.createdAt));
 
   return NextResponse.json(result);
@@ -57,8 +64,11 @@ export async function POST(request: Request) {
     console.log("[POST /api/tasks] STEP B — after Zod parse:", JSON.stringify(validated));
     console.log("[POST /api/tasks] STEP B — dueDate after Zod:", validated.dueDate ?? "(not present)");
 
+    const householdId = await getUserHouseholdId(user.id);
+
     const insertValues = {
       userId: user.id,
+      householdId,
       title: validated.title,
       category: validated.category,
       subcategory: validated.subcategory,

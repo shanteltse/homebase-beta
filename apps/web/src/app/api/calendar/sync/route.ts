@@ -5,6 +5,7 @@ import { getAuthUser } from "@/lib/get-auth-user";
 import { db } from "@/db";
 import { users, tasks, calendarEvents } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { getUserHouseholdId } from "@/lib/get-user-household";
 import { handleApiError, ApiError } from "@/lib/api-error";
 import { validateOrigin } from "@/lib/api-utils";
 import {
@@ -63,13 +64,13 @@ export async function POST(request: Request) {
     const calendarId = profile.gcalCalendarId ?? "primary";
     const appUrl = process.env.NEXTAUTH_URL ?? "";
 
-    // Get all active tasks with due dates (apply sync filter)
-    let taskQuery = db
-      .select()
-      .from(tasks)
-      .where(and(eq(tasks.userId, user.id), eq(tasks.completed, false)));
+    // Get all active tasks — scope to household if applicable, else user-only
+    const householdId = await getUserHouseholdId(user.id);
+    const taskScopeCondition = householdId
+      ? and(eq(tasks.householdId, householdId), eq(tasks.completed, false))
+      : and(eq(tasks.userId, user.id), eq(tasks.completed, false));
 
-    const userTasks = await taskQuery;
+    const userTasks = await db.select().from(tasks).where(taskScopeCondition);
 
     const filteredTasks = userTasks.filter((t) => {
       if (profile.gcalSyncWhat === "starred") return t.starred;

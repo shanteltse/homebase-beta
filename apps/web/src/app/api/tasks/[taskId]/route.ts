@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/get-auth-user";
+import { getUserHouseholdId } from "@/lib/get-user-household";
 import { db } from "@/db";
 import { tasks } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -10,6 +11,19 @@ import { validateOrigin } from "@/lib/api-utils";
 
 type Params = { params: Promise<{ taskId: string }> };
 
+/**
+ * Build a WHERE condition that grants access to a task based on household
+ * membership. If the user is in a household, any member of that household can
+ * read/write any task in the household. Otherwise, the user can only access
+ * their own tasks.
+ */
+function taskAccessCondition(taskId: string, userId: string, householdId: string | null) {
+  if (householdId) {
+    return and(eq(tasks.id, taskId), eq(tasks.householdId, householdId));
+  }
+  return and(eq(tasks.id, taskId), eq(tasks.userId, userId));
+}
+
 export async function GET(_request: Request, { params }: Params) {
   const user = await getAuthUser(_request);
   if (!user) {
@@ -17,11 +31,12 @@ export async function GET(_request: Request, { params }: Params) {
   }
 
   const { taskId } = await params;
+  const householdId = await getUserHouseholdId(user.id);
 
   const [task] = await db
     .select()
     .from(tasks)
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
+    .where(taskAccessCondition(taskId, user.id, householdId))
     .limit(1);
 
   if (!task) {
@@ -61,6 +76,8 @@ export async function PATCH(request: Request, { params }: Params) {
     // Validate input — inject the taskId as `id` for the schema
     const validated = updateTaskInputSchema.parse({ ...body, id: taskId });
 
+    const householdId = await getUserHouseholdId(user.id);
+
     const updates: Record<string, unknown> = { updatedAt: new Date() };
 
     if (validated.title !== undefined) updates.title = validated.title;
@@ -96,7 +113,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const [task] = await db
       .update(tasks)
       .set(updates)
-      .where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
+      .where(taskAccessCondition(taskId, user.id, householdId))
       .returning();
 
     if (!task) {
@@ -117,7 +134,8 @@ export async function PATCH(request: Request, { params }: Params) {
       const [nextTask] = await db
         .insert(tasks)
         .values({
-          userId: user.id,
+          userId: task.userId,
+          householdId: task.householdId,
           title: task.title,
           category: task.category,
           subcategory: task.subcategory,
@@ -169,10 +187,11 @@ export async function DELETE(request: Request, { params }: Params) {
     }
 
     const { taskId } = await params;
+    const householdId = await getUserHouseholdId(user.id);
 
     const [task] = await db
       .delete(tasks)
-      .where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
+      .where(taskAccessCondition(taskId, user.id, householdId))
       .returning({ id: tasks.id });
 
     if (!task) {

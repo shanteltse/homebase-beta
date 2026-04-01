@@ -134,6 +134,8 @@ export const tasks = pgTable("tasks", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  householdId: text("household_id")
+    .references(() => households.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   category: text("category").notNull(),
   subcategory: text("subcategory"),

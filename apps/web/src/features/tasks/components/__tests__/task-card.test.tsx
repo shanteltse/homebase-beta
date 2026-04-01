@@ -14,7 +14,7 @@ const baseTask: Task = {
   tags: [],
   links: [],
   starred: false,
-  createdBy: "user-1",
+  userId: "user-1",
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };

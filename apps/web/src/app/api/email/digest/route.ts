@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { users, tasks, achievements } from "@/db/schema";
+import { users, tasks, achievements, householdMembers } from "@/db/schema";
 import { eq, and, lt, gte, lte, desc } from "drizzle-orm";
 import {
   generateDigestHtml,
@@ -76,17 +76,21 @@ export async function POST(request: Request) {
     }> = [];
 
     for (const user of usersWithTasks) {
+      // Determine task scope: household tasks if the user is in a household
+      const [membership] = await db
+        .select({ householdId: householdMembers.householdId })
+        .from(householdMembers)
+        .where(eq(householdMembers.userId, user.id))
+        .limit(1);
+      const taskScope = membership
+        ? eq(tasks.householdId, membership.householdId)
+        : eq(tasks.userId, user.id);
+
       // Overdue tasks: not completed, due date before today
       const overdueTasks = await db
         .select()
         .from(tasks)
-        .where(
-          and(
-            eq(tasks.userId, user.id),
-            eq(tasks.completed, false),
-            lt(tasks.dueDate, todayStart),
-          ),
-        )
+        .where(and(taskScope, eq(tasks.completed, false), lt(tasks.dueDate, todayStart)))
         .orderBy(desc(tasks.dueDate))
         .limit(10);
 
@@ -95,12 +99,7 @@ export async function POST(request: Request) {
         .select()
         .from(tasks)
         .where(
-          and(
-            eq(tasks.userId, user.id),
-            eq(tasks.completed, false),
-            gte(tasks.dueDate, todayStart),
-            lte(tasks.dueDate, todayEnd),
-          ),
+          and(taskScope, eq(tasks.completed, false), gte(tasks.dueDate, todayStart), lte(tasks.dueDate, todayEnd)),
         )
         .orderBy(tasks.priority);
 
@@ -110,12 +109,7 @@ export async function POST(request: Request) {
         .select()
         .from(tasks)
         .where(
-          and(
-            eq(tasks.userId, user.id),
-            eq(tasks.completed, false),
-            gte(tasks.dueDate, nextDay),
-            lte(tasks.dueDate, weekEnd),
-          ),
+          and(taskScope, eq(tasks.completed, false), gte(tasks.dueDate, nextDay), lte(tasks.dueDate, weekEnd)),
         )
         .orderBy(tasks.dueDate)
         .limit(10);
@@ -124,13 +118,7 @@ export async function POST(request: Request) {
       const recentlyCompletedTasks = await db
         .select()
         .from(tasks)
-        .where(
-          and(
-            eq(tasks.userId, user.id),
-            eq(tasks.completed, true),
-            gte(tasks.completedAt, yesterday),
-          ),
-        )
+        .where(and(taskScope, eq(tasks.completed, true), gte(tasks.completedAt, yesterday)))
         .orderBy(desc(tasks.completedAt))
         .limit(10);
 
@@ -242,7 +230,7 @@ async function calculateStreak(userId: string): Promise<number> {
       .from(tasks)
       .where(
         and(
-          eq(tasks.userId, userId),
+          eq(tasks.userId, userId), // streak is personal — count tasks the user completed
           eq(tasks.completed, true),
           gte(tasks.completedAt, dayStart),
           lte(tasks.completedAt, dayEnd),

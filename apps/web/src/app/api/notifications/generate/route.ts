@@ -3,6 +3,7 @@ import { getAuthUser } from "@/lib/get-auth-user";
 import { db } from "@/db";
 import { notifications, tasks } from "@/db/schema";
 import { and, eq, gte } from "drizzle-orm";
+import { getUserHouseholdId } from "@/lib/get-user-household";
 
 export async function POST() {
   const user = await getAuthUser();
@@ -18,16 +19,13 @@ export async function POST() {
   const threeDaysOut = new Date(todayStart);
   threeDaysOut.setDate(threeDaysOut.getDate() + 3);
 
-  // Fetch user's active (not completed) tasks that have a due date
-  const userTasks = await db
-    .select()
-    .from(tasks)
-    .where(
-      and(
-        eq(tasks.userId, userId),
-        eq(tasks.completed, false),
-      ),
-    );
+  // Fetch active tasks — household-scoped if the user is in a household
+  const householdId = await getUserHouseholdId(userId);
+  const taskScopeCondition = householdId
+    ? and(eq(tasks.householdId, householdId), eq(tasks.completed, false))
+    : and(eq(tasks.userId, userId), eq(tasks.completed, false));
+
+  const userTasks = await db.select().from(tasks).where(taskScopeCondition);
 
   // Get today's existing notifications to de-duplicate
   const existingToday = await db
