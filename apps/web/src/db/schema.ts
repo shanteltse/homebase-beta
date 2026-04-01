@@ -164,6 +164,7 @@ export const tasks = pgTable("tasks", {
   links: jsonb("links").$type<string[]>().notNull().default([]),
   starred: boolean("starred").notNull().default(false),
   isStarter: boolean("is_starter").notNull().default(false),
+  isSample: boolean("is_sample").notNull().default(false),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });

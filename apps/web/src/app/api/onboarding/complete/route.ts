@@ -145,13 +145,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // Deduplicate by title and limit to 10
+    // Deduplicate by title and limit to 3
     const seen = new Set<string>();
     const uniqueTasks = starterTasksToCreate.filter((t) => {
       if (seen.has(t.title)) return false;
       seen.add(t.title);
       return true;
-    }).slice(0, 10);
+    }).slice(0, 3);
 
     if (uniqueTasks.length > 0) {
       const householdId = await getUserHouseholdId(user.id);
@@ -164,6 +164,7 @@ export async function POST(request: Request) {
           subcategory: t.subcategory,
           priority: t.priority,
           isStarter: true,
+          isSample: true,
           subtasks: [],
           tags: [],
           links: [],
