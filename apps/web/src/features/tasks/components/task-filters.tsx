@@ -68,23 +68,23 @@ export function TaskFilters({
 
       {/* Member filter — only shown when household has >1 member */}
       {showMemberFilter && (
-        <div className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {[{ id: "", label: "All" }, { id: "mine", label: "Mine" }, ...members.map((m) => ({ id: m.id, label: m.name ?? m.email }))].map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => onAssigneeFilterChange(assigneeFilter === opt.id ? "" : opt.id)}
-              className={cn(
-                "shrink-0 rounded-full px-3 py-0.5 text-xs font-medium transition-colors",
-                assigneeFilter === opt.id
-                  ? "bg-foreground text-background"
-                  : "bg-muted text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        <Select
+          value={assigneeFilter ?? ""}
+          onValueChange={(val) => onAssigneeFilterChange(val === "all" ? "" : val)}
+        >
+          <SelectTrigger className="flex-1 min-w-[8rem] max-w-[12rem]">
+            <SelectValue placeholder="All members" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All members</SelectItem>
+            <SelectItem value="mine">Mine</SelectItem>
+            {members.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.name ?? m.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
 
       {/* Filter selects — wrap onto a second line on narrow screens */}

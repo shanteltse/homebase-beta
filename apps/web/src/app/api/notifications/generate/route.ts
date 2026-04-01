@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/get-auth-user";
 import { db } from "@/db";
 import { notifications, tasks } from "@/db/schema";
-import { and, eq, gte } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getUserHouseholdId } from "@/lib/get-user-household";
 
 export async function POST() {
@@ -27,19 +27,15 @@ export async function POST() {
 
   const userTasks = await db.select().from(tasks).where(taskScopeCondition);
 
-  // Get today's existing notifications to de-duplicate
-  const existingToday = await db
-    .select()
+  // Fetch all existing notifications for this user to de-duplicate per task.
+  // A task should produce at most one notification ever — once notified, skip it.
+  const existingNotifications = await db
+    .select({ taskId: notifications.taskId })
     .from(notifications)
-    .where(
-      and(
-        eq(notifications.userId, userId),
-        gte(notifications.createdAt, todayStart),
-      ),
-    );
+    .where(eq(notifications.userId, userId));
 
   const existingKeys = new Set(
-    existingToday.map((n) => `${n.taskId}:${n.type}`),
+    existingNotifications.map((n) => n.taskId).filter(Boolean),
   );
 
   const toCreate: {
@@ -55,44 +51,40 @@ export async function POST() {
 
     const dueDate = new Date(task.dueDate);
 
+    if (existingKeys.has(task.id)) continue;
+
     // Overdue: due date is before today start
     if (dueDate < todayStart) {
-      if (!existingKeys.has(`${task.id}:overdue`)) {
-        toCreate.push({
-          userId,
-          type: "overdue",
-          title: "Task overdue",
-          message: `"${task.title}" was due ${formatDaysAgo(todayStart, dueDate)}`,
-          taskId: task.id,
-        });
-      }
+      toCreate.push({
+        userId,
+        type: "overdue",
+        title: "Task overdue",
+        message: `"${task.title}" was due ${formatDaysAgo(todayStart, dueDate)}`,
+        taskId: task.id,
+      });
     }
     // Due today
     else if (dueDate >= todayStart && dueDate < todayEnd) {
-      if (!existingKeys.has(`${task.id}:due_today`)) {
-        toCreate.push({
-          userId,
-          type: "due_today",
-          title: "Task due today",
-          message: `"${task.title}" is due today`,
-          taskId: task.id,
-        });
-      }
+      toCreate.push({
+        userId,
+        type: "due_today",
+        title: "Task due today",
+        message: `"${task.title}" is due today`,
+        taskId: task.id,
+      });
     }
     // Due soon (within 3 days)
     else if (dueDate >= todayEnd && dueDate < threeDaysOut) {
-      if (!existingKeys.has(`${task.id}:due_soon`)) {
-        const daysUntil = Math.ceil(
-          (dueDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24),
-        );
-        toCreate.push({
-          userId,
-          type: "due_soon",
-          title: "Task due soon",
-          message: `"${task.title}" is due in ${daysUntil} day${daysUntil === 1 ? "" : "s"}`,
-          taskId: task.id,
-        });
-      }
+      const daysUntil = Math.ceil(
+        (dueDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      toCreate.push({
+        userId,
+        type: "due_soon",
+        title: "Task due soon",
+        message: `"${task.title}" is due in ${daysUntil} day${daysUntil === 1 ? "" : "s"}`,
+        taskId: task.id,
+      });
     }
   }
 

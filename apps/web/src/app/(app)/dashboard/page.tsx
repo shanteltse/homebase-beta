@@ -14,7 +14,6 @@ import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog
 import { ImportTasksDialog } from "@/features/tasks/components/import-tasks-dialog";
 import { StatsCard } from "@/features/gamification/components/stats-card";
 import { Upload } from "lucide-react";
-import { cn } from "@/utils/cn";
 import {
   Select,
   SelectContent,
@@ -212,23 +211,23 @@ export default function DashboardPage() {
 
       {/* Member filter — only shown when household has >1 member */}
       {showMemberFilter && (
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {[{ id: "", label: "All" }, { id: "mine", label: "Mine" }, ...members.map((m) => ({ id: m.id, label: m.name ?? m.email }))].map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setAssigneeFilter(assigneeFilter === opt.id ? "" : opt.id)}
-              className={cn(
-                "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                assigneeFilter === opt.id
-                  ? "bg-foreground text-background"
-                  : "bg-muted text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        <Select
+          value={assigneeFilter || "all"}
+          onValueChange={(val) => setAssigneeFilter(val === "all" ? "" : val)}
+        >
+          <SelectTrigger className="w-[12rem]">
+            <SelectValue placeholder="All members" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All members</SelectItem>
+            <SelectItem value="mine">Mine</SelectItem>
+            {members.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.name ?? m.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
 
       {/* Stats — only shown when user enables it in Settings */}
@@ -300,24 +299,29 @@ export default function DashboardPage() {
 
           {/* All / Today / This Week toggle section */}
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex gap-1 rounded-lg border border-border p-0.5 shrink-0">
-                {(["all", "today", "this-week"] as DashboardView[]).map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setDashboardView(v)}
-                    className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                      dashboardView === v
-                        ? "bg-foreground text-background"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {v === "all" ? "All" : v === "today" ? "Today" : "This Week"}
-                  </button>
-                ))}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex gap-1 rounded-lg border border-border p-0.5">
+                  {(["all", "today", "this-week"] as DashboardView[]).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setDashboardView(v)}
+                      className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                        dashboardView === v
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {v === "all" ? "All" : v === "today" ? "Today" : "This Week"}
+                    </button>
+                  ))}
+                </div>
+                <Link href={`/tasks?view=${summaryView}`} className="caption text-primary hover:underline">
+                  View all
+                </Link>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex justify-end">
                 <Select value={sort} onValueChange={(val) => setSort(val as TaskSort)}>
                   <SelectTrigger className="h-8 text-xs w-[9rem]">
                     <SelectValue />
@@ -329,9 +333,6 @@ export default function DashboardPage() {
                     <SelectItem value="created">Date Created</SelectItem>
                   </SelectContent>
                 </Select>
-                <Link href={`/tasks?view=${summaryView}`} className="caption text-primary hover:underline shrink-0">
-                  View all
-                </Link>
               </div>
             </div>
 
