@@ -1,3 +1,57 @@
+export interface ReminderData {
+  userName: string | null;
+  userEmail: string;
+  taskTitles: string[];
+  appUrl: string;
+  type: "daily" | "weekly";
+}
+
+export function generateReminderHtml(data: ReminderData): string {
+  const { userName, taskTitles, appUrl, type } = data;
+  const greeting = userName ? `Hi ${userName}` : "Hi there";
+  const count = taskTitles.length;
+  const subject = type === "daily"
+    ? `You have ${count} task${count !== 1 ? "s" : ""} due today`
+    : `You have ${count} task${count !== 1 ? "s" : ""} due this week`;
+  const intro = type === "daily"
+    ? `Here are your tasks due <strong>today</strong>:`
+    : `Here are your tasks due <strong>this week</strong>:`;
+
+  const taskList = taskTitles
+    .map((t) => `<li style="margin-bottom:6px;font-size:14px;color:#4a3f3a;">${t}</li>`)
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background:#faf7f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:500px;margin:0 auto;padding:40px 16px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <h1 style="margin:0;font-size:28px;color:#b08068;font-weight:700;">HomeBase</h1>
+    </div>
+    <p style="font-size:16px;color:#4a3f3a;margin:0 0 8px 0;">${greeting},</p>
+    <p style="font-size:15px;color:#7a6f6a;margin:0 0 16px 0;">${intro}</p>
+    <ul style="margin:0 0 24px 0;padding-left:20px;">
+      ${taskList}
+    </ul>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${appUrl}/tasks" style="display:inline-block;padding:12px 32px;background:#b08068;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;">View Tasks</a>
+    </div>
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid #e8e0da;text-align:center;">
+      <p style="margin:0;font-size:12px;color:#7a6f6a;">
+        You&apos;re receiving this because you enabled email reminders in HomeBase.
+        <br/>Manage your preferences in <a href="${appUrl}/settings" style="color:#b08068;">Settings</a>.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 export interface PasswordResetData {
   userName: string | null;
   resetUrl: string;

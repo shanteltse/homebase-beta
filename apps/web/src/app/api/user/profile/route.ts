@@ -38,6 +38,10 @@ export async function GET(request: Request) {
       showStatsOnDashboard: users.showStatsOnDashboard,
       showTaskSummaryOnDashboard: users.showTaskSummaryOnDashboard,
       showGcalEvents: users.showGcalEvents,
+      reminderDailyEnabled: users.reminderDailyEnabled,
+      reminderDailyTime: users.reminderDailyTime,
+      reminderWeeklyEnabled: users.reminderWeeklyEnabled,
+      reminderWeeklyTime: users.reminderWeeklyTime,
     })
     .from(users)
     .where(eq(users.id, user.id))
@@ -79,6 +83,10 @@ export async function PATCH(request: Request) {
     if (typeof body.showStatsOnDashboard === "boolean") updatable.showStatsOnDashboard = body.showStatsOnDashboard;
     if (typeof body.showTaskSummaryOnDashboard === "boolean") updatable.showTaskSummaryOnDashboard = body.showTaskSummaryOnDashboard;
     if (typeof body.showGcalEvents === "boolean") updatable.showGcalEvents = body.showGcalEvents;
+    if (typeof body.reminderDailyEnabled === "boolean") updatable.reminderDailyEnabled = body.reminderDailyEnabled;
+    if (typeof body.reminderDailyTime === "string") updatable.reminderDailyTime = body.reminderDailyTime;
+    if (typeof body.reminderWeeklyEnabled === "boolean") updatable.reminderWeeklyEnabled = body.reminderWeeklyEnabled;
+    if (typeof body.reminderWeeklyTime === "string") updatable.reminderWeeklyTime = body.reminderWeeklyTime;
 
     if (Object.keys(updatable).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

@@ -53,6 +53,11 @@ export const users = pgTable("users", {
   showTaskSummaryOnDashboard: boolean("show_task_summary_on_dashboard").notNull().default(false),
   // Google Calendar display preference
   showGcalEvents: boolean("show_gcal_events").notNull().default(true),
+  // Email reminder preferences
+  reminderDailyEnabled: boolean("reminder_daily_enabled").notNull().default(false),
+  reminderDailyTime: text("reminder_daily_time").notNull().default("08:00"),
+  reminderWeeklyEnabled: boolean("reminder_weekly_enabled").notNull().default(false),
+  reminderWeeklyTime: text("reminder_weekly_time").notNull().default("08:00"),
 });
 
 export const accounts = pgTable(

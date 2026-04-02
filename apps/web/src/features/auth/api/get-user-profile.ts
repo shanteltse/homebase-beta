@@ -24,6 +24,10 @@ export type UserProfile = {
   showStatsOnDashboard: boolean;
   showTaskSummaryOnDashboard: boolean;
   showGcalEvents: boolean;
+  reminderDailyEnabled: boolean;
+  reminderDailyTime: string;
+  reminderWeeklyEnabled: boolean;
+  reminderWeeklyTime: string;
 };
 
 async function fetchUserProfile(): Promise<UserProfile> {
