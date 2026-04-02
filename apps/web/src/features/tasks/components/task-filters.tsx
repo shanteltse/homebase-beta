@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@repo/ui/button";
 import {
   Select,
   SelectContent,
@@ -50,50 +49,53 @@ export function TaskFilters({
     onAssigneeFilterChange && members && members.length > 1;
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* View tabs — scrolls horizontally on narrow screens rather than overflowing */}
-      <div className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div className="flex flex-col gap-2">
+      {/* View tabs — compact, scrolls horizontally on narrow screens */}
+      <div className="flex gap-0.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {VIEWS.map((v) => (
-          <Button
+          <button
             key={v.value}
-            variant={view === v.value ? "primary" : "ghost"}
-            size="sm"
+            type="button"
             onClick={() => onFilterChange("view", v.value === "all" ? "" : v.value)}
-            className={cn("shrink-0", view === v.value && "pointer-events-none")}
+            className={cn(
+              "shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+              view === v.value
+                ? "bg-foreground text-background pointer-events-none"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted",
+            )}
           >
             {v.label}
-          </Button>
+          </button>
         ))}
       </div>
 
-      {/* Member filter — only shown when household has >1 member */}
-      {showMemberFilter && (
-        <Select
-          value={assigneeFilter ?? ""}
-          onValueChange={(val) => onAssigneeFilterChange(val === "all" ? "" : val)}
-        >
-          <SelectTrigger className="flex-1 min-w-[8rem] max-w-[12rem]">
-            <SelectValue placeholder="All members" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All members</SelectItem>
-            <SelectItem value="mine">Mine</SelectItem>
-            {members.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.name ?? m.email}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
+      {/* Filter selects row — compact height */}
+      <div className="flex flex-wrap gap-1.5">
+        {showMemberFilter && (
+          <Select
+            value={assigneeFilter ?? ""}
+            onValueChange={(val) => onAssigneeFilterChange(val === "all" ? "" : val)}
+          >
+            <SelectTrigger className="h-7 text-xs flex-1 min-w-[7rem] max-w-[10rem]">
+              <SelectValue placeholder="All members" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All members</SelectItem>
+              <SelectItem value="mine">Mine</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name ?? m.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
-      {/* Filter selects — wrap onto a second line on narrow screens */}
-      <div className="flex flex-wrap gap-2">
         <Select
           value={category}
           onValueChange={(val) => onFilterChange("category", val === "all" ? "" : val)}
         >
-          <SelectTrigger className="flex-1 min-w-[9rem] max-w-[12rem]">
+          <SelectTrigger className="h-7 text-xs flex-1 min-w-[7rem] max-w-[10rem]">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -108,11 +110,9 @@ export function TaskFilters({
 
         <Select
           value={priority}
-          onValueChange={(val) =>
-            onFilterChange("priority", val === "all" ? "" : val)
-          }
+          onValueChange={(val) => onFilterChange("priority", val === "all" ? "" : val)}
         >
-          <SelectTrigger className="flex-1 min-w-[8rem] max-w-[10rem]">
+          <SelectTrigger className="h-7 text-xs flex-1 min-w-[6rem] max-w-[9rem]">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -127,8 +127,8 @@ export function TaskFilters({
           value={sort}
           onValueChange={(val) => onSortChange(val as TaskSort)}
         >
-          <SelectTrigger className="flex-1 min-w-[9rem] max-w-[11rem]">
-            <SelectValue placeholder="Sort by" />
+          <SelectTrigger className="h-7 text-xs flex-1 min-w-[7rem] max-w-[10rem]">
+            <SelectValue placeholder="Sort" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="due-date">Due Date</SelectItem>

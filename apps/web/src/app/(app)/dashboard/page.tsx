@@ -13,7 +13,13 @@ import { SmartTaskInput } from "@/features/ai/components/smart-task-input";
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog";
 import { ImportTasksDialog } from "@/features/tasks/components/import-tasks-dialog";
 import { StatsCard } from "@/features/gamification/components/stats-card";
-import { Upload } from "lucide-react";
+import { Upload, ArrowUpDown, Check } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@repo/ui/dropdown-menu";
+import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -75,6 +81,9 @@ export default function DashboardPage() {
       (members ?? []).map((m) => [m.id, m.name ?? m.email]),
     );
     return [...taskList].sort((a, b) => {
+      // Starred tasks always float to top
+      if (a.starred && !b.starred) return -1;
+      if (!a.starred && b.starred) return 1;
       if (sort === "priority") {
         const diff = (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1);
         if (diff !== 0) return diff;
@@ -167,6 +176,10 @@ export default function DashboardPage() {
 
   function handleToggleComplete(taskId: string, completed: boolean) {
     updateTask.mutate({ id: taskId, completed });
+  }
+
+  function handleToggleStar(taskId: string, starred: boolean) {
+    updateTask.mutate({ id: taskId, starred });
   }
 
   function handleOpenCreateDialog(prefill: ParsedTask) {
@@ -292,6 +305,7 @@ export default function DashboardPage() {
                   key={task.id}
                   task={task}
                   onToggleComplete={handleToggleComplete}
+                  onToggleStar={handleToggleStar}
                 />
               ))}
             </div>
@@ -317,22 +331,33 @@ export default function DashboardPage() {
                     </button>
                   ))}
                 </div>
-                <Link href={`/tasks?view=${summaryView}`} className="caption text-primary hover:underline">
-                  View all
-                </Link>
-              </div>
-              <div className="flex justify-end">
-                <Select value={sort} onValueChange={(val) => setSort(val as TaskSort)}>
-                  <SelectTrigger className="h-8 text-xs w-[9rem]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="due-date">Due Date</SelectItem>
-                    <SelectItem value="priority">Priority</SelectItem>
-                    <SelectItem value="assignee">Assignee</SelectItem>
-                    <SelectItem value="created">Date Created</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        aria-label="Sort tasks"
+                      >
+                        <ArrowUpDown className="h-3 w-3" />
+                        <span className="hidden sm:inline">
+                          {sort === "due-date" ? "Due Date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : "Date Created"}
+                        </span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
+                        <DropdownMenuItem key={s} onClick={() => setSort(s)} className="flex items-center justify-between gap-4">
+                          {s === "due-date" ? "Due Date" : s === "priority" ? "Priority" : s === "assignee" ? "Assignee" : "Date Created"}
+                          {sort === s && <Check className="h-3.5 w-3.5 text-primary" />}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Link href={`/tasks?view=${summaryView}`} className="caption text-primary hover:underline">
+                    View all
+                  </Link>
+                </div>
               </div>
             </div>
 
@@ -342,6 +367,7 @@ export default function DashboardPage() {
                   key={task.id}
                   task={task}
                   onToggleComplete={handleToggleComplete}
+                  onToggleStar={handleToggleStar}
                 />
               ))
             ) : (

@@ -159,6 +159,10 @@ export function useTaskFilters(currentUserId?: string, members?: HouseholdMember
       }
 
       return filtered.sort((a, b) => {
+        // Starred tasks always float to top
+        if (a.starred && !b.starred) return -1;
+        if (!a.starred && b.starred) return 1;
+
         if (sort === "priority") {
           const diff = (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1);
           if (diff !== 0) return diff;

@@ -90,6 +90,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar }: TaskCardProps
           className={cn(
             "body font-medium text-foreground hover:text-primary",
             task.completed && "line-through",
+            task.starred && "font-bold",
           )}
         >
           {task.title}

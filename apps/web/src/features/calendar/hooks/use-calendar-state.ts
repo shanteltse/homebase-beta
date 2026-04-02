@@ -10,7 +10,7 @@ export function useCalendarState() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const view: CalendarView = (searchParams.get("view") as CalendarView) ?? "month";
+  const view: CalendarView = (searchParams.get("view") as CalendarView) ?? "week";
 
   const currentDate = useMemo(() => {
     const dateParam = searchParams.get("date");
