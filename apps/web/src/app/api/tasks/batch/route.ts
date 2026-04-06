@@ -56,6 +56,7 @@ export async function POST(request: Request) {
           contact: t.contact ?? null,
           links: t.links,
           recurring: t.recurring ?? null,
+          isImported: true,
         })),
       )
       .returning();
