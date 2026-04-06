@@ -16,7 +16,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { users, tasks, calendarEvents } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { refreshAccessToken, getEvent, taskToGCalEvent } from "@/lib/gcal";
+import { refreshAccessToken, getEvent } from "@/lib/gcal";
 
 export async function POST(request: Request) {
   const channelToken = request.headers.get("X-Goog-Channel-Token");
@@ -66,7 +66,6 @@ export async function POST(request: Request) {
     }
 
     const calendarId = profile.gcalCalendarId ?? "primary";
-    const appUrl = process.env.NEXTAUTH_URL ?? "";
 
     // Fetch updated events from the calendar and sync back to tasks
     const mappings = await db

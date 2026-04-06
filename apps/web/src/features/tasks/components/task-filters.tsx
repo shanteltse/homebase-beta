@@ -41,7 +41,6 @@ export function TaskFilters({
   onFilterChange,
   onSortChange,
   members,
-  currentUserId,
   assigneeFilter,
   onAssigneeFilterChange,
 }: TaskFiltersProps) {

@@ -36,7 +36,7 @@ describe("TaskList", () => {
     });
 
     expect(screen.getByText("Today")).toBeInTheDocument();
-    expect(screen.getByText("Upcoming")).toBeInTheDocument();
+    expect(screen.getByText("This Week")).toBeInTheDocument();
     expect(screen.getByText("Completed")).toBeInTheDocument();
   });
 });

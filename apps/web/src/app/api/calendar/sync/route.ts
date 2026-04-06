@@ -91,7 +91,6 @@ export async function POST(request: Request) {
       .where(eq(calendarEvents.userId, user.id));
 
     const mappingByTaskId = new Map(existingMappings.map((m) => [m.taskId, m]));
-    const mappedTaskIds = new Set(existingMappings.map((m) => m.taskId));
     const filteredTaskIds = new Set(filteredTasks.map((t) => t.id));
 
     let synced = 0;

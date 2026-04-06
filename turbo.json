@@ -14,7 +14,8 @@
         "ANTHROPIC_API_KEY",
         "CRON_SECRET",
         "NODE_ENV",
-        "NEXTAUTH_URL"
+        "NEXTAUTH_URL",
+        "AUTH_URL"
       ]
     },
     "lint": {
@@ -27,7 +28,8 @@
         "ANTHROPIC_API_KEY",
         "CRON_SECRET",
         "NODE_ENV",
-        "NEXTAUTH_URL"
+        "NEXTAUTH_URL",
+        "AUTH_URL"
       ]
     },
     "check-types": {
@@ -40,7 +42,8 @@
         "ANTHROPIC_API_KEY",
         "CRON_SECRET",
         "NODE_ENV",
-        "NEXTAUTH_URL"
+        "NEXTAUTH_URL",
+        "AUTH_URL"
       ]
     },
     "test": {
