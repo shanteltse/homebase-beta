@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useTasks } from "@/features/tasks/api/get-tasks";
 import { useUpdateTask } from "@/features/tasks/api/update-task";
@@ -9,11 +9,11 @@ import { useUser } from "@/features/auth/api/get-user";
 import { useHouseholdMembers } from "@/features/household/api/get-members";
 import { Spinner } from "@repo/ui/spinner";
 import { TaskCard } from "@/features/tasks/components/task-card";
-import { SmartTaskInput } from "@/features/ai/components/smart-task-input";
+import { SmartTaskInput, type SmartTaskInputHandle } from "@/features/ai/components/smart-task-input";
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog";
 import { ImportTasksDialog } from "@/features/tasks/components/import-tasks-dialog";
 import { StatsCard } from "@/features/gamification/components/stats-card";
-import { Upload, ArrowUpDown, Check } from "lucide-react";
+import { Upload, ArrowUpDown, Check, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const { data: profile } = useUserProfile();
   const { data: user } = useUser();
   const { data: members } = useHouseholdMembers();
+  const smartInputRef = useRef<SmartTaskInputHandle>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogPrefill, setDialogPrefill] = useState<ParsedTask | undefined>();
   const [importOpen, setImportOpen] = useState(false);
@@ -198,7 +199,7 @@ export default function DashboardPage() {
 
       {/* Smart quick add */}
       <div className="flex flex-col gap-2">
-        <SmartTaskInput onOpenCreateDialog={handleOpenCreateDialog} />
+        <SmartTaskInput ref={smartInputRef} onOpenCreateDialog={handleOpenCreateDialog} />
         <div className="flex justify-end">
           <button
             type="button"
@@ -286,7 +287,28 @@ export default function DashboardPage() {
       {/* Gamification stats — only shown when user enables it in Settings */}
       {profile?.showStatsOnDashboard && <StatsCard />}
 
-      {isLoading ? (
+      {!isLoading && allActiveTasks.length === 0 ? (
+        <div className="flex flex-col items-center gap-5 py-16 text-center">
+          <div className="text-4xl">📋</div>
+          <div className="flex flex-col gap-1.5">
+            <h3 className="heading-sm text-foreground">What&apos;s on your plate?</h3>
+            <p className="body text-muted-foreground">
+              Add your first task and start making progress.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              smartInputRef.current?.focus();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="flex items-center gap-2 rounded-xl border-2 border-dashed border-primary/40 px-8 py-4 text-sm font-medium text-primary transition-all hover:border-primary hover:bg-primary/5 active:scale-95"
+          >
+            <Plus className="h-4 w-4" />
+            Add a task
+          </button>
+        </div>
+      ) : isLoading ? (
         <div className="flex justify-center py-8">
           <Spinner />
         </div>

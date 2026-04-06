@@ -28,6 +28,7 @@ export type UserProfile = {
   reminderDailyTime: string;
   reminderWeeklyEnabled: boolean;
   reminderWeeklyTime: string;
+  pwaInstalled: boolean;
 };
 
 async function fetchUserProfile(): Promise<UserProfile> {

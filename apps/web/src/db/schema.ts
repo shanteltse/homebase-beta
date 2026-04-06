@@ -58,6 +58,8 @@ export const users = pgTable("users", {
   reminderDailyTime: text("reminder_daily_time").notNull().default("08:00"),
   reminderWeeklyEnabled: boolean("reminder_weekly_enabled").notNull().default(false),
   reminderWeeklyTime: text("reminder_weekly_time").notNull().default("08:00"),
+  // PWA tracking
+  pwaInstalled: boolean("pwa_installed").notNull().default(false),
 });
 
 export const accounts = pgTable(

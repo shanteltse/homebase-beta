@@ -42,6 +42,7 @@ export async function GET(request: Request) {
       reminderDailyTime: users.reminderDailyTime,
       reminderWeeklyEnabled: users.reminderWeeklyEnabled,
       reminderWeeklyTime: users.reminderWeeklyTime,
+      pwaInstalled: users.pwaInstalled,
     })
     .from(users)
     .where(eq(users.id, user.id))
@@ -87,6 +88,7 @@ export async function PATCH(request: Request) {
     if (typeof body.reminderDailyTime === "string") updatable.reminderDailyTime = body.reminderDailyTime;
     if (typeof body.reminderWeeklyEnabled === "boolean") updatable.reminderWeeklyEnabled = body.reminderWeeklyEnabled;
     if (typeof body.reminderWeeklyTime === "string") updatable.reminderWeeklyTime = body.reminderWeeklyTime;
+    if (body.pwaInstalled === true) updatable.pwaInstalled = true;
 
     if (Object.keys(updatable).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });

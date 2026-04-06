@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import localFont from "next/font/local";
+import { Analytics } from "@vercel/analytics/next";
 import { Providers } from "./providers";
 import { PwaInit } from "@/components/pwa-init";
 import "./globals.css";
@@ -46,6 +47,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${geistMono.variable} font-sans`}>
         <PwaInit />
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );

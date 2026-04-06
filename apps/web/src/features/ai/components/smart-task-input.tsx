@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import { Sparkles, Check, Pencil, X, Loader2, Mic, MicOff } from "lucide-react";
 import { Input } from "@repo/ui/input";
 import { Button } from "@repo/ui/button";
@@ -40,7 +40,10 @@ type SmartTaskInputProps = {
   onOpenCreateDialog?: (prefill: ParsedTask) => void;
 };
 
-export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
+export type SmartTaskInputHandle = { focus: () => void };
+
+export const SmartTaskInput = forwardRef<SmartTaskInputHandle, SmartTaskInputProps>(
+function SmartTaskInput({ onOpenCreateDialog }, ref) {
   const [text, setText] = useState("");
   const [preview, setPreview] = useState<ParsedTask | null>(null);
   const [isInlineMicListening, setIsInlineMicListening] = useState(false);
@@ -192,6 +195,10 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
     const cat = DEFAULT_CATEGORIES.find((c) => c.id === categoryId);
     return cat?.subcategories.find((s) => s.id === subId)?.name ?? subId;
   }
+
+  useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current?.focus(),
+  }));
 
   // Auto-focus the input when the preview appears so pressing Enter immediately accepts
   useEffect(() => {
@@ -358,4 +365,4 @@ export function SmartTaskInput({ onOpenCreateDialog }: SmartTaskInputProps) {
       )}
     </div>
   );
-}
+});
