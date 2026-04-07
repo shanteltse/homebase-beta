@@ -125,8 +125,8 @@ export async function POST(request: Request) {
             inviteUrl: `${appUrl}/invite/${token}`,
             appUrl,
           }),
-        }).catch(() => {
-          // Don't fail the household creation if email sending fails
+        }).catch((err: unknown) => {
+          console.error("[households] Failed to send invite email to", email, err);
         });
       }
     }

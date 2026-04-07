@@ -106,8 +106,8 @@ export async function POST(request: Request) {
               inviteUrl: `${appUrl}/invite/${token}`,
               appUrl,
             }),
-          }).catch(() => {
-            // Don't fail the whole request if email sending fails
+          }).catch((err: unknown) => {
+            console.error("[onboarding/complete] Failed to send invite email to", email, err);
           });
         }
       }
