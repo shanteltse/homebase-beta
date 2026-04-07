@@ -19,21 +19,8 @@ const nextAuth: NextAuthResult = NextAuth({
   pages: {
     signIn: "/login",
   },
-  // AUTH_URL must be set in Vercel environment variables:
-  // AUTH_URL=https://homebase-beta-web.vercel.app
-  // Auth.js v5 derives the Google callback as {AUTH_URL}/api/auth/callback/google.
-  // Explicitly passing the authorization redirect_uri here prevents Auth.js from
-  // guessing the wrong URL when running behind Vercel's reverse proxy.
   providers: [
-    Google({
-      authorization: {
-        params: {
-          redirect_uri: process.env.AUTH_URL
-            ? `${process.env.AUTH_URL}/api/auth/callback/google`
-            : "https://homebase-beta-web.vercel.app/api/auth/callback/google",
-        },
-      },
-    }),
+    Google({}),
     Credentials({
       credentials: {
         email: {},

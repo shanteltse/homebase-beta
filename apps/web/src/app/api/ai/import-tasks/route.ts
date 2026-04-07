@@ -16,6 +16,7 @@ export type ImportedTask = {
   title: string;
   priority: "high" | "medium" | "low";
   category: string;
+  subcategory?: string;
   dueDate?: string;
   assignee?: string;
   notes?: string;
@@ -43,6 +44,7 @@ For each task extract:
 - title: string — clean, concise task description (required)
 - priority: "high" | "medium" | "low" — infer from urgency/importance words; default "medium"
 - category: one of [${categoryIds}] — infer from context; default "personal"
+- subcategory: one of [household-chores, meal-planning, work-tasks, finances, family-activities, self-care, errands, home-maintenance, health-fitness] — infer from context; omit if none fit
 - dueDate: ISO 8601 UTC string (e.g. "2026-04-15T12:00:00.000Z") — only if a date or timeframe is mentioned
 - assignee: member ID string — only if the input clearly names a household member
 - notes: string — any extra context that doesn't fit the title; omit if empty
@@ -57,7 +59,7 @@ Rules:
 - Ignore meta-text like "to-do list", "things to do", section headers that aren't tasks
 - Return ONLY a valid JSON array, no markdown, no explanation
 
-Example output: [{"title":"Schedule dentist appointment","priority":"medium","category":"personal"},{"title":"Pay electricity bill","priority":"high","category":"personal","dueDate":"2026-04-01T12:00:00.000Z"}]`;
+Example output: [{"title":"Schedule dentist appointment","priority":"medium","category":"personal","subcategory":"self-care"},{"title":"Pay electricity bill","priority":"high","category":"personal","subcategory":"finances","dueDate":"2026-04-01T12:00:00.000Z"}]`;
 }
 
 export async function POST(request: Request) {
@@ -141,6 +143,7 @@ export async function POST(request: Request) {
         category: validCategories.includes(String(item.category))
           ? String(item.category)
           : "personal",
+        ...(item.subcategory ? { subcategory: String(item.subcategory) } : {}),
         ...(item.dueDate ? { dueDate: String(item.dueDate) } : {}),
         ...(item.assignee ? { assignee: String(item.assignee) } : {}),
         ...(item.notes ? { notes: String(item.notes) } : {}),

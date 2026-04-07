@@ -21,12 +21,11 @@ export function useCelebrationTrigger() {
   const showCelebration = useCelebrationStore((s) => s.showCelebration);
 
   function triggerCheck() {
+    showCelebration(); // show immediately
     checkAchievements.mutate(undefined, {
       onSuccess: (data) => {
         if (data.newAchievements.length > 0) {
-          showCelebration(data.newAchievements[0]);
-        } else {
-          showCelebration();
+          showCelebration(data.newAchievements[0]); // upgrade if achievement unlocked
         }
       },
     });

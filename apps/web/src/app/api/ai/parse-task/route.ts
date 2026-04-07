@@ -81,32 +81,61 @@ const categoryDescription = DEFAULT_CATEGORIES.map(
     `${c.id} (${c.name}) — subcategories: ${c.subcategories.map((s) => s.id).join(", ")}`,
 ).join("\n");
 
+const allSubcategoryIds = DEFAULT_CATEGORIES.flatMap((c) => c.subcategories.map((s) => s.id));
+
 type HouseholdMemberRef = { id: string; name: string | null; email: string };
 
-function buildSystemPrompt(members: HouseholdMemberRef[] = []): string {
+function buildDateContext() {
   const now = new Date();
   const todayStr = now.toISOString().split("T")[0]!;
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const todayDayName = dayNames[now.getDay()];
-
-  // Tomorrow
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split("T")[0]!;
-
-  // End of this week (Sunday)
   const daysUntilSunday = now.getDay() === 0 ? 0 : 7 - now.getDay();
   const thisSunday = new Date(now);
   thisSunday.setDate(now.getDate() + daysUntilSunday);
   const thisSundayStr = thisSunday.toISOString().split("T")[0]!;
-
-  // Next 7 days by name (for day-of-week resolution)
   const upcomingDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(now);
     d.setDate(now.getDate() + i + 1);
     return `${dayNames[d.getDay()]}: ${d.toISOString().split("T")[0]}`;
   }).join(", ");
+  return { todayStr, todayDayName, tomorrowStr, thisSundayStr, upcomingDays };
+}
 
+function sharedFieldDocs() {
+  return `Fields (omit if not applicable):
+- title: string (core task description, cleaned up and concise)
+- category: string (one of: family-home, personal, work-career)
+- subcategory: string (one of the subcategory IDs if applicable)
+- priority: "high" | "medium" | "low"
+- dueDate: ISO 8601 UTC datetime (e.g. "2026-03-15T15:00:00.000Z")
+- tags: string[] (relevant labels)
+- notes: string (extra context not captured elsewhere)
+- assignee: string (member ID — only if input clearly names a household member)`;
+}
+
+function sharedDateRules(ctx: ReturnType<typeof buildDateContext>) {
+  return `DATE PARSING RULES — apply these exactly:
+- "today" → ${ctx.todayStr}T12:00:00.000Z
+- "tomorrow" → ${ctx.tomorrowStr}T12:00:00.000Z
+- "this week" or "by end of week" → ${ctx.thisSundayStr}T23:59:00.000Z
+- A day name like "Tuesday", "on Tuesday", "next Tuesday" → use the date from Upcoming days above
+- A specific time like "3pm" → use that hour (24h UTC). If no time given, use T12:00:00.000Z
+- ALWAYS include dueDate whenever any time reference is detected, even vague ones like "soon"
+- If truly no time reference exists, omit dueDate`;
+}
+
+function memberBlock(members: HouseholdMemberRef[]) {
+  return members.length > 0
+    ? `Household members (for assignee detection):\n${members.map((m) => `- ${m.name ?? m.email} (id: "${m.id}")`).join("\n")}\nIf the input names a member, set assignee to their id. Otherwise omit.`
+    : "No household members — omit assignee.";
+}
+
+function buildSystemPrompt(members: HouseholdMemberRef[] = []): string {
+  const ctx = buildDateContext();
   return `You are a task parser. Extract structured task information from natural language input.
 
 Available categories:
@@ -114,19 +143,12 @@ ${categoryDescription}
 
 Available priorities: high, medium, low.
 
-TODAY IS ${todayDayName}, ${todayStr}.
-Tomorrow: ${tomorrowStr}
-End of this week (Sunday): ${thisSundayStr}
-Upcoming days: ${upcomingDays}
+TODAY IS ${ctx.todayDayName}, ${ctx.todayStr}.
+Tomorrow: ${ctx.tomorrowStr}
+End of this week (Sunday): ${ctx.thisSundayStr}
+Upcoming days: ${ctx.upcomingDays}
 
-DATE PARSING RULES — apply these exactly:
-- "today" → ${todayStr}T12:00:00.000Z
-- "tomorrow" → ${tomorrowStr}T12:00:00.000Z
-- "this week" or "by end of week" → ${thisSundayStr}T23:59:00.000Z
-- A day name like "Tuesday", "on Tuesday", "next Tuesday" → use the date from Upcoming days above
-- A specific time like "3pm" → use that hour (24h UTC). If no time given, use T12:00:00.000Z
-- ALWAYS include dueDate whenever any time reference is detected in the input, even vague ones like "soon" or "this week"
-- If truly no time reference exists, omit dueDate
+${sharedDateRules(ctx)}
 
 Return JSON with these fields (omit if not applicable):
 - title: string (the core task description, cleaned up and concise)
@@ -138,14 +160,92 @@ Return JSON with these fields (omit if not applicable):
 - notes: string (any additional context not captured in other fields)
 - assignee: string (member ID — only set if the input clearly names a household member)
 
-${members.length > 0
-  ? `Household members (for assignee detection):
-${members.map((m) => `- ${m.name ?? m.email} (id: "${m.id}")`).join("\n")}
-
-If the input says something like "remind John to..." or "ask Sarah to..." and a member name matches, set assignee to their id. If no member matches, omit assignee.`
-  : "No household members — omit assignee."}
+${memberBlock(members)}
 
 Return ONLY valid JSON, no markdown, no explanation.`;
+}
+
+function buildMultiSystemPrompt(members: HouseholdMemberRef[] = []): string {
+  const ctx = buildDateContext();
+  return `You are a task parser. The user has provided multiple tasks. Extract each distinct task and return them as a JSON ARRAY.
+
+IMPORTANT: The input may not have newlines — tasks may be pasted as a single line of space-separated phrases, separated by commas, semicolons, numbers, bullets, or just adjacent sentences. Split them into individual tasks regardless of formatting. Do not treat the entire input as one task.
+
+Available categories:
+${categoryDescription}
+
+Available priorities: high, medium, low.
+
+TODAY IS ${ctx.todayDayName}, ${ctx.todayStr}.
+Tomorrow: ${ctx.tomorrowStr}
+End of this week (Sunday): ${ctx.thisSundayStr}
+Upcoming days: ${ctx.upcomingDays}
+
+${sharedDateRules(ctx)}
+
+${sharedFieldDocs()}
+
+${memberBlock(members)}
+
+Return ONLY a valid JSON array of task objects, no markdown, no explanation. Example: [{"title":"Buy groceries","category":"personal","priority":"medium"},{"title":"Call dentist","category":"personal","priority":"high"}]`;
+}
+
+function isMultiTaskInput(text: string): boolean {
+  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length >= 2) return true;
+  // Detect inline numbered or bulleted lists: "1. task 2. task" or "- task - task"
+  const numbered = text.match(/\b\d+[.)]\s+\S/g);
+  if (numbered && numbered.length >= 2) return true;
+  const bulleted = text.match(/(?:^|\s)[-*•]\s+\S/g);
+  if (bulleted && bulleted.length >= 2) return true;
+  // Detect multiple capitalized sentences joined without newlines
+  const sentences = text.split(/(?<=[.!?])\s+(?=[A-Z])/).filter(Boolean);
+  if (sentences.length >= 2) return true;
+  // Detect 4+ words that look like separate task phrases (no punctuation separating them)
+  const wordCount = text.trim().split(/\s+/).length;
+  if (wordCount >= 8 && text.split(/[,;]/).length >= 3) return true;
+  return false;
+}
+
+function normalizeItem(item: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...item };
+  if (!("dueDate" in out) && "due_date" in out) {
+    out.dueDate = out.due_date;
+    delete out.due_date;
+  }
+  return out;
+}
+
+function validateParsedItem(raw: Record<string, unknown>) {
+  const item = normalizeItem(raw);
+  const validCategoryIds = DEFAULT_CATEGORIES.map((c) => c.id);
+  const validPriorities = ["high", "medium", "low"];
+
+  const category =
+    typeof item.category === "string" && validCategoryIds.includes(item.category)
+      ? item.category
+      : "personal";
+
+  const priority =
+    typeof item.priority === "string" && validPriorities.includes(item.priority)
+      ? (item.priority as "high" | "medium" | "low")
+      : "medium";
+
+  const subcategory =
+    typeof item.subcategory === "string" && allSubcategoryIds.includes(item.subcategory)
+      ? item.subcategory
+      : undefined;
+
+  return {
+    title: typeof item.title === "string" ? item.title : String(item.title ?? ""),
+    category,
+    priority,
+    ...(subcategory ? { subcategory } : {}),
+    ...(item.dueDate ? { dueDate: String(item.dueDate) } : {}),
+    ...(Array.isArray(item.tags) ? { tags: (item.tags as unknown[]).map(String) } : {}),
+    ...(item.notes ? { notes: String(item.notes) } : {}),
+    ...(item.assignee ? { assignee: String(item.assignee) } : {}),
+  };
 }
 
 export async function POST(request: Request) {
@@ -164,16 +264,16 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const rawText = typeof body.text === "string" ? body.text : "";
-  const text = rawText.trim().slice(0, 500);
+  const trimmedRaw = rawText.trim();
 
-  console.log("[parse-task] STEP 1 — received text:", JSON.stringify(text));
-
-  if (!text) {
-    return NextResponse.json(
-      { error: "Text input is required" },
-      { status: 400 },
-    );
+  if (!trimmedRaw) {
+    return NextResponse.json({ error: "Text input is required" }, { status: 400 });
   }
+
+  const multi = isMultiTaskInput(trimmedRaw);
+  const text = trimmedRaw.slice(0, multi ? 2000 : 500);
+
+  console.log("[parse-task] STEP 1 — received text:", JSON.stringify(text), "| multi:", multi);
 
   // Fetch household members so the AI can detect assignees by name
   const members: HouseholdMemberRef[] = [];
@@ -196,9 +296,42 @@ export async function POST(request: Request) {
     // Non-fatal — continue without member context
   }
 
+  // ── Multi-task path ──────────────────────────────────────────────────────
+  if (multi) {
+    try {
+      const message = await client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 2048,
+        system: buildMultiSystemPrompt(members),
+        messages: [{ role: "user", content: text }],
+      });
+
+      const content = message.content[0];
+      if (!content || content.type !== "text") throw new Error("Unexpected response type");
+
+      const rawJson = content.text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      const parsed: unknown = JSON.parse(rawJson);
+      if (!Array.isArray(parsed)) throw new Error("Expected array");
+
+      const tasks = parsed
+        .filter((item): item is Record<string, unknown> =>
+          typeof item === "object" && item !== null && typeof (item as Record<string, unknown>).title === "string",
+        )
+        .map(validateParsedItem)
+        .filter((t) => t.title.length > 0)
+        .slice(0, 50);
+
+      console.log("[parse-task] MULTI — returning", tasks.length, "tasks");
+      return NextResponse.json({ tasks });
+    } catch (error) {
+      console.error("[parse-task] MULTI ERROR — falling back to single:", error);
+      // Fall through to single-task path
+    }
+  }
+
+  // ── Single-task path ─────────────────────────────────────────────────────
   try {
     const systemPrompt = buildSystemPrompt(members);
-    console.log("[parse-task] STEP 2 — system prompt (date section):", systemPrompt.split("DATE PARSING RULES")[0]?.split("TODAY IS")[1]?.trim().slice(0, 200));
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
@@ -208,59 +341,28 @@ export async function POST(request: Request) {
     });
 
     const content = message.content[0];
-    if (!content || content.type !== "text") {
-      throw new Error("Unexpected response type");
-    }
+    if (!content || content.type !== "text") throw new Error("Unexpected response type");
 
     console.log("[parse-task] STEP 3 — raw AI response:", JSON.stringify(content.text));
 
-    const rawJson = content.text
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
+    const rawJson = content.text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+    const parsed = JSON.parse(rawJson) as Record<string, unknown>;
 
-    console.log("[parse-task] STEP 4 — cleaned JSON string:", rawJson);
-
-    const parsed = JSON.parse(rawJson);
-
-    console.log("[parse-task] STEP 5 — parsed object:", JSON.stringify(parsed));
     console.log("[parse-task] STEP 5 — dueDate field:", parsed.dueDate ?? "(not present)");
 
-    // Normalize snake_case field names the AI sometimes returns despite instructions
-    if (!("dueDate" in parsed) && "due_date" in parsed) {
-      parsed.dueDate = parsed.due_date;
-      delete parsed.due_date;
-      console.log("[parse-task] STEP 5 — normalized due_date → dueDate:", parsed.dueDate);
-    }
+    const normalized = validateParsedItem(parsed);
 
-    // Validate category is one of the known IDs
-    const validCategoryIds = DEFAULT_CATEGORIES.map((c) => c.id);
-    if (parsed.category && !validCategoryIds.includes(parsed.category)) {
-      parsed.category = "personal";
-    }
-
-    // Validate priority
-    const validPriorities = ["high", "medium", "low"];
-    if (parsed.priority && !validPriorities.includes(parsed.priority)) {
-      parsed.priority = "medium";
-    }
-
-    console.log("[parse-task] STEP 6 — returning to client:", JSON.stringify(parsed));
-    return NextResponse.json({ parsed });
+    console.log("[parse-task] STEP 6 — returning to client:", JSON.stringify(normalized));
+    return NextResponse.json({ parsed: normalized });
   } catch (error) {
     console.error("[parse-task] ERROR — parse failed, using fallback. Error:", error);
 
-    // Fallback: regex-parse what we can from the raw text (date, priority)
     const fallbackDueDate = parseDateFromText(text);
-    const fallbackPriority =
-      /\bhigh(?:\s+priority)?\b/.test(text.toLowerCase())
-        ? "high"
-        : /\blow(?:\s+priority)?\b/.test(text.toLowerCase())
-          ? "low"
-          : "medium";
-
-    console.log("[parse-task] FALLBACK — dueDate:", fallbackDueDate ?? "(not found)");
-    console.log("[parse-task] FALLBACK — priority:", fallbackPriority);
+    const fallbackPriority = /\bhigh(?:\s+priority)?\b/.test(text.toLowerCase())
+      ? "high"
+      : /\blow(?:\s+priority)?\b/.test(text.toLowerCase())
+        ? "low"
+        : "medium";
 
     return NextResponse.json({
       parsed: {

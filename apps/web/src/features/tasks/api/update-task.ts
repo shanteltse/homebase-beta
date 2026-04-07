@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCelebrationTrigger } from "@/features/gamification/hooks/use-completion-celebration";
+import type { Task } from "@/types/task";
 
 type UpdateTaskInput = {
   id: string;
@@ -22,11 +23,20 @@ export function useUpdateTask() {
 
   return useMutation({
     mutationFn: updateTask,
-    onSuccess: (_data, variables) => {
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ["tasks"] });
+      const previous = queryClient.getQueryData(["tasks"]);
+      queryClient.setQueryData<Task[]>(["tasks"], (old) =>
+        old?.map((t) => t.id === variables.id ? { ...t, ...variables } : t) ?? []
+      );
+      if (variables.completed === true) triggerCheck();
+      return { previous };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previous) queryClient.setQueryData(["tasks"], context.previous);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      if (variables.completed === true) {
-        triggerCheck();
-      }
     },
   });
 }

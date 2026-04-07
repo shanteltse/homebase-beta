@@ -104,6 +104,7 @@ export function ImportTasksDialog({
             title: t.title,
             category: t.category,
             priority: t.priority,
+            ...(t.subcategory ? { subcategory: t.subcategory } : {}),
             ...(t.dueDate ? { dueDate: t.dueDate } : {}),
             ...(t.assignee ? { assignee: t.assignee } : {}),
             ...(t.notes ? { notes: t.notes } : {}),
