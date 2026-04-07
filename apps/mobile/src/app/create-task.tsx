@@ -58,6 +58,9 @@ export default function CreateTaskScreen() {
       title: title.trim(),
       category: category.toLowerCase(),
       priority,
+      subtasks: [],
+      tags: [],
+      links: [],
       notes: notes.trim() || undefined,
       dueDate: dueDate ? dueDate.toISOString() : undefined,
     };
@@ -208,7 +211,7 @@ export default function CreateTaskScreen() {
               value={dueDate ?? new Date()}
               mode="date"
               display={Platform.OS === "ios" ? "inline" : "default"}
-              onChange={(_event, selectedDate) => {
+              onChange={(_event: unknown, selectedDate?: Date) => {
                 if (Platform.OS === "android") {
                   setShowDatePicker(false);
                 }

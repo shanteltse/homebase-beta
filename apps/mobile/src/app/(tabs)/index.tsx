@@ -263,9 +263,11 @@ export default function TasksScreen() {
         title: parsed.title,
         category: parsed.category ?? "personal",
         priority: parsed.priority ?? "medium",
+        subtasks: [],
+        tags: parsed.tags?.length ? parsed.tags : [],
+        links: [],
         ...(parsed.dueDate ? { dueDate: parsed.dueDate } : {}),
         ...(parsed.subcategory ? { subcategory: parsed.subcategory } : {}),
-        ...(parsed.tags?.length ? { tags: parsed.tags } : {}),
         ...(parsed.notes ? { notes: parsed.notes } : {}),
       };
 

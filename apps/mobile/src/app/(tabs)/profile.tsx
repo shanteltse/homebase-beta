@@ -49,7 +49,7 @@ export default function ProfileScreen() {
   }, [unlockedAchievements]);
 
   const totalTasks = tasks?.length ?? 0;
-  const completedTasks = tasks?.filter((t) => t.status === "done").length ?? 0;
+  const completedTasks = tasks?.filter((t) => t.status === "completed").length ?? 0;
   const achievementCount = unlockedAchievements?.length ?? 0;
 
   const handleSignOut = () => {

@@ -24,7 +24,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Tasks",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="checkmark-circle-outline" size={size} color={color} />
           ),
         }}
@@ -33,7 +33,7 @@ export default function TabLayout() {
         name="calendar"
         options={{
           title: "Calendar",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="calendar-outline" size={size} color={color} />
           ),
         }}
@@ -42,7 +42,7 @@ export default function TabLayout() {
         name="household"
         options={{
           title: "Household",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
@@ -51,7 +51,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}

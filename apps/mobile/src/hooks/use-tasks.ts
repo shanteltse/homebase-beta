@@ -43,9 +43,22 @@ export function useUpdateTask() {
 
       // Optimistic update — apply changes instantly
       queryClient.setQueryData<Task[]>(["tasks"], (old) =>
-        old?.map((t) =>
-          t.id === variables.id ? { ...t, ...variables } : t
-        )
+        old?.map((t) => {
+          if (t.id !== variables.id) return t;
+          return {
+            ...t,
+            ...variables,
+            // UpdateTaskInput allows null to clear these fields; Task only allows undefined
+            recurring:
+              variables.recurring === null
+                ? undefined
+                : (variables.recurring ?? t.recurring),
+            contact:
+              variables.contact === null
+                ? undefined
+                : (variables.contact ?? t.contact),
+          };
+        })
       );
 
       return { previous };
