@@ -158,26 +158,52 @@ export function VoiceFab() {
         setFabState("processing");
         parseTask.mutate(text, {
           onSuccess: (parsed) => {
-            createTask.mutate(
-              {
-                title: parsed.title ?? text,
-                category: parsed.category ?? "personal",
-                subcategory: parsed.subcategory,
-                priority: parsed.priority ?? "medium",
-                dueDate: parsed.dueDate,
-                tags: parsed.tags ?? [],
-                notes: parsed.notes,
-                subtasks: [],
-                links: [],
-              },
-              {
-                onSuccess: () => {
-                  setFabState("success");
-                  setTimeout(() => setFabState("idle"), 1500);
+            if (parsed.type === "single") {
+              createTask.mutate(
+                {
+                  title: parsed.task.title ?? text,
+                  category: parsed.task.category ?? "personal",
+                  subcategory: parsed.task.subcategory,
+                  priority: parsed.task.priority ?? "medium",
+                  dueDate: parsed.task.dueDate,
+                  tags: parsed.task.tags ?? [],
+                  notes: parsed.task.notes,
+                  subtasks: [],
+                  links: [],
                 },
-                onError: () => showError("Couldn't save task — try again"),
-              },
-            );
+                {
+                  onSuccess: () => {
+                    setFabState("success");
+                    setTimeout(() => setFabState("idle"), 1500);
+                  },
+                  onError: () => showError("Couldn't save task — try again"),
+                },
+              );
+            } else {
+              // Multi-task via voice: create the first task, ignore the rest for now
+              const first = parsed.tasks[0];
+              if (!first) { setFabState("idle"); return; }
+              createTask.mutate(
+                {
+                  title: first.title ?? text,
+                  category: first.category ?? "personal",
+                  subcategory: first.subcategory,
+                  priority: first.priority ?? "medium",
+                  dueDate: first.dueDate,
+                  tags: first.tags ?? [],
+                  notes: first.notes,
+                  subtasks: [],
+                  links: [],
+                },
+                {
+                  onSuccess: () => {
+                    setFabState("success");
+                    setTimeout(() => setFabState("idle"), 1500);
+                  },
+                  onError: () => showError("Couldn't save task — try again"),
+                },
+              );
+            }
           },
           onError: () => {
             // Fallback: create with just the title
