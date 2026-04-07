@@ -62,14 +62,12 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="general">
-        <div className="overflow-x-auto w-full">
-          <TabsList className="w-max min-w-full justify-start">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="calendar">Calendar</TabsTrigger>
-            <TabsTrigger value="account">Account</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="flex w-full">
+          <TabsTrigger value="general" className="flex-1 px-1 text-xs sm:px-3 sm:text-sm">General</TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-1 px-1 text-xs sm:px-3 sm:text-sm">Notifications</TabsTrigger>
+          <TabsTrigger value="calendar" className="flex-1 px-1 text-xs sm:px-3 sm:text-sm">Calendar</TabsTrigger>
+          <TabsTrigger value="account" className="flex-1 px-1 text-xs sm:px-3 sm:text-sm">Account</TabsTrigger>
+        </TabsList>
 
         {/* General Tab */}
         <TabsContent value="general" className="flex flex-col gap-6 mt-4">

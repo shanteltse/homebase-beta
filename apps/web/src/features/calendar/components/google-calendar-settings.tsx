@@ -125,19 +125,19 @@ export function GoogleCalendarSettings() {
           )}
 
           {/* Connection status */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground shrink-0">Status</p>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-foreground">Status</p>
               {isConnected ? (
-                <Badge variant="secondary" className="bg-green-100 text-green-800 shrink-0">
+                <Badge variant="secondary" className="bg-green-100 text-green-800">
                   Connected
                 </Badge>
               ) : (
-                <Badge variant="outline" className="shrink-0">Not connected</Badge>
+                <Badge variant="outline">Not connected</Badge>
               )}
             </div>
             {isConnected ? (
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -162,7 +162,7 @@ export function GoogleCalendarSettings() {
             ) : (
               <a
                 href="/api/calendar/connect"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                className="inline-flex w-fit items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >
                 <Calendar className="h-3.5 w-3.5" />
                 Connect Google Calendar
