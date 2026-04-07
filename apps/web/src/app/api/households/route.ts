@@ -4,8 +4,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { getAuthUser } from "@/lib/get-auth-user";
 import { db } from "@/db";
-import { households, householdMembers, tasks } from "@/db/schema";
-import { and, eq, isNull } from "drizzle-orm";
+import { households, householdMembers, householdInvitations, onboardingMembers, tasks } from "@/db/schema";
+import { and, eq, isNull, isNotNull } from "drizzle-orm";
+import { sendEmail } from "@/lib/send-email";
+import { generateInviteHtml } from "@/lib/email-templates";
 import { handleApiError, ApiError } from "@/lib/api-error";
 import { validateOrigin } from "@/lib/api-utils";
 
@@ -92,6 +94,42 @@ export async function POST(request: Request) {
       .update(tasks)
       .set({ householdId: household.id })
       .where(and(eq(tasks.userId, user.id), isNull(tasks.householdId)));
+
+    // Send email invites to any onboarding members that have emails
+    const pendingMembers = await db
+      .select()
+      .from(onboardingMembers)
+      .where(and(eq(onboardingMembers.userId, user.id), isNotNull(onboardingMembers.email)));
+
+    if (pendingMembers.length > 0) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://homebase-beta-web.vercel.app";
+      for (const m of pendingMembers) {
+        const token = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        const email = m.email!.toLowerCase();
+
+        await db.insert(householdInvitations).values({
+          householdId: household.id,
+          inviterUserId: user.id,
+          email,
+          token,
+          expiresAt,
+        });
+
+        await sendEmail({
+          to: email,
+          subject: `${user.name ?? "Someone"} invited you to join ${household.name} on HomeBase`,
+          html: generateInviteHtml({
+            inviterName: user.name ?? null,
+            householdName: household.name,
+            inviteUrl: `${appUrl}/invite/${token}`,
+            appUrl,
+          }),
+        }).catch(() => {
+          // Don't fail the household creation if email sending fails
+        });
+      }
+    }
 
     return NextResponse.json(household, { status: 201 });
   } catch (error) {

@@ -52,6 +52,52 @@ export function generateReminderHtml(data: ReminderData): string {
 </html>`;
 }
 
+export interface HouseholdInviteData {
+  inviterName: string | null;
+  householdName: string;
+  inviteUrl: string;
+  appUrl: string;
+}
+
+export function generateInviteHtml(data: HouseholdInviteData): string {
+  const { inviterName, householdName, inviteUrl } = data;
+  const inviter = inviterName ?? "Someone";
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>You&apos;re invited to join ${householdName} on HomeBase</title>
+</head>
+<body style="margin:0;padding:0;background:#faf7f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:500px;margin:0 auto;padding:40px 16px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <h1 style="margin:0;font-size:28px;color:#b08068;font-weight:700;">HomeBase</h1>
+    </div>
+    <p style="font-size:16px;color:#4a3f3a;margin:0 0 8px 0;">Hi there,</p>
+    <p style="font-size:15px;color:#7a6f6a;margin:0 0 24px 0;">
+      <strong style="color:#4a3f3a;">${inviter}</strong> has invited you to join
+      <strong style="color:#4a3f3a;">${householdName}</strong> on HomeBase &mdash;
+      the family task manager that keeps everyone on the same page.
+    </p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${inviteUrl}" style="display:inline-block;padding:12px 32px;background:#b08068;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;">
+        Accept Invitation
+      </a>
+    </div>
+    <p style="font-size:13px;color:#7a6f6a;margin:0 0 4px 0;">
+      This invitation expires in 7 days. If you didn&apos;t expect this, you can safely ignore it.
+    </p>
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid #e8e0da;text-align:center;">
+      <p style="margin:0;font-size:12px;color:#7a6f6a;">
+        HomeBase &mdash; household task management made easy.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 export interface PasswordResetData {
   userName: string | null;
   resetUrl: string;

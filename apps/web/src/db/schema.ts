@@ -209,6 +209,25 @@ export const onboardingMembers = pgTable("onboarding_members", {
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
+// ─── Household invitations ───
+
+export const householdInvitations = pgTable("household_invitations", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  householdId: text("household_id")
+    .notNull()
+    .references(() => households.id, { onDelete: "cascade" }),
+  inviterUserId: text("inviter_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  token: text("token").unique().notNull(),
+  expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
+  acceptedAt: timestamp("accepted_at", { mode: "date" }),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+});
+
 // ─── Calendar event mappings ───
 
 export const calendarEvents = pgTable("calendar_events", {

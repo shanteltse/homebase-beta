@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Send } from "lucide-react";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { Spinner } from "@repo/ui/spinner";
@@ -35,6 +35,9 @@ export function HouseholdSettings() {
   const [inviteCode, setInviteCode] = useState("");
   const [copied, setCopied] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteStatus, setInviteStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [inviteError, setInviteError] = useState("");
 
   function handleCreate() {
     const name = householdName.trim();
@@ -66,6 +69,30 @@ export function HouseholdSettings() {
     leaveHousehold.mutate(undefined, {
       onSuccess: () => setShowLeaveConfirm(false),
     });
+  }
+
+  async function handleInvite() {
+    const email = inviteEmail.trim();
+    if (!email) return;
+    setInviteStatus("sending");
+    setInviteError("");
+    try {
+      const res = await fetch("/api/households/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        throw new Error(data.error ?? "Failed to send invitation");
+      }
+      setInviteStatus("sent");
+      setInviteEmail("");
+      setTimeout(() => setInviteStatus("idle"), 4000);
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : "Failed to send invitation");
+      setInviteStatus("error");
+    }
   }
 
   if (isLoading) {
@@ -213,6 +240,48 @@ export function HouseholdSettings() {
             <div className="flex flex-col gap-3">
               <h4 className="label font-medium text-foreground">Members</h4>
               <MemberList />
+            </div>
+
+            <div className="border-t border-border" />
+
+            {/* Invite by email */}
+            <div className="flex flex-col gap-3">
+              <h4 className="label font-medium text-foreground">Invite a Member</h4>
+              <div className="flex flex-wrap items-end gap-2">
+                <Input
+                  id="invite-email"
+                  label="Email address"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void handleInvite();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={() => void handleInvite()}
+                  disabled={!inviteEmail.trim() || inviteStatus === "sending"}
+                >
+                  {inviteStatus === "sending" ? (
+                    "Sending..."
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Send invite
+                    </>
+                  )}
+                </Button>
+              </div>
+              {inviteStatus === "sent" && (
+                <p className="body text-green-700">Invitation sent!</p>
+              )}
+              {inviteStatus === "error" && (
+                <p className="body text-destructive">{inviteError}</p>
+              )}
             </div>
 
             <div className="border-t border-border" />

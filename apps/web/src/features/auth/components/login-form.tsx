@@ -16,7 +16,11 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export function LoginForm() {
+interface LoginFormProps {
+  inviteToken?: string;
+}
+
+export function LoginForm({ inviteToken }: LoginFormProps) {
   const router = useRouter();
   const login = useLogin();
   const googleLogin = useGoogleLogin();
@@ -31,7 +35,13 @@ export function LoginForm() {
 
   function onSubmit(data: LoginFormValues) {
     login.mutate(data, {
-      onSuccess: () => router.push("/dashboard"),
+      onSuccess: () => {
+        if (inviteToken) {
+          router.push(`/invite/${inviteToken}`);
+        } else {
+          router.push("/dashboard");
+        }
+      },
     });
   }
 

@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1743033600000,
+      "tag": "0001_add_pwa_installed",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1743638400000,
+      "tag": "0002_add_is_imported",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1744070400000,
+      "tag": "0003_add_reminder_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1744416000000,
+      "tag": "0004_add_household_invitations",
+      "breakpoints": true
+    }
+  ]
+}

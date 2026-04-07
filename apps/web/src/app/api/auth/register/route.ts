@@ -7,9 +7,14 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function POST(request: Request) {
-  const { name, email, password } = await request.json();
+  let name: unknown, email: unknown, password: unknown;
+  try {
+    ({ name, email, password } = await request.json());
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
 
-  if (!name || !email || !password) {
+  if (typeof name !== "string" || typeof email !== "string" || typeof password !== "string" || !name || !email || !password) {
     return NextResponse.json(
       { error: "Name, email, and password are required." },
       { status: 400 },
@@ -38,10 +43,14 @@ export async function POST(request: Request) {
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  const [user] = await db
-    .insert(users)
-    .values({ name, email, passwordHash })
-    .returning({ id: users.id });
+  try {
+    const [user] = await db
+      .insert(users)
+      .values({ name, email, passwordHash })
+      .returning({ id: users.id });
 
-  return NextResponse.json({ id: user!.id }, { status: 201 });
+    return NextResponse.json({ id: user!.id }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to create account." }, { status: 500 });
+  }
 }

@@ -3,10 +3,12 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/get-auth-user";
 import { db } from "@/db";
-import { users, onboardingMembers } from "@/db/schema";
+import { users, onboardingMembers, households, householdMembers, householdInvitations } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { handleApiError, ApiError } from "@/lib/api-error";
 import { validateOrigin } from "@/lib/api-utils";
+import { sendEmail } from "@/lib/send-email";
+import { generateInviteHtml } from "@/lib/email-templates";
 
 type OnboardingMember = {
   name: string;
@@ -58,17 +60,57 @@ export async function POST(request: Request) {
       .where(eq(users.id, user.id));
 
     // Insert household members
-    if (members.length > 0) {
+    const validMembers = members.filter((m) => m.name?.trim());
+    if (validMembers.length > 0) {
       await db.insert(onboardingMembers).values(
-        members
-          .filter((m) => m.name?.trim())
-          .map((m) => ({
-            userId: user.id,
-            name: m.name.trim().slice(0, 100),
-            email: m.email?.trim() || null,
-            relationship: m.relationship ?? "other",
-          })),
+        validMembers.map((m) => ({
+          userId: user.id,
+          name: m.name.trim().slice(0, 100),
+          email: m.email?.trim() || null,
+          relationship: m.relationship ?? "other",
+        })),
       );
+    }
+
+    // If the user is already in a household, send email invites to members with emails
+    const membersWithEmail = validMembers.filter((m) => m.email?.trim());
+    if (membersWithEmail.length > 0) {
+      const [membership] = await db
+        .select({ householdId: householdMembers.householdId, householdName: households.name })
+        .from(householdMembers)
+        .innerJoin(households, eq(householdMembers.householdId, households.id))
+        .where(eq(householdMembers.userId, user.id))
+        .limit(1);
+
+      if (membership) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://homebase-beta-web.vercel.app";
+        for (const m of membersWithEmail) {
+          const token = crypto.randomUUID();
+          const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          const email = m.email!.trim().toLowerCase();
+
+          await db.insert(householdInvitations).values({
+            householdId: membership.householdId,
+            inviterUserId: user.id,
+            email,
+            token,
+            expiresAt,
+          });
+
+          await sendEmail({
+            to: email,
+            subject: `${user.name ?? "Someone"} invited you to join ${membership.householdName} on HomeBase`,
+            html: generateInviteHtml({
+              inviterName: user.name ?? null,
+              householdName: membership.householdName,
+              inviteUrl: `${appUrl}/invite/${token}`,
+              appUrl,
+            }),
+          }).catch(() => {
+            // Don't fail the whole request if email sending fails
+          });
+        }
+      }
     }
 
     return NextResponse.json({ success: true });

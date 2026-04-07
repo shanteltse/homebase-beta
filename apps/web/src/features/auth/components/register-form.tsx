@@ -23,7 +23,11 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-export function RegisterForm() {
+interface RegisterFormProps {
+  inviteToken?: string;
+}
+
+export function RegisterForm({ inviteToken }: RegisterFormProps) {
   const router = useRouter();
   const registerMutation = useRegister();
   const googleLogin = useGoogleLogin();
@@ -38,7 +42,13 @@ export function RegisterForm() {
 
   function onSubmit(data: RegisterFormValues) {
     registerMutation.mutate(data, {
-      onSuccess: () => router.push("/dashboard"),
+      onSuccess: () => {
+        if (inviteToken) {
+          router.push(`/invite/${inviteToken}`);
+        } else {
+          router.push("/dashboard");
+        }
+      },
     });
   }
 
