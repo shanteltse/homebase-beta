@@ -225,23 +225,25 @@ export default function DashboardPage() {
 
       {/* Member filter — only shown when household has >1 member */}
       {showMemberFilter && (
-        <Select
-          value={assigneeFilter || "all"}
-          onValueChange={(val) => setAssigneeFilter(val === "all" ? "" : val)}
-        >
-          <SelectTrigger className="w-[12rem]">
-            <SelectValue placeholder="All members" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All members</SelectItem>
-            <SelectItem value="mine">Mine</SelectItem>
-            {members.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.name ?? m.email}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="-mt-4 -mb-4">
+          <Select
+            value={assigneeFilter || "all"}
+            onValueChange={(val) => setAssigneeFilter(val === "all" ? "" : val)}
+          >
+            <SelectTrigger className="w-[12rem]">
+              <SelectValue placeholder="All members" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All members</SelectItem>
+              <SelectItem value="mine">Mine</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name ?? m.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       )}
 
       {/* Stats — only shown when user enables it in Settings */}
