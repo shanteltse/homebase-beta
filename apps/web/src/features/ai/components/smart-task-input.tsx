@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
-import { Sparkles, Check, Pencil, X, Loader2, Mic, MicOff, Trash2 } from "lucide-react";
+import { Sparkles, Check, Pencil, X, Loader2, Mic, MicOff, Trash2, Plus } from "lucide-react";
 
 import { Button } from "@repo/ui/button";
 import { Badge } from "@repo/ui/badge";
 import { useParseTask, type ParsedTask, type ParseTaskResult } from "../api/parse-task";
 import { useCreateTask } from "@/features/tasks/api/create-task";
+import { useUpdateTask } from "@/features/tasks/api/update-task";
 import { DEFAULT_CATEGORIES } from "@/types/category";
 import { cn } from "@/utils/cn";
 
@@ -50,6 +51,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
   const [isInlineMicListening, setIsInlineMicListening] = useState(false);
   const parseTask = useParseTask();
   const createTask = useCreateTask();
+  const updateTask = useUpdateTask();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const inlineRecognitionRef = useRef<InlineSpeechRecognition | null>(null);
 
@@ -125,17 +127,21 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
     if (!trimmed) return;
 
     if (preview) {
-      // If single preview is showing, Enter accepts it
       handleAccept();
       return;
     }
 
     if (tasksPreview) {
-      // If multi-task preview is showing, Enter does nothing (user must click button)
       return;
     }
 
-    // Try AI parsing
+    // Enter = Quick Add
+    handleFallbackCreate(trimmed);
+  }
+
+  function handleSmartAdd() {
+    const trimmed = text.trim();
+    if (!trimmed) return;
     parseTask.mutate(trimmed, {
       onSuccess: handleParseResult,
       onError: () => handleFallbackCreate(trimmed),
@@ -212,6 +218,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
   }
 
   function handleFallbackCreate(title: string) {
+    const inputText = text;
     createTask.mutate(
       {
         title,
@@ -222,9 +229,25 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
         links: [],
       },
       {
-        onSuccess: () => {
+        onSuccess: (created) => {
           setText("");
           setPreview(null);
+          // Silently parse in the background and patch the task with AI fields
+          parseTask.mutate(inputText, {
+            onSuccess: (result) => {
+              const parsed = result.type === "single" ? result.task : result.tasks[0];
+              if (!parsed) return;
+              const patch: Record<string, unknown> = { id: created.id };
+              if (parsed.category) patch.category = parsed.category;
+              if (parsed.subcategory) patch.subcategory = parsed.subcategory;
+              if (parsed.priority) patch.priority = parsed.priority;
+              if (parsed.dueDate) patch.dueDate = parsed.dueDate;
+              if (parsed.tags?.length) patch.tags = parsed.tags;
+              if (parsed.notes) patch.notes = parsed.notes;
+              updateTask.mutate(patch as Parameters<typeof updateTask.mutate>[0]);
+            },
+            // Errors swallowed — task stays as created
+          });
         },
       },
     );
@@ -304,19 +327,33 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
             </button>
           )}
         </div>
-        <Button
-          type="submit"
-          disabled={isProcessing || !text.trim()}
-          variant="primary"
-          className="gap-1.5"
-        >
-          {parseTask.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Sparkles className="h-4 w-4" />
-          )}
-          {parseTask.isPending ? "Parsing..." : "Smart Add"}
-        </Button>
+        <div className="flex gap-1.5">
+          <Button
+            type="button"
+            onClick={() => { const trimmed = text.trim(); if (trimmed) handleFallbackCreate(trimmed); }}
+            disabled={isProcessing || !text.trim()}
+            variant="outline"
+            title="Quick Add — create task instantly without AI (Shift+Enter)"
+            className="gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            Quick Add
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSmartAdd}
+            disabled={isProcessing || !text.trim()}
+            variant="primary"
+            className="gap-1.5"
+          >
+            {parseTask.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {parseTask.isPending ? "Parsing..." : "Smart Add"}
+          </Button>
+        </div>
       </form>
       </div>
 
