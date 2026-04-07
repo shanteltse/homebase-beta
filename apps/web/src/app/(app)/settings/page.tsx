@@ -62,37 +62,39 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="general">
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          <TabsTrigger value="account">Account</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto w-full">
+          <TabsList className="w-max min-w-full justify-start">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            <TabsTrigger value="account">Account</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* General Tab */}
         <TabsContent value="general" className="flex flex-col gap-6 mt-4">
-          {/* Setup Wizard */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wand2 className="h-5 w-5" />
-                {profile?.onboardingCompleted ? "Setup Wizard" : profile && profile.onboardingStep > 0 ? "Resume Setup" : "Setup Wizard"}
-              </CardTitle>
-              <CardDescription>
-                {profile?.onboardingCompleted
-                  ? "Personalize your household, notifications, and starter tasks."
-                  : profile && profile.onboardingStep > 0
+          {/* Setup Wizard — only show when onboarding is not yet complete */}
+          {!profile?.onboardingCompleted && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wand2 className="h-5 w-5" />
+                  {profile && profile.onboardingStep > 0 ? "Resume Setup" : "Setup Wizard"}
+                </CardTitle>
+                <CardDescription>
+                  {profile && profile.onboardingStep > 0
                     ? "You're partway through setup — pick up where you left off."
                     : "Set up your household in just a few minutes to personalize your experience."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" onClick={() => router.push("/onboarding")} className="gap-2">
-                <Wand2 className="h-4 w-4" />
-                {profile?.onboardingCompleted ? "Re-run Setup" : profile && profile.onboardingStep > 0 ? "Resume Setup" : "Start Setup"}
-              </Button>
-            </CardContent>
-          </Card>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" onClick={() => router.push("/onboarding")} className="gap-2">
+                  <Wand2 className="h-4 w-4" />
+                  {profile && profile.onboardingStep > 0 ? "Resume Setup" : "Start Setup"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Profile */}
           <Card>
@@ -185,16 +187,6 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Appearance */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Appearance</CardTitle>
-              <CardDescription>Customize how HomeBase looks.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="body text-muted-foreground">Theme toggle coming soon.</p>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* Notifications & Reminders Tab */}
