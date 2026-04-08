@@ -287,6 +287,7 @@ export default function DashboardPage() {
       {/* Gamification stats — only shown when user enables it in Settings */}
       {profile?.showStatsOnDashboard && <StatsCard />}
 
+      <div className="-mt-6">
       {!isLoading && allActiveTasks.length === 0 ? (
         <div className="flex flex-col items-center gap-5 py-16 text-center">
           <div className="text-4xl">📋</div>
@@ -404,6 +405,7 @@ export default function DashboardPage() {
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }
