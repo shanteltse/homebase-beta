@@ -282,7 +282,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
         <div className="relative">
           <textarea
             ref={inputRef}
-            placeholder="e.g. dentist appointment next Tuesday 3pm high priority"
+            placeholder="e.g. dentist appointment next Tuesday"
             value={text}
             rows={1}
             onChange={(e) => {

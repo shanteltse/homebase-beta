@@ -198,13 +198,34 @@ export default function DashboardPage() {
       </div>
 
       {/* Smart quick add */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 mb-2">
         <SmartTaskInput ref={smartInputRef} onOpenCreateDialog={handleOpenCreateDialog} />
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-2">
+          {showMemberFilter ? (
+            <Select
+              value={assigneeFilter || "all"}
+              onValueChange={(val) => setAssigneeFilter(val === "all" ? "" : val)}
+            >
+              <SelectTrigger className="w-[12rem]">
+                <SelectValue placeholder="All members" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All members</SelectItem>
+                <SelectItem value="mine">Mine</SelectItem>
+                {members.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name ?? m.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div />
+          )}
           <button
             type="button"
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
             <Upload className="h-3.5 w-3.5" />
             Import existing list
@@ -222,29 +243,6 @@ export default function DashboardPage() {
       />
 
       <ImportTasksDialog open={importOpen} onOpenChange={setImportOpen} />
-
-      {/* Member filter — only shown when household has >1 member */}
-      {showMemberFilter && (
-        <div className="-mt-4 -mb-4">
-          <Select
-            value={assigneeFilter || "all"}
-            onValueChange={(val) => setAssigneeFilter(val === "all" ? "" : val)}
-          >
-            <SelectTrigger className="w-[12rem]">
-              <SelectValue placeholder="All members" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All members</SelectItem>
-              <SelectItem value="mine">Mine</SelectItem>
-              {members.map((m) => (
-                <SelectItem key={m.id} value={m.id}>
-                  {m.name ?? m.email}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
 
       {/* Stats — only shown when user enables it in Settings */}
       {profile?.showTaskSummaryOnDashboard && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
