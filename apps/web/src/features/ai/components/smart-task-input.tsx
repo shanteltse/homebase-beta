@@ -278,8 +278,8 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
     <div className="flex flex-col gap-2">
       <div className="rounded-xl border-2 border-primary/25 bg-background shadow-sm hover:border-primary/40 focus-within:border-primary/50 focus-within:shadow-md transition-all duration-200 p-3 flex flex-col gap-2">
         <p className="text-xs font-semibold text-primary uppercase tracking-widest select-none">Add a Task</p>
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <div className="relative flex-1">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+        <div className="relative">
           <textarea
             ref={inputRef}
             placeholder="e.g. dentist appointment next Tuesday 3pm high priority"
@@ -327,7 +327,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
             </button>
           )}
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 justify-end">
           <Button
             type="button"
             onClick={() => { const trimmed = text.trim(); if (trimmed) handleFallbackCreate(trimmed); }}
