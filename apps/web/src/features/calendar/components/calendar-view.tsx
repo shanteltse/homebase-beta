@@ -178,6 +178,8 @@ function CalendarViewInner() {
               gcalEvents={gcalEvents}
               onDayClick={handleDayClick}
               onToggleComplete={handleToggleComplete}
+              onNext={goNext}
+              onPrev={goPrev}
             />
           )}
           {view === "week" && (
