@@ -358,27 +358,24 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
             type="date"
             {...register("dueDateDate")}
           />
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="dueDateTime" className="label text-foreground">
-              Time (optional)
-            </label>
-            <div className="relative">
-              <Input
-                id="dueDateTime"
-                type="time"
-                {...register("dueDateTime")}
-              />
-              {watch("dueDateTime") && (
-                <button
-                  type="button"
-                  onClick={() => setValue("dueDateTime", "", { shouldDirty: true })}
-                  aria-label="Clear time"
-                  className="absolute right-8 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </div>
+          <div className="relative">
+            <Input
+              id="dueDateTime"
+              label="Time (optional)"
+              type="time"
+              className="pr-8"
+              {...register("dueDateTime")}
+            />
+            {watch("dueDateTime") && (
+              <button
+                type="button"
+                onClick={() => setValue("dueDateTime", "", { shouldDirty: true })}
+                aria-label="Clear time"
+                className="absolute right-8 bottom-0 flex h-10 items-center px-1 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
         </div>
 
