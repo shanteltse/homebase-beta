@@ -24,7 +24,7 @@ export function AssigneePicker({ value, onChange }: AssigneePickerProps) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="label text-foreground">Assignee</label>
+      <label className="label text-foreground">Who's responsible?</label>
       <Select
         value={value ?? "unassigned"}
         onValueChange={(val) =>
@@ -50,6 +50,7 @@ export function AssigneePicker({ value, onChange }: AssigneePickerProps) {
           ))}
         </SelectContent>
       </Select>
+
     </div>
   );
 }

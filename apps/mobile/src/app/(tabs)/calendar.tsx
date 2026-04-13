@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  PanResponder,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -260,6 +261,42 @@ export default function CalendarScreen() {
     setSelectedDate(now);
   }, []);
 
+  // Stable refs so panResponder doesn't need to be recreated on each render
+  const goToPrevRef = useRef(goToPrevMonth);
+  const goToNextRef = useRef(goToNextMonth);
+  const viewModeRef = useRef(viewMode);
+  useEffect(() => { goToPrevRef.current = goToPrevMonth; }, [goToPrevMonth]);
+  useEffect(() => { goToNextRef.current = goToNextMonth; }, [goToNextMonth]);
+  useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_evt, gestureState) => {
+        const { dx, dy } = gestureState;
+        return Math.abs(dx) > 10 || Math.abs(dy) > 10;
+      },
+      onPanResponderRelease: (_evt, gestureState) => {
+        const { dx, dy } = gestureState;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        if (absDx > 50 && absDx >= absDy) {
+          // Horizontal swipe — both views
+          if (dx < 0) goToNextRef.current(); // swipe left → next
+          else goToPrevRef.current();         // swipe right → prev
+        } else if (
+          absDy > 50 &&
+          absDy > absDx &&
+          viewModeRef.current === "week"
+        ) {
+          // Vertical swipe — week view only
+          if (dy < 0) goToNextRef.current(); // swipe up → next week
+          else goToPrevRef.current();         // swipe down → prev week
+        }
+      },
+    })
+  ).current;
+
   const handleDayPress = useCallback((date: Date) => {
     setSelectedDate(date);
   }, []);
@@ -365,7 +402,7 @@ export default function CalendarScreen() {
 
       {/* Month view */}
       {viewMode === "month" && (
-        <View style={styles.calendarGrid}>
+        <View style={styles.calendarGrid} {...panResponder.panHandlers}>
           {rows.map((row, rowIndex) => (
             <View key={rowIndex} style={styles.calendarRow}>
               {row.map((day, colIndex) => {
@@ -428,7 +465,7 @@ export default function CalendarScreen() {
 
       {/* Week view */}
       {viewMode === "week" && (
-        <View style={styles.calendarGrid}>
+        <View style={styles.calendarGrid} {...panResponder.panHandlers}>
           <View style={styles.calendarRow}>
             {weekDays.map((day, colIndex) => {
               const isToday = isSameDay(day.date, today);

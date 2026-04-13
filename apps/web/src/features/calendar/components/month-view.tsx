@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useEffect } from "react";
 import { cn } from "@/utils/cn";
 import type { Task } from "@/types/task";
 import {
@@ -20,6 +21,8 @@ type MonthViewProps = {
   gcalEvents: GCalExternalEvent[];
   onDayClick: (date: Date) => void;
   onToggleComplete: (taskId: string, completed: boolean) => void;
+  onNext: () => void;
+  onPrev: () => void;
 };
 
 export function MonthView({
@@ -28,12 +31,47 @@ export function MonthView({
   gcalEvents,
   onDayClick,
   onToggleComplete,
+  onNext,
+  onPrev,
 }: MonthViewProps) {
   const days = getMonthDays(currentDate.getFullYear(), currentDate.getMonth());
   const currentMonth = currentDate.getMonth();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    function handleWheel(e: WheelEvent) {
+      e.preventDefault();
+      if (e.deltaY > 0) onNext();
+      else onPrev();
+    }
+
+    let touchStartX = 0;
+    function handleTouchStart(e: TouchEvent) {
+      touchStartX = e.touches[0]?.clientX ?? 0;
+    }
+    function handleTouchEnd(e: TouchEvent) {
+      const delta = touchStartX - (e.changedTouches[0]?.clientX ?? 0);
+      if (Math.abs(delta) > 50) {
+        if (delta > 0) onNext();
+        else onPrev();
+      }
+    }
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    el.addEventListener("touchstart", handleTouchStart, { passive: true });
+    el.addEventListener("touchend", handleTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+      el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [onNext, onPrev]);
 
   return (
-    <div className="flex flex-col">
+    <div ref={containerRef} className="flex flex-col">
       {/* Day headers */}
       <div className="grid grid-cols-7 border-b border-border">
         {DAY_HEADERS.map((day) => (

@@ -40,7 +40,8 @@ const editFormSchema = z.object({
   category: z.string().min(1),
   subcategory: z.string().optional(),
   priority: z.enum(["high", "medium", "low"]),
-  dueDate: z.string().optional(),
+  dueDateDate: z.string().optional(),
+  dueDateTime: z.string().optional(),
   notes: z.string().optional(),
   contact: z.string().optional(),
 });
@@ -128,15 +129,23 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           category: task.category,
           subcategory: task.subcategory ?? undefined,
           priority: task.priority,
-          dueDate: task.dueDate
+          dueDateDate: task.dueDate
+            ? /^\d{4}-\d{2}-\d{2}$/.test(task.dueDate)
+              ? task.dueDate
+              : (() => {
+                  const d = new Date(task.dueDate);
+                  const pad = (n: number) => String(n).padStart(2, "0");
+                  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+                })()
+            : "",
+          dueDateTime: task.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(task.dueDate)
             ? (() => {
-                // Use local time methods so the datetime-local input shows the
-                // correct local time, not the UTC time from toISOString()
                 const d = new Date(task.dueDate);
                 const pad = (n: number) => String(n).padStart(2, "0");
-                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                const t = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                return t === "00:00" ? "" : t;
               })()
-            : undefined,
+            : "",
           notes: task.notes ?? undefined,
           contact: task.contact ?? undefined,
         }
@@ -175,13 +184,16 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
     (assignee ?? null) !== (task.assignee ?? null);
 
   function onSubmit(data: EditFormValues) {
+    const { dueDateDate, dueDateTime, ...rest } = data;
     updateTask.mutate(
       {
         id: taskId,
-        ...data,
-        // Convert datetime-local string to UTC ISO so the user's local time is
-        // preserved regardless of server timezone. Empty string becomes undefined.
-        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
+        ...rest,
+        dueDate: dueDateDate
+          ? dueDateTime
+            ? new Date(`${dueDateDate}T${dueDateTime}`).toISOString()
+            : `${dueDateDate}T00:00:00.000Z`
+          : undefined,
         // Use null (not undefined) so clearing these fields is persisted to DB.
         // undefined is stripped by JSON.stringify; null explicitly writes NULL.
         recurring: recurring ?? null,
@@ -318,40 +330,61 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="label text-foreground">Priority</label>
-            <Select
-              value={watch("priority") ?? task.priority}
-              onValueChange={(val) =>
-                setValue("priority", val as "high" | "medium" | "low", {
-                  shouldDirty: true,
-                })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Input
-            id="dueDate"
-            label="Due date"
-            type="datetime-local"
-            step={60}
-            {...register("dueDate")}
-          />
+        <div className="flex flex-col gap-1.5">
+          <label className="label text-foreground">Priority</label>
+          <Select
+            value={watch("priority") ?? task.priority}
+            onValueChange={(val) =>
+              setValue("priority", val as "high" | "medium" | "low", {
+                shouldDirty: true,
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <ContactField register={register} watch={watch} />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            id="dueDateDate"
+            label="Due date"
+            type="date"
+            {...register("dueDateDate")}
+          />
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="dueDateTime" className="label text-foreground">
+              Time (optional)
+            </label>
+            <div className="relative">
+              <Input
+                id="dueDateTime"
+                type="time"
+                {...register("dueDateTime")}
+              />
+              {watch("dueDateTime") && (
+                <button
+                  type="button"
+                  onClick={() => setValue("dueDateTime", "", { shouldDirty: true })}
+                  aria-label="Clear time"
+                  className="absolute right-8 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
         <AssigneePicker value={assignee} onChange={setAssignee} />
+
+        <ContactField register={register} watch={watch} />
 
         <Textarea id="notes" label="Notes" {...register("notes")} />
 

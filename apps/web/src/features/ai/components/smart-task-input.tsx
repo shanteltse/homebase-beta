@@ -37,6 +37,98 @@ function getInlineSpeechAPI(): (new () => InlineSpeechRecognition) | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+// ── Client-side date parser (mirrors server-side parseDateFromText) ───────────
+
+function parseQuickAddDate(text: string): string | undefined {
+  const lower = text.toLowerCase();
+  const now = new Date();
+
+  const hasExplicitTime =
+    /\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/i.test(lower) ||
+    /\b\d{1,2}:\d{2}\b/.test(lower);
+
+  function toDateOnly(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  let hour = 12;
+  const ampmMatch = lower.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/);
+  if (ampmMatch) {
+    let h = parseInt(ampmMatch[1]!, 10);
+    if (ampmMatch[3] === "pm" && h !== 12) h += 12;
+    if (ampmMatch[3] === "am" && h === 12) h = 0;
+    hour = h;
+  } else {
+    const t24 = lower.match(/\b(\d{1,2}):(\d{2})\b/);
+    if (t24) hour = parseInt(t24[1]!, 10);
+  }
+
+  function atHour(d: Date): string {
+    const r = new Date(d);
+    r.setHours(hour, 0, 0, 0);
+    return r.toISOString();
+  }
+
+  function resolve(d: Date): string {
+    return hasExplicitTime ? atHour(d) : toDateOnly(d);
+  }
+
+  if (/\btoday\b/.test(lower)) return resolve(now);
+
+  if (/\btomorrow\b/.test(lower)) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + 1);
+    return resolve(d);
+  }
+
+  if (/\bthis week\b|\bend of (?:the )?week\b/.test(lower)) {
+    const d = new Date(now);
+    const daysUntilSunday = now.getDay() === 0 ? 0 : 7 - now.getDay();
+    d.setDate(d.getDate() + daysUntilSunday);
+    return hasExplicitTime ? atHour(d) : toDateOnly(d);
+  }
+
+  if (/\bnext week\b/.test(lower)) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + 7);
+    return resolve(d);
+  }
+
+  const DAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const dayMatch = lower.match(
+    /\b(?:on\s+|next\s+|this\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/,
+  );
+  if (dayMatch) {
+    const target = DAY_NAMES.indexOf(dayMatch[1]!);
+    const d = new Date(now);
+    let ahead = target - d.getDay();
+    if (ahead <= 0) ahead += 7;
+    d.setDate(d.getDate() + ahead);
+    return resolve(d);
+  }
+
+  return undefined;
+}
+
+function formatDueDate(dueDate: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+    // Date-only — parse as local noon to avoid timezone shifting the displayed date
+    return new Date(dueDate + "T12:00:00").toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  }
+  return new Date(dueDate).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 type SmartTaskInputProps = {
   onOpenCreateDialog?: (prefill: ParsedTask) => void;
 };
@@ -219,6 +311,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
 
   function handleFallbackCreate(title: string) {
     const inputText = text;
+    const quickDate = parseQuickAddDate(title);
     createTask.mutate(
       {
         title,
@@ -227,6 +320,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
         subtasks: [],
         tags: [],
         links: [],
+        ...(quickDate ? { dueDate: quickDate } : {}),
       },
       {
         onSuccess: (created) => {
@@ -406,15 +500,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
               </Badge>
             )}
             {preview.dueDate && (
-              <Badge variant="outline">
-                {new Date(preview.dueDate).toLocaleDateString(undefined, {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
-              </Badge>
+              <Badge variant="outline">{formatDueDate(preview.dueDate)}</Badge>
             )}
             {preview.tags?.map((tag) => (
               <Badge key={tag} variant="outline">
@@ -504,13 +590,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
                       </Badge>
                     )}
                     {task.dueDate && (
-                      <Badge variant="outline">
-                        {new Date(task.dueDate).toLocaleDateString(undefined, {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </Badge>
+                      <Badge variant="outline">{formatDueDate(task.dueDate)}</Badge>
                     )}
                   </div>
                 </div>

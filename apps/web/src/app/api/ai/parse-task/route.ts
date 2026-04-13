@@ -17,8 +17,18 @@ function parseDateFromText(text: string): string | undefined {
   const lower = text.toLowerCase();
   const now = new Date();
 
+  // Detect whether an explicit time is mentioned
+  const hasExplicitTime =
+    /\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/i.test(lower) ||
+    /\b\d{1,2}:\d{2}\b/.test(lower);
+
+  function toDateOnly(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
   // Extract time component (e.g. "3pm", "3:30pm", "15:00")
-  let hour = 12; // default noon UTC
+  let hour = 12;
   const ampmMatch = lower.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/);
   if (ampmMatch) {
     let h = parseInt(ampmMatch[1]!, 10);
@@ -37,18 +47,24 @@ function parseDateFromText(text: string): string | undefined {
     return r.toISOString();
   }
 
-  if (/\btoday\b/.test(lower)) return atHour(now);
+  // Returns date-only string if no time mentioned, full ISO if time present
+  function resolve(d: Date): string {
+    return hasExplicitTime ? atHour(d) : toDateOnly(d);
+  }
+
+  if (/\btoday\b/.test(lower)) return resolve(now);
 
   if (/\btomorrow\b/.test(lower)) {
     const d = new Date(now);
     d.setDate(d.getDate() + 1);
-    return atHour(d);
+    return resolve(d);
   }
 
   if (/\bthis week\b|\bend of (?:the )?week\b/.test(lower)) {
     const d = new Date(now);
     const daysUntilSunday = now.getDay() === 0 ? 0 : 7 - now.getDay();
     d.setDate(d.getDate() + daysUntilSunday);
+    if (!hasExplicitTime) return toDateOnly(d);
     d.setUTCHours(23, 59, 0, 0);
     return d.toISOString();
   }
@@ -56,7 +72,7 @@ function parseDateFromText(text: string): string | undefined {
   if (/\bnext week\b/.test(lower)) {
     const d = new Date(now);
     d.setDate(d.getDate() + 7);
-    return atHour(d);
+    return resolve(d);
   }
 
   // Day-of-week: "on tuesday", "next friday", "this wednesday", bare "sunday" etc.
@@ -70,7 +86,7 @@ function parseDateFromText(text: string): string | undefined {
     let ahead = target - d.getDay();
     if (ahead <= 0) ahead += 7; // always pick a future occurrence
     d.setDate(d.getDate() + ahead);
-    return atHour(d);
+    return resolve(d);
   }
 
   return undefined;
@@ -119,11 +135,12 @@ function sharedFieldDocs() {
 
 function sharedDateRules(ctx: ReturnType<typeof buildDateContext>) {
   return `DATE PARSING RULES — apply these exactly:
-- "today" → ${ctx.todayStr}T12:00:00.000Z
-- "tomorrow" → ${ctx.tomorrowStr}T12:00:00.000Z
-- "this week" or "by end of week" → ${ctx.thisSundayStr}T23:59:00.000Z
+- "today" → ${ctx.todayStr}
+- "tomorrow" → ${ctx.tomorrowStr}
+- "this week" or "by end of week" → ${ctx.thisSundayStr}
 - A day name like "Tuesday", "on Tuesday", "next Tuesday" → use the date from Upcoming days above
-- A specific time like "3pm" → use that hour (24h UTC). If no time given, use T12:00:00.000Z
+- If a time is explicitly mentioned (e.g. "3pm", "15:00", "at noon"), return a full ISO 8601 UTC string (e.g. "${ctx.tomorrowStr}T15:00:00.000Z")
+- If only a date or vague timeframe is mentioned (e.g. "tomorrow", "next Tuesday", "this week") with no time, return the date only as YYYY-MM-DD (e.g. "${ctx.tomorrowStr}") with no time component
 - ALWAYS include dueDate whenever any time reference is detected, even vague ones like "soon"
 - If truly no time reference exists, omit dueDate`;
 }
@@ -155,7 +172,7 @@ Return JSON with these fields (omit if not applicable):
 - category: string (one of the category IDs: family-home, personal, work-career)
 - subcategory: string (one of the subcategory IDs if applicable)
 - priority: "high" | "medium" | "low"
-- dueDate: ISO 8601 datetime string in UTC (e.g. "2026-03-15T15:00:00.000Z")
+- dueDate: if a time is explicitly mentioned, a full ISO 8601 UTC string (e.g. "2026-03-15T15:00:00.000Z"); if only a date or vague timeframe with no time, a date-only string (e.g. "2026-03-15")
 - tags: string[] (any relevant tags or labels)
 - notes: string (any additional context not captured in other fields)
 - assignee: string (member ID — only set if the input clearly names a household member)

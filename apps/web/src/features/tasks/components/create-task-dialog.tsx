@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
@@ -34,7 +35,8 @@ const formSchema = z.object({
   category: z.string().min(1, "Category is required"),
   subcategory: z.string().optional(),
   priority: z.enum(["high", "medium", "low"]),
-  dueDate: z.string().optional(),
+  dueDateDate: z.string().optional(),
+  dueDateTime: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -76,7 +78,22 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
       priority: prefill?.priority ?? "medium",
       category: prefill?.category ?? DEFAULT_CATEGORIES[0]?.id ?? "",
       subcategory: prefill?.subcategory,
-      dueDate: prefill?.dueDate,
+      dueDateDate: prefill?.dueDate
+        ? /^\d{4}-\d{2}-\d{2}$/.test(prefill.dueDate)
+          ? prefill.dueDate
+          : (() => {
+              const d = new Date(prefill.dueDate!);
+              const pad = (n: number) => String(n).padStart(2, "0");
+              return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            })()
+        : "",
+      dueDateTime: prefill?.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(prefill.dueDate)
+        ? (() => {
+            const d = new Date(prefill.dueDate!);
+            const pad = (n: number) => String(n).padStart(2, "0");
+            return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          })()
+        : "",
       notes: prefill?.notes,
     },
   });
@@ -87,11 +104,14 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
     [];
 
   function onSubmit(data: FormValues) {
+    const { dueDateDate, dueDateTime, ...rest } = data;
     const input: CreateTaskInput = {
-      ...data,
-      // Convert datetime-local string to UTC ISO so the user's local time is
-      // preserved regardless of server timezone. Empty string becomes undefined.
-      dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
+      ...rest,
+      dueDate: dueDateDate
+        ? dueDateTime
+          ? new Date(`${dueDateDate}T${dueDateTime}`).toISOString()
+          : `${dueDateDate}T00:00:00.000Z`
+        : undefined,
       subtasks: [],
       tags,
       links: [],
@@ -194,33 +214,54 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="label text-foreground">Priority</label>
-              <Select
-                value={watch("priority")}
-                onValueChange={(val) =>
-                  setValue("priority", val as "high" | "medium" | "low")
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="label text-foreground">Priority</label>
+            <Select
+              value={watch("priority")}
+              onValueChange={(val) =>
+                setValue("priority", val as "high" | "medium" | "low")
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
+          <div className="grid grid-cols-2 gap-4">
             <Input
-              id="dueDate"
+              id="dueDateDate"
               label="Due date"
-              type="datetime-local"
-              step={60}
-              {...register("dueDate")}
+              type="date"
+              {...register("dueDateDate")}
             />
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="dueDateTime" className="label text-foreground">
+                Time (optional)
+              </label>
+              <div className="relative">
+                <Input
+                  id="dueDateTime"
+                  type="time"
+                  {...register("dueDateTime")}
+                />
+                {watch("dueDateTime") && (
+                  <button
+                    type="button"
+                    onClick={() => setValue("dueDateTime", "")}
+                    aria-label="Clear time"
+                    className="absolute right-8 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           <AssigneePicker value={assignee} onChange={setAssignee} />

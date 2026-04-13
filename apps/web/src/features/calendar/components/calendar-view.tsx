@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@repo/ui/button";
 import { Spinner } from "@repo/ui/spinner";
@@ -37,6 +37,66 @@ function CalendarViewInner() {
     profile?.gcalSyncFrequency,
   );
   const gcalEvents = showGcal ? gcalEventsRaw : [];
+
+  const contentRef = useRef<HTMLDivElement>(null);
+  const wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    function handleWheel(e: WheelEvent) {
+      e.preventDefault();
+      // Leading-edge debounce — fire immediately, ignore for 300 ms
+      if (wheelTimer.current) return;
+      if (e.deltaY > 0) goNext();
+      else goPrev();
+      wheelTimer.current = setTimeout(() => {
+        wheelTimer.current = null;
+      }, 300);
+    }
+
+    let startX = 0;
+    let startY = 0;
+
+    function handleTouchStart(e: TouchEvent) {
+      startX = e.touches[0]?.clientX ?? 0;
+      startY = e.touches[0]?.clientY ?? 0;
+    }
+
+    function handleTouchEnd(e: TouchEvent) {
+      const dx = (e.changedTouches[0]?.clientX ?? 0) - startX;
+      const dy = (e.changedTouches[0]?.clientY ?? 0) - startY;
+
+      if (Math.abs(dx) > 50 && Math.abs(dx) >= Math.abs(dy)) {
+        // Horizontal swipe — all views
+        if (dx < 0) goNext(); // swipe left → next
+        else goPrev();        // swipe right → prev
+      } else if (
+        Math.abs(dy) > 50 &&
+        Math.abs(dy) > Math.abs(dx) &&
+        (view === "week" || view === "day")
+      ) {
+        // Vertical swipe — week and day only
+        if (dy < 0) goNext(); // swipe up → next
+        else goPrev();        // swipe down → prev
+      }
+    }
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    el.addEventListener("touchstart", handleTouchStart, { passive: true });
+    el.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+      el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchend", handleTouchEnd);
+      if (wheelTimer.current) {
+        clearTimeout(wheelTimer.current);
+        wheelTimer.current = null;
+      }
+    };
+  }, [goNext, goPrev, view]);
 
   function handleToggleComplete(taskId: string, completed: boolean) {
     updateTask.mutate({ id: taskId, completed });
@@ -110,7 +170,7 @@ function CalendarViewInner() {
           <Spinner />
         </div>
       ) : (
-        <>
+        <div ref={contentRef}>
           {view === "month" && (
             <MonthView
               currentDate={currentDate}
@@ -137,7 +197,7 @@ function CalendarViewInner() {
               onToggleComplete={handleToggleComplete}
             />
           )}
-        </>
+        </div>
       )}
     </div>
   );
