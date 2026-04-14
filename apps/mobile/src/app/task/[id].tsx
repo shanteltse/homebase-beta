@@ -75,6 +75,14 @@ export default function TaskDetailScreen() {
     updateTask.mutate({ id: task.id, notes });
   };
 
+  const handleCyclePriority = useCallback(() => {
+    if (!task) return;
+    const order: Array<Task["priority"]> = ["high", "medium", "low"];
+    const next = order[(order.indexOf(task.priority) + 1) % 3] ?? "medium";
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateTask.mutate({ id: task.id, priority: next });
+  }, [task, updateTask]);
+
   const handleToggleStarred = useCallback(() => {
     if (!task) return;
     updateTask.mutate({ id: task.id, starred: !task.starred });
@@ -199,13 +207,21 @@ export default function TaskDetailScreen() {
             color={task.starred ? "#e8a838" : "#8a7f78"}
           />
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleDelete}
-          style={styles.headerButton}
-          hitSlop={8}
-        >
-          <Ionicons name="trash-outline" size={22} color="#dc3545" />
-        </TouchableOpacity>
+        {/* Trash + priority pill stacked */}
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={handleDelete} hitSlop={8}>
+            <Ionicons name="trash-outline" size={22} color="#dc3545" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleCyclePriority}
+            style={[styles.priorityPill, { backgroundColor: priorityColor.bg }]}
+            hitSlop={4}
+          >
+            <Text style={[styles.priorityPillText, { color: priorityColor.text }]}>
+              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
