@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useRef, useEffect } from "react";
+import { Suspense, useRef, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@repo/ui/button";
 import { Spinner } from "@repo/ui/spinner";
@@ -38,6 +38,22 @@ function CalendarViewInner() {
   );
   const gcalEvents = showGcal ? gcalEventsRaw : [];
 
+  // Track slide direction so the content animates the right way
+  const [slideDir, setSlideDir] = useState<"next" | "prev">("next");
+  // Show scroll hint briefly on first hover
+  const [showScrollHint, setShowScrollHint] = useState(false);
+  const scrollHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasScrolled = useRef(false);
+
+  function navigateNext() {
+    setSlideDir("next");
+    goNext();
+  }
+  function navigatePrev() {
+    setSlideDir("prev");
+    goPrev();
+  }
+
   const contentRef = useRef<HTMLDivElement>(null);
   const wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -49,8 +65,17 @@ function CalendarViewInner() {
       e.preventDefault();
       // Leading-edge debounce — fire immediately, ignore for 300 ms
       if (wheelTimer.current) return;
-      if (e.deltaY > 0) goNext();
-      else goPrev();
+
+      // Show scroll hint label on first scroll
+      if (!hasScrolled.current) {
+        hasScrolled.current = true;
+        setShowScrollHint(true);
+        if (scrollHintTimer.current) clearTimeout(scrollHintTimer.current);
+        scrollHintTimer.current = setTimeout(() => setShowScrollHint(false), 1500);
+      }
+
+      if (e.deltaY > 0) navigateNext();
+      else navigatePrev();
       wheelTimer.current = setTimeout(() => {
         wheelTimer.current = null;
       }, 300);
@@ -70,16 +95,16 @@ function CalendarViewInner() {
 
       if (Math.abs(dx) > 50 && Math.abs(dx) >= Math.abs(dy)) {
         // Horizontal swipe — all views
-        if (dx < 0) goNext(); // swipe left → next
-        else goPrev();        // swipe right → prev
+        if (dx < 0) navigateNext(); // swipe left → next
+        else navigatePrev();        // swipe right → prev
       } else if (
         Math.abs(dy) > 50 &&
         Math.abs(dy) > Math.abs(dx) &&
         (view === "week" || view === "day")
       ) {
         // Vertical swipe — week and day only
-        if (dy < 0) goNext(); // swipe up → next
-        else goPrev();        // swipe down → prev
+        if (dy < 0) navigateNext(); // swipe up → next
+        else navigatePrev();        // swipe down → prev
       }
     }
 
@@ -94,6 +119,9 @@ function CalendarViewInner() {
       if (wheelTimer.current) {
         clearTimeout(wheelTimer.current);
         wheelTimer.current = null;
+      }
+      if (scrollHintTimer.current) {
+        clearTimeout(scrollHintTimer.current);
       }
     };
   }, [goNext, goPrev, view]);
@@ -122,7 +150,7 @@ function CalendarViewInner() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={goPrev}
+              onClick={navigatePrev}
               aria-label="Previous"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -130,12 +158,22 @@ function CalendarViewInner() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={goNext}
+              onClick={navigateNext}
               aria-label="Next"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <h3 className="heading-xs text-foreground ml-2">{label}</h3>
+            <h3
+              key={label}
+              className={cn(
+                "heading-xs text-foreground ml-2 animate-in fade-in duration-200",
+                slideDir === "next"
+                  ? "slide-in-from-right-2"
+                  : "slide-in-from-left-2",
+              )}
+            >
+              {label}
+            </h3>
           </div>
 
           {/* View toggle */}
@@ -170,35 +208,59 @@ function CalendarViewInner() {
           <Spinner />
         </div>
       ) : (
-        <div ref={contentRef}>
-          {view === "month" && (
-            <MonthView
-              currentDate={currentDate}
-              tasks={tasks ?? []}
-              gcalEvents={gcalEvents}
-              onDayClick={handleDayClick}
-              onToggleComplete={handleToggleComplete}
-              onNext={goNext}
-              onPrev={goPrev}
-            />
-          )}
-          {view === "week" && (
-            <WeekView
-              currentDate={currentDate}
-              tasks={tasks ?? []}
-              gcalEvents={gcalEvents}
-              onDayClick={handleDayClick}
-              onToggleComplete={handleToggleComplete}
-            />
-          )}
-          {view === "day" && (
-            <DayView
-              currentDate={currentDate}
-              tasks={tasks ?? []}
-              gcalEvents={gcalEvents}
-              onToggleComplete={handleToggleComplete}
-            />
-          )}
+        <div ref={contentRef} className="relative overflow-hidden">
+          {/* Scroll-to-navigate hint */}
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-x-0 top-1/2 z-10 flex -translate-y-1/2 justify-center transition-opacity duration-500",
+              showScrollHint ? "opacity-100" : "opacity-0",
+            )}
+          >
+            <span className="rounded-full bg-foreground/70 px-3 py-1 text-xs text-background shadow-md">
+              Scroll to navigate
+            </span>
+          </div>
+
+          {/* Animated calendar pane — keyed so it remounts and slides on each navigation */}
+          <div
+            key={label}
+            className={cn(
+              "animate-in duration-250",
+              slideDir === "next"
+                ? "slide-in-from-right-4"
+                : "slide-in-from-left-4",
+            )}
+          >
+            {view === "month" && (
+              <MonthView
+                currentDate={currentDate}
+                tasks={tasks ?? []}
+                gcalEvents={gcalEvents}
+                onDayClick={handleDayClick}
+                onToggleComplete={handleToggleComplete}
+                onNext={navigateNext}
+                onPrev={navigatePrev}
+              />
+            )}
+            {view === "week" && (
+              <WeekView
+                currentDate={currentDate}
+                tasks={tasks ?? []}
+                gcalEvents={gcalEvents}
+                onDayClick={handleDayClick}
+                onToggleComplete={handleToggleComplete}
+              />
+            )}
+            {view === "day" && (
+              <DayView
+                currentDate={currentDate}
+                tasks={tasks ?? []}
+                gcalEvents={gcalEvents}
+                onToggleComplete={handleToggleComplete}
+              />
+            )}
+          </div>
         </div>
       )}
     </div>

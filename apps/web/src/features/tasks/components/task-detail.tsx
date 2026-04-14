@@ -4,12 +4,12 @@ import { useRouter } from "next/navigation";
 import { useForm, type UseFormRegister, type UseFormWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { ArrowLeft, ExternalLink, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react";
+import { cn } from "@/utils/cn";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { Textarea } from "@repo/ui/textarea";
 import { Spinner } from "@repo/ui/spinner";
-import { Badge } from "@repo/ui/badge";
 import { Checkbox } from "@repo/ui/checkbox";
 import {
   Select,
@@ -192,7 +192,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         dueDate: dueDateDate
           ? dueDateTime
             ? new Date(`${dueDateDate}T${dueDateTime}`).toISOString()
-            : `${dueDateDate}T00:00:00.000Z`
+            : dueDateDate
           : undefined,
         // Use null (not undefined) so clearing these fields is persisted to DB.
         // undefined is stripped by JSON.stringify; null explicitly writes NULL.
@@ -239,8 +239,6 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
     updateTask.mutate({ id: taskId, subtasks: updated });
   }
 
-  const priorityVariant = { high: "high", medium: "medium", low: "low" } as const;
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
@@ -256,12 +254,38 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
             checked={task.completed}
             onCheckedChange={handleToggleComplete}
           />
-          <h2 className="heading-sm text-foreground">{task.title}</h2>
+          <input
+            {...register("title")}
+            className="heading-sm flex-1 rounded-md bg-muted/40 px-1 py-0.5 text-foreground outline-none placeholder:text-muted-foreground sm:bg-transparent sm:hover:bg-muted/50 focus:bg-muted/50 focus:ring-1 focus:ring-ring transition-colors cursor-text"
+            placeholder="Task title"
+          />
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={priorityVariant[task.priority]}>
-            {task.priority}
-          </Badge>
+          <button
+            type="button"
+            title="Click to cycle priority"
+            onClick={() => {
+              const order = ["high", "medium", "low"] as const;
+              const cur = watch("priority") ?? task.priority;
+              const next = order[(order.indexOf(cur) + 1) % 3]!;
+              setValue("priority", next, { shouldDirty: true });
+            }}
+            className={cn(
+              "group flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+              watch("priority") === "high"
+                ? "border-red-300 bg-red-50 text-red-700 hover:border-red-400 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
+                : watch("priority") === "low"
+                  ? "border-border bg-muted/50 text-muted-foreground hover:border-border/80 hover:bg-muted"
+                  : "border-yellow-300 bg-yellow-50 text-yellow-700 hover:border-yellow-400 hover:bg-yellow-100 dark:border-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400",
+            )}
+          >
+            <span className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              watch("priority") === "high" ? "bg-red-500" : watch("priority") === "low" ? "bg-muted-foreground" : "bg-yellow-500",
+            )} />
+            {watch("priority") ?? task.priority}
+            <Pencil className="h-2.5 w-2.5 opacity-50 sm:opacity-0 sm:group-hover:opacity-60 transition-opacity" />
+          </button>
           <Button
             variant="ghost"
             size="icon"
@@ -273,12 +297,9 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        <Input
-          id="title"
-          label="Title"
-          error={errors.title?.message}
-          {...register("title")}
-        />
+        {errors.title?.message && (
+          <p className="text-xs text-destructive">{errors.title.message}</p>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
@@ -330,27 +351,6 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           )}
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="label text-foreground">Priority</label>
-          <Select
-            value={watch("priority") ?? task.priority}
-            onValueChange={(val) =>
-              setValue("priority", val as "high" | "medium" | "low", {
-                shouldDirty: true,
-              })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         <div className="grid grid-cols-2 gap-4">
           <Input
             id="dueDateDate"
@@ -379,15 +379,16 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           </div>
         </div>
 
-        <AssigneePicker value={assignee} onChange={setAssignee} />
+        <div className="flex items-center gap-2">
+          <RecurringPicker value={recurring} onChange={setRecurring} />
+        </div>
 
-        <ContactField register={register} watch={watch} />
+        <div className="grid grid-cols-2 gap-4">
+          <AssigneePicker value={assignee} onChange={setAssignee} />
+          <ContactField register={register} watch={watch} />
+        </div>
 
         <Textarea id="notes" label="Notes" {...register("notes")} />
-
-        <TagPicker value={tags} onChange={setTags} />
-
-        <RecurringPicker value={recurring} onChange={setRecurring} />
 
         {/* Subtasks */}
         <div className="flex flex-col gap-3">
@@ -459,6 +460,8 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
             </Button>
           </div>
         </div>
+
+        <TagPicker value={tags} onChange={setTags} />
 
         {updateTask.error && (
           <p className="body text-destructive">

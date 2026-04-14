@@ -37,6 +37,12 @@ export async function GET(request: Request) {
     state,
   });
 
+  // Pre-select the account the user is already signed in with so they
+  // can't accidentally connect a different Google account.
+  if (user.email) {
+    params.set("login_hint", user.email);
+  }
+
   return NextResponse.redirect(
     `https://accounts.google.com/o/oauth2/v2/auth?${params}`,
   );

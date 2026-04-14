@@ -110,7 +110,7 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
       dueDate: dueDateDate
         ? dueDateTime
           ? new Date(`${dueDateDate}T${dueDateTime}`).toISOString()
-          : `${dueDateDate}T00:00:00.000Z`
+          : dueDateDate
         : undefined,
       subtasks: [],
       tags,

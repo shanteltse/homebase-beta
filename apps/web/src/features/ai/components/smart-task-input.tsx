@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
-import { Sparkles, Check, Pencil, X, Loader2, Mic, MicOff, Trash2, Plus } from "lucide-react";
+import { Sparkles, Check, Pencil, X, Loader2, Mic, MicOff, Trash2, Plus, CalendarDays } from "lucide-react";
 
 import { Button } from "@repo/ui/button";
 import { Badge } from "@repo/ui/badge";
@@ -141,10 +141,12 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
   const [preview, setPreview] = useState<ParsedTask | null>(null);
   const [tasksPreview, setTasksPreview] = useState<ParsedTask[] | null>(null);
   const [isInlineMicListening, setIsInlineMicListening] = useState(false);
+  const [quickDueDate, setQuickDueDate] = useState("");
   const parseTask = useParseTask();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const inlineRecognitionRef = useRef<InlineSpeechRecognition | null>(null);
 
   function handleParseResult(result: ParseTaskResult) {
@@ -247,7 +249,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
       category: preview.category ?? "personal",
       subcategory: preview.subcategory,
       priority: preview.priority ?? "medium",
-      dueDate: preview.dueDate,
+      dueDate: preview.dueDate ?? (quickDueDate || undefined),
       tags: preview.tags ?? [],
       notes: preview.notes,
       subtasks: [] as [],
@@ -262,6 +264,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
         onSuccess: () => {
           setText("");
           setPreview(null);
+          setQuickDueDate("");
         },
       },
     );
@@ -304,6 +307,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
       }
       setText("");
       setTasksPreview(null);
+      setQuickDueDate("");
     } catch {
       // createTask error state is surfaced via createTask.isError
     }
@@ -311,7 +315,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
 
   function handleFallbackCreate(title: string) {
     const inputText = text;
-    const quickDate = parseQuickAddDate(title);
+    const resolvedDate = quickDueDate || parseQuickAddDate(title);
     createTask.mutate(
       {
         title,
@@ -320,12 +324,13 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
         subtasks: [],
         tags: [],
         links: [],
-        ...(quickDate ? { dueDate: quickDate } : {}),
+        ...(resolvedDate ? { dueDate: resolvedDate } : {}),
       },
       {
         onSuccess: (created) => {
           setText("");
           setPreview(null);
+          setQuickDueDate("");
           // Silently parse in the background and patch the task with AI fields
           parseTask.mutate(inputText, {
             onSuccess: (result) => {
@@ -368,9 +373,19 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
   const isProcessing = parseTask.isPending || createTask.isPending;
   const taskCount = tasksPreview?.length ?? 0;
 
+  function formatQuickDueDate(dateStr: string): string {
+    return new Date(dateStr + "T12:00:00").toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+  }
+
   return (
-    <div className="flex flex-col gap-2">
-      <div className="rounded-xl border-2 border-primary/25 bg-background shadow-sm hover:border-primary/40 focus-within:border-primary/50 focus-within:shadow-md transition-all duration-200 p-3 flex flex-col gap-2">
+    <div className="flex flex-col">
+      <div className={cn(
+        "border-2 border-primary/25 bg-background shadow-sm hover:border-primary/40 focus-within:border-primary/50 focus-within:shadow-md transition-all duration-200 p-3 flex flex-col gap-2",
+        (preview || (tasksPreview && tasksPreview.length > 0)) ? "rounded-t-xl" : "rounded-xl",
+      )}>
         <p className="text-xs font-semibold text-primary uppercase tracking-widest select-none">Add a Task</p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <div className="relative">
@@ -400,8 +415,30 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
               "w-full resize-none overflow-hidden rounded-md border border-input bg-background px-3 py-2 text-sm",
               "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               "disabled:cursor-not-allowed disabled:opacity-50",
-              "pr-9 leading-normal",
+              "pr-16 leading-normal",
             )}
+          />
+          <button
+            type="button"
+            onClick={() => dateInputRef.current?.showPicker()}
+            title={quickDueDate ? formatQuickDueDate(quickDueDate) : "Add due date"}
+            aria-label={quickDueDate ? `Due date: ${formatQuickDueDate(quickDueDate)}` : "Add due date"}
+            className={cn(
+              "absolute right-9 top-2 flex h-6 w-6 items-center justify-center rounded-full transition-colors",
+              quickDueDate
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <CalendarDays className="h-3.5 w-3.5" />
+          </button>
+          <input
+            ref={dateInputRef}
+            type="date"
+            className="sr-only"
+            value={quickDueDate}
+            onChange={(e) => setQuickDueDate(e.target.value)}
+            tabIndex={-1}
           />
           {getInlineSpeechAPI() && (
             <button
@@ -421,33 +458,43 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
             </button>
           )}
         </div>
-        <div className="flex gap-1.5 justify-end">
-          <Button
-            type="button"
-            onClick={() => { const trimmed = text.trim(); if (trimmed) handleFallbackCreate(trimmed); }}
-            disabled={isProcessing || !text.trim()}
-            variant="outline"
-            title="Quick Add — create task instantly without AI (Shift+Enter)"
-            className="gap-1.5"
-          >
-            <Plus className="h-4 w-4" />
-            Quick Add
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSmartAdd}
-            disabled={isProcessing || !text.trim()}
-            variant="primary"
-            className="gap-1.5"
-          >
-            {parseTask.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-            {parseTask.isPending ? "Parsing..." : "Smart Add"}
-          </Button>
-        </div>
+        {!preview && !(tasksPreview && tasksPreview.length > 0) && (
+          <>
+            {/* Quick Add / Smart Add — right under the textarea */}
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  onClick={() => { const trimmed = text.trim(); if (trimmed) handleFallbackCreate(trimmed); }}
+                  disabled={isProcessing || !text.trim()}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  <Plus className="h-3 w-3" />
+                  Quick Add
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSmartAdd}
+                  disabled={isProcessing || !text.trim()}
+                  variant="primary"
+                  size="sm"
+                  className="gap-1"
+                >
+                  {parseTask.isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3" />
+                  )}
+                  {parseTask.isPending ? "Parsing..." : "Smart Add"}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground text-right">Quick saves instantly · Smart reviews first</p>
+            </div>
+
+          </>
+        )}
       </form>
       </div>
 
@@ -455,7 +502,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
       {preview && (
         <div
           className={cn(
-            "rounded-lg border border-primary/40 bg-primary/5 p-4",
+            "rounded-b-xl border-x-2 border-b-2 border-primary/25 bg-primary/5 p-4",
             "flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200",
           )}
         >
@@ -519,6 +566,9 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
             >
               <Check className="h-3.5 w-3.5" />
               {createTask.isPending ? "Adding..." : "Add Task"}
+              {!createTask.isPending && (
+                <kbd className="ml-0.5 text-[11px] opacity-60 font-sans hidden sm:inline">↵</kbd>
+              )}
             </Button>
             {onOpenCreateDialog && (
               <Button
@@ -534,16 +584,13 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
             <Button size="sm" variant="ghost" onClick={handleDismiss}>
               Dismiss
             </Button>
-            <span className="ml-auto caption text-muted-foreground hidden sm:inline">
-              ↵ Enter to add
-            </span>
           </div>
         </div>
       )}
 
       {/* Multi-task preview */}
       {tasksPreview && tasksPreview.length > 0 && (
-        <div className="rounded-lg border border-primary/40 bg-primary/5 p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="rounded-b-xl border-x-2 border-b-2 border-primary/25 bg-primary/5 p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center justify-between">
             <p className="body-sm font-medium text-foreground">
               {taskCount} task{taskCount !== 1 ? "s" : ""} detected

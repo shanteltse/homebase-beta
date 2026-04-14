@@ -6,42 +6,46 @@ import { useTasks } from "@/features/tasks/api/get-tasks";
 import { ACHIEVEMENTS } from "@/features/gamification/achievements";
 import type { Task } from "@/types/task";
 
+function toLocalDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function calculateStreakFromTasks(tasks: Task[]): {
   current: number;
   best: number;
 } {
   const completedDates = tasks
     .filter((t) => t.completed && t.completedAt)
-    .map((t) => {
-      const d = new Date(t.completedAt!);
-      d.setHours(0, 0, 0, 0);
-      return d.toISOString().split("T")[0]!;
-    });
+    .map((t) => toLocalDateStr(new Date(t.completedAt!)));
 
   const uniqueDates = [...new Set(completedDates)].sort().reverse();
 
   if (uniqueDates.length === 0) return { current: 0, best: 0 };
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const firstDate = new Date(uniqueDates[0]!);
-  firstDate.setHours(0, 0, 0, 0);
+  const todayStr = toLocalDateStr(today);
+  const yesterdayStr = toLocalDateStr(yesterday);
+
+  const firstDate = uniqueDates[0]!;
+
+  function daysBetween(a: string, b: string): number {
+    return Math.round(
+      (new Date(a).getTime() - new Date(b).getTime()) / (1000 * 60 * 60 * 24),
+    );
+  }
 
   // Calculate all streaks to find best
   let best = 1;
   let currentRun = 1;
 
   for (let i = 1; i < uniqueDates.length; i++) {
-    const curr = new Date(uniqueDates[i]!);
-    const prev = new Date(uniqueDates[i - 1]!);
-    const diffDays = Math.round(
-      (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24),
-    );
-
-    if (diffDays === 1) {
+    if (daysBetween(uniqueDates[i - 1]!, uniqueDates[i]!) === 1) {
       currentRun++;
       best = Math.max(best, currentRun);
     } else {
@@ -51,15 +55,10 @@ function calculateStreakFromTasks(tasks: Task[]): {
 
   // Current streak: must include today or yesterday
   let current = 0;
-  if (firstDate >= yesterday) {
+  if (firstDate === todayStr || firstDate === yesterdayStr) {
     current = 1;
     for (let i = 1; i < uniqueDates.length; i++) {
-      const curr = new Date(uniqueDates[i]!);
-      const prev = new Date(uniqueDates[i - 1]!);
-      const diffDays = Math.round(
-        (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24),
-      );
-      if (diffDays === 1) {
+      if (daysBetween(uniqueDates[i - 1]!, uniqueDates[i]!) === 1) {
         current++;
       } else {
         break;

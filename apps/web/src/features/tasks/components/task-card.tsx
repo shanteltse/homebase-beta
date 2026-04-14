@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Mail, Phone, Repeat, Star } from "lucide-react";
-import { Checkbox } from "@repo/ui/checkbox";
 import { Badge } from "@repo/ui/badge";
 import { cn } from "@/utils/cn";
 import type { Task } from "@/types/task";
@@ -14,6 +13,7 @@ type TaskCardProps = {
   task: Task;
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onToggleStar?: (taskId: string, starred: boolean) => void;
+  onTagClick?: (tag: string) => void;
 };
 
 const PRIORITY_VARIANTS = {
@@ -42,7 +42,7 @@ function getContactMeta(contact: string | null | undefined): { type: "email" | "
   return null;
 }
 
-export function TaskCard({ task, onToggleComplete, onToggleStar }: TaskCardProps) {
+export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: TaskCardProps) {
   const { data: members } = useHouseholdMembers();
   const assignedMember = task.assignee
     ? members?.find((m) => m.id === task.assignee)
@@ -64,14 +64,6 @@ export function TaskCard({ task, onToggleComplete, onToggleStar }: TaskCardProps
         task.completed && "opacity-60",
       )}
     >
-      <Checkbox
-        checked={task.completed}
-        onCheckedChange={(checked) =>
-          onToggleComplete(task.id, checked === true)
-        }
-        className="mt-0.5"
-      />
-
       {onToggleStar && (
         <button
           onClick={() => onToggleStar(task.id, !task.starred)}
@@ -111,7 +103,9 @@ export function TaskCard({ task, onToggleComplete, onToggleStar }: TaskCardProps
               )}
             >
               {overdue && "Overdue: "}
-              {new Date(task.dueDate).toLocaleDateString()}
+              {/^\d{4}-\d{2}-\d{2}$/.test(task.dueDate)
+                ? new Date(task.dueDate + "T12:00:00").toLocaleDateString()
+                : new Date(task.dueDate).toLocaleDateString()}
               {task.recurring && (
                 <span title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}>
                   <Repeat className="h-3 w-3" />
@@ -129,11 +123,20 @@ export function TaskCard({ task, onToggleComplete, onToggleStar }: TaskCardProps
             </span>
           )}
           {task.tags.length > 0 &&
-            task.tags.map((tag) => (
-              <Badge key={tag} variant="secondary">
-                {tag}
-              </Badge>
-            ))}
+            task.tags.map((tag) =>
+              onTagClick ? (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTagClick(tag); }}
+                  className="hover:opacity-70 transition-opacity"
+                >
+                  <Badge variant="secondary">{tag}</Badge>
+                </button>
+              ) : (
+                <Badge key={tag} variant="secondary">{tag}</Badge>
+              )
+            )}
           {contactMeta && (
             <a
               href={contactMeta.href}
@@ -180,6 +183,18 @@ export function TaskCard({ task, onToggleComplete, onToggleStar }: TaskCardProps
         </div>
       </div>
 
+      <button
+        type="button"
+        onClick={() => onToggleComplete(task.id, !task.completed)}
+        className={cn(
+          "shrink-0 self-center rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
+          task.completed
+            ? "border-border text-muted-foreground hover:border-border hover:text-foreground"
+            : "border-border text-muted-foreground hover:border-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30",
+        )}
+      >
+        {task.completed ? "Undo" : "Complete ✓"}
+      </button>
     </div>
   );
 }

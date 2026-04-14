@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useTasks } from "@/features/tasks/api/get-tasks";
 import { useUpdateTask } from "@/features/tasks/api/update-task";
-import { useUserProfile } from "@/features/auth/api/get-user-profile";
+import { useUserProfile, useUpdateUserProfile } from "@/features/auth/api/get-user-profile";
 import { useUser } from "@/features/auth/api/get-user";
+import { useQueryClient } from "@tanstack/react-query";
 import { useHouseholdMembers } from "@/features/household/api/get-members";
 import { Spinner } from "@repo/ui/spinner";
 import { TaskCard } from "@/features/tasks/components/task-card";
@@ -13,7 +14,8 @@ import { SmartTaskInput, type SmartTaskInputHandle } from "@/features/ai/compone
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog";
 import { ImportTasksDialog } from "@/features/tasks/components/import-tasks-dialog";
 import { StatsCard } from "@/features/gamification/components/stats-card";
-import { Upload, ArrowUpDown, Check, Plus } from "lucide-react";
+import { Upload, ArrowUpDown, Check, Plus, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +30,7 @@ import {
   SelectValue,
 } from "@repo/ui/select";
 import type { Task } from "@/types/task";
+import { cn } from "@/utils/cn";
 import type { TaskSort } from "@/features/tasks/hooks/use-task-filters";
 import type { ParsedTask } from "@/features/ai/api/parse-task";
 
@@ -47,6 +50,9 @@ export default function DashboardPage() {
   const { data: profile } = useUserProfile();
   const { data: user } = useUser();
   const { data: members } = useHouseholdMembers();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { update: updateProfile } = useUpdateUserProfile();
   const smartInputRef = useRef<SmartTaskInputHandle>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogPrefill, setDialogPrefill] = useState<ParsedTask | undefined>();
@@ -198,7 +204,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Smart quick add */}
-      <div className="flex flex-col gap-2 mb-2">
+      <div className="flex flex-col gap-2">
         <SmartTaskInput ref={smartInputRef} onOpenCreateDialog={handleOpenCreateDialog} />
         <div className="flex items-center justify-between gap-2">
           {showMemberFilter ? (
@@ -244,48 +250,72 @@ export default function DashboardPage() {
 
       <ImportTasksDialog open={importOpen} onOpenChange={setImportOpen} />
 
-      {/* Stats — only shown when user enables it in Settings */}
-      {profile?.showTaskSummaryOnDashboard && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Link
-          href="/tasks?view=overdue"
-          className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
+      {/* Dashboard overview (summary + stats) */}
+      {(profile?.showTaskSummaryOnDashboard ?? true) ? (
+        <div className="flex flex-col gap-4 -mt-8">
+          <button
+            type="button"
+            onClick={async () => {
+              await updateProfile({ showTaskSummaryOnDashboard: false, showStatsOnDashboard: false });
+              await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+            }}
+            className="flex items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-3 w-3" />
+            Hide overview
+          </button>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Link
+              href="/tasks?view=overdue"
+              className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
+            >
+              <p className="label text-muted-foreground">Overdue</p>
+              <p className={cn("stat", !isLoading && overdueTasks.length === 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+                {isLoading ? "—" : overdueTasks.length}
+              </p>
+            </Link>
+            <Link
+              href="/tasks?view=today"
+              className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
+            >
+              <p className="label text-muted-foreground">Today</p>
+              <p className="stat text-foreground">
+                {isLoading ? "—" : todayTasks.length}
+              </p>
+            </Link>
+            <Link
+              href="/tasks?view=this-week"
+              className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
+            >
+              <p className="label text-muted-foreground">This Week</p>
+              <p className="stat text-foreground">
+                {isLoading ? "—" : thisWeekTasksAll.length}
+              </p>
+            </Link>
+            <Link
+              href="/tasks?view=completed"
+              className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
+            >
+              <p className="label text-muted-foreground">Completed</p>
+              <p className="stat text-foreground">
+                {isLoading ? "—" : completedCount}
+              </p>
+            </Link>
+          </div>
+          {(profile?.showStatsOnDashboard ?? true) && <StatsCard />}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={async () => {
+            await updateProfile({ showTaskSummaryOnDashboard: true, showStatsOnDashboard: true });
+            await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+          }}
+          className="self-start -mt-8 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          <p className="label text-muted-foreground">Overdue</p>
-          <p className="stat text-destructive">
-            {isLoading ? "—" : overdueTasks.length}
-          </p>
-        </Link>
-        <Link
-          href="/tasks?view=today"
-          className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
-        >
-          <p className="label text-muted-foreground">Today</p>
-          <p className="stat text-foreground">
-            {isLoading ? "—" : todayTasks.length}
-          </p>
-        </Link>
-        <Link
-          href="/tasks?view=this-week"
-          className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
-        >
-          <p className="label text-muted-foreground">This Week</p>
-          <p className="stat text-foreground">
-            {isLoading ? "—" : thisWeekTasksAll.length}
-          </p>
-        </Link>
-        <Link
-          href="/tasks?view=completed"
-          className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
-        >
-          <p className="label text-muted-foreground">Completed</p>
-          <p className="stat text-foreground">
-            {isLoading ? "—" : completedCount}
-          </p>
-        </Link>
-      </div>}
-
-      {/* Gamification stats — only shown when user enables it in Settings */}
-      {profile?.showStatsOnDashboard && <StatsCard />}
+          + Show overview
+        </button>
+      )}
 
       <div className="-mt-6">
       {!isLoading && allActiveTasks.length === 0 ? (
@@ -329,6 +359,7 @@ export default function DashboardPage() {
                   task={task}
                   onToggleComplete={handleToggleComplete}
                   onToggleStar={handleToggleStar}
+                  onTagClick={(t) => router.push(`/tasks?tag=${encodeURIComponent(t)}`)}
                 />
               ))}
             </div>
@@ -391,6 +422,7 @@ export default function DashboardPage() {
                   task={task}
                   onToggleComplete={handleToggleComplete}
                   onToggleStar={handleToggleStar}
+                  onTagClick={(t) => router.push(`/tasks?tag=${encodeURIComponent(t)}`)}
                 />
               ))
             ) : (

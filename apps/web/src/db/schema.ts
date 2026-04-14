@@ -49,8 +49,8 @@ export const users = pgTable("users", {
   voiceInputLanguage: text("voice_input_language").notNull().default("en-US"),
   voiceInputAutoSubmit: boolean("voice_input_auto_submit").notNull().default(false),
   // Dashboard preferences
-  showStatsOnDashboard: boolean("show_stats_on_dashboard").notNull().default(false),
-  showTaskSummaryOnDashboard: boolean("show_task_summary_on_dashboard").notNull().default(false),
+  showStatsOnDashboard: boolean("show_stats_on_dashboard").notNull().default(true),
+  showTaskSummaryOnDashboard: boolean("show_task_summary_on_dashboard").notNull().default(true),
   // Google Calendar display preference
   showGcalEvents: boolean("show_gcal_events").notNull().default(true),
   // Email reminder preferences

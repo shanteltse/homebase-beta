@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/select";
+import { X } from "lucide-react";
 import { DEFAULT_CATEGORIES } from "@/types/category";
 import { cn } from "@/utils/cn";
 import type { TaskView, TaskSort } from "../hooks/use-task-filters";
@@ -16,6 +17,7 @@ type TaskFiltersProps = {
   view: TaskView;
   category: string;
   priority: string;
+  tag: string;
   sort: TaskSort;
   onFilterChange: (key: string, value: string) => void;
   onSortChange: (value: TaskSort) => void;
@@ -37,6 +39,7 @@ export function TaskFilters({
   view,
   category,
   priority,
+  tag,
   sort,
   onFilterChange,
   onSortChange,
@@ -136,6 +139,17 @@ export function TaskFilters({
             <SelectItem value="created">Date Created</SelectItem>
           </SelectContent>
         </Select>
+
+        {tag && (
+          <button
+            type="button"
+            onClick={() => onFilterChange("tag", "")}
+            className="flex items-center gap-1 h-7 px-2 text-xs rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          >
+            #{tag}
+            <X className="h-3 w-3" />
+          </button>
+        )}
       </div>
     </div>
   );

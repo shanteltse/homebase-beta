@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { users, calendarEvents } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { handleApiError } from "@/lib/api-error";
-import { refreshAccessToken, listEvents } from "@/lib/gcal";
+import { refreshAccessToken, listEvents, GCalUnauthorizedError } from "@/lib/gcal";
 
 export type GCalExternalEvent = {
   id: string;
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
 
     let accessToken = profile.gcalAccessToken;
 
-    // Refresh token if access token is missing
+    // Proactively refresh if token is missing (first fetch or after revocation)
     if (!accessToken && profile.gcalRefreshToken) {
       const refreshed = await refreshAccessToken(profile.gcalRefreshToken);
       if (refreshed) {
@@ -67,25 +67,51 @@ export async function GET(request: Request) {
     }
 
     if (!accessToken) {
-      // Credentials expired — return empty rather than an error so the
-      // calendar still renders with tasks
       return NextResponse.json([] as GCalExternalEvent[]);
     }
 
     const calendarId = profile.gcalCalendarId ?? "primary";
 
-    // Fetch ±60 days so month, week, and day views are all covered without
-    // needing a refetch on every navigation
     const timeMin = new Date();
     timeMin.setDate(timeMin.getDate() - 60);
     const timeMax = new Date();
     timeMax.setDate(timeMax.getDate() + 60);
-
-    const rawEvents = await listEvents(accessToken, calendarId, {
+    const fetchOpts = {
       timeMin: timeMin.toISOString(),
       timeMax: timeMax.toISOString(),
       maxResults: 500,
-    });
+    };
+
+    let rawEvents;
+    try {
+      rawEvents = await listEvents(accessToken, calendarId, fetchOpts);
+    } catch (err) {
+      if (err instanceof GCalUnauthorizedError && profile.gcalRefreshToken) {
+        // Access token expired — refresh and retry once
+        const refreshed = await refreshAccessToken(profile.gcalRefreshToken);
+        if (!refreshed) {
+          // Refresh token also revoked — mark as disconnected so the UI
+          // prompts the user to reconnect rather than silently failing forever
+          await db
+            .update(users)
+            .set({ gcalConnected: false, gcalAccessToken: null })
+            .where(eq(users.id, user.id));
+          return NextResponse.json([] as GCalExternalEvent[]);
+        }
+        accessToken = refreshed.accessToken;
+        await db
+          .update(users)
+          .set({ gcalAccessToken: accessToken })
+          .where(eq(users.id, user.id));
+        try {
+          rawEvents = await listEvents(accessToken, calendarId, fetchOpts);
+        } catch {
+          return NextResponse.json([] as GCalExternalEvent[]);
+        }
+      } else {
+        throw err;
+      }
+    }
 
     // Get all gcalEventIds that originated from HomeBase so we can exclude them
     const mappings = await db

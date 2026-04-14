@@ -53,7 +53,7 @@ export function TaskList() {
   const updateTask = useUpdateTask();
   const { data: user } = useUser();
   const { data: members } = useHouseholdMembers();
-  const { view, category, priority, sort, setFilter, setSort, filterTasks, assigneeFilter, setAssigneeFilter } =
+  const { view, category, priority, tag, sort, setFilter, setSort, filterTasks, assigneeFilter, setAssigneeFilter } =
     useTaskFilters(user?.id, members);
 
   function handleToggleComplete(taskId: string, completed: boolean) {
@@ -81,6 +81,7 @@ export function TaskList() {
         view={view}
         category={category}
         priority={priority}
+        tag={tag}
         sort={sort}
         onFilterChange={setFilter}
         onSortChange={setSort}
@@ -109,6 +110,7 @@ export function TaskList() {
                   task={task}
                   onToggleComplete={handleToggleComplete}
                   onToggleStar={handleToggleStar}
+                  onTagClick={(t) => setFilter("tag", t)}
                 />
               ))}
             </div>

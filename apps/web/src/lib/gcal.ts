@@ -5,6 +5,14 @@
 
 const GCAL_BASE = "https://www.googleapis.com/calendar/v3";
 
+/** Thrown when the Google API returns 401 — access token expired or revoked. */
+export class GCalUnauthorizedError extends Error {
+  constructor() {
+    super("GCal access token expired or revoked");
+    this.name = "GCalUnauthorizedError";
+  }
+}
+
 export type GCalEvent = {
   id: string;
   summary: string;
@@ -61,6 +69,7 @@ export async function listEvents(
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );
 
+  if (res.status === 401) throw new GCalUnauthorizedError();
   if (!res.ok) throw new Error(`GCal list events failed: ${res.status}`);
   const data = await res.json();
   return data.items ?? [];

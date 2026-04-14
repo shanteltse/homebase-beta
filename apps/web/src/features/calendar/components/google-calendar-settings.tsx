@@ -101,7 +101,7 @@ export function GoogleCalendarSettings() {
           <Calendar className="h-5 w-5" /> Google Calendar
         </CardTitle>
         <CardDescription>
-          Sync your HomeBase tasks with Google Calendar — two-way.
+          Sync your HomeBase tasks to Google Calendar.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -274,8 +274,7 @@ export function GoogleCalendarSettings() {
 
               <div className="rounded-lg bg-muted/50 border border-border p-3">
                 <p className="text-xs text-muted-foreground">
-                  <strong>Two-way sync:</strong> Changes in HomeBase sync to Google Calendar and vice versa.
-                  Deleting an event in Google Calendar will delete the task in HomeBase.
+                  Tasks with due dates sync to Google Calendar as events. Changes made in Google Calendar are not reflected back in HomeBase.
                 </p>
               </div>
             </>

@@ -47,6 +47,7 @@ export function useTaskFilters(currentUserId?: string, members?: HouseholdMember
   const view = (searchParams.get("view") as TaskView) || "all";
   const category = searchParams.get("category") || "";
   const priority = (searchParams.get("priority") as TaskPriority) || "";
+  const tag = searchParams.get("tag") || "";
 
   const setFilter = useCallback(
     (key: string, value: string) => {
@@ -158,6 +159,10 @@ export function useTaskFilters(currentUserId?: string, members?: HouseholdMember
         filtered = filtered.filter((t) => t.priority === priority);
       }
 
+      if (tag) {
+        filtered = filtered.filter((t) => t.tags.includes(tag));
+      }
+
       return filtered.sort((a, b) => {
         // Starred tasks always float to top
         if (a.starred && !b.starred) return -1;
@@ -193,7 +198,7 @@ export function useTaskFilters(currentUserId?: string, members?: HouseholdMember
         return b.createdAt.localeCompare(a.createdAt);
       });
     };
-  }, [view, category, priority, sort, assigneeFilter, currentUserId, members]);
+  }, [view, category, priority, tag, sort, assigneeFilter, currentUserId, members]);
 
-  return { view, category, priority, sort, setFilter, setSort, filterTasks, assigneeFilter, setAssigneeFilter };
+  return { view, category, priority, tag, sort, setFilter, setSort, filterTasks, assigneeFilter, setAssigneeFilter };
 }
