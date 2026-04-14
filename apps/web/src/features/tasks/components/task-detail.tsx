@@ -33,7 +33,7 @@ import { useDeleteTask } from "../api/delete-task";
 import { TagPicker } from "./tag-picker";
 import { RecurringPicker } from "./recurring-picker";
 import { AssigneePicker } from "@/features/household/components/assignee-picker";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const editFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -114,6 +114,16 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   const [assignee, setAssignee] = useState<string | undefined>(
     task?.assignee ?? undefined,
   );
+
+  // Sync out-of-form state when task data arrives asynchronously
+  // (e.g. individual-task cache was cold after a mutation invalidation).
+  useEffect(() => {
+    if (!task) return;
+    setTags(task.tags ?? []);
+    setRecurring(task.recurring as RecurringPattern | undefined);
+    setAssignee(task.assignee ?? undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task?.id]);
 
   const {
     register,
@@ -241,37 +251,32 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/tasks")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex flex-1 items-center gap-3">
-            <Checkbox
-              checked={task.completed}
-              onCheckedChange={handleToggleComplete}
-            />
-            <input
-              {...register("title")}
-              className="heading-sm flex-1 rounded-md bg-muted/40 px-1 py-0.5 text-foreground outline-none placeholder:text-muted-foreground sm:bg-transparent sm:hover:bg-muted/50 focus:bg-muted/50 focus:ring-1 focus:ring-ring transition-colors cursor-text"
-              placeholder="Task title"
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowDeleteConfirm(true)}
-          >
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/tasks")}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex flex-1 items-center gap-3 min-w-0">
+          <Checkbox
+            checked={task.completed}
+            onCheckedChange={handleToggleComplete}
+          />
+          <textarea
+            {...register("title")}
+            rows={1}
+            onInput={(e) => {
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${el.scrollHeight}px`;
+            }}
+            className="heading-sm flex-1 min-w-0 resize-none overflow-hidden rounded-md bg-muted/40 px-1 py-0.5 text-foreground outline-none placeholder:text-muted-foreground sm:bg-transparent sm:hover:bg-muted/50 focus:bg-muted/50 focus:ring-1 focus:ring-ring transition-colors cursor-text"
+            placeholder="Task title"
+          />
         </div>
-
-        {/* Priority pill — below title, right-aligned */}
-        <div className="flex justify-end pr-1">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             title="Click to cycle priority"
@@ -297,6 +302,13 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
             {watch("priority") ?? task.priority}
             <Pencil className="h-2.5 w-2.5 opacity-50 sm:opacity-0 sm:group-hover:opacity-60 transition-opacity" />
           </button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
         </div>
       </div>
 
@@ -356,31 +368,35 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Input
-            id="dueDateDate"
-            label="Due date"
-            type="date"
-            className="h-10 text-sm"
-            {...register("dueDateDate")}
-          />
-          <div className="relative">
-            <Input
-              id="dueDateTime"
-              label="Time (optional)"
-              type="time"
-              className="h-10 text-sm pr-8"
-              {...register("dueDateTime")}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="dueDateDate" className="label text-foreground">Due date</label>
+            <input
+              id="dueDateDate"
+              type="date"
+              {...register("dueDateDate")}
+              className="flex h-10 w-full appearance-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-date-and-time-value]:text-left"
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="dueDateTime" className="label text-foreground">Time (optional)</label>
+            <div className="relative">
+              <input
+                id="dueDateTime"
+                type="time"
+                {...register("dueDateTime")}
+                className="flex h-10 w-full appearance-none rounded-md border border-border bg-background px-3 py-2 pr-8 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-date-and-time-value]:text-left"
+              />
             {watch("dueDateTime") && (
               <button
                 type="button"
                 onClick={() => setValue("dueDateTime", "", { shouldDirty: true })}
                 aria-label="Clear time"
-                className="absolute right-8 bottom-0 flex h-10 items-center px-1 text-muted-foreground hover:text-foreground"
+                className="absolute right-2 bottom-0 flex h-10 items-center px-1 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-3 w-3" />
               </button>
             )}
+            </div>
           </div>
         </div>
 
