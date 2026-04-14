@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Task } from "@/types/task";
 
-type ReorderItem = { id: string; sortOrder: number };
+type ReorderItem = { id: string };
 
 async function reorderTasks(items: ReorderItem[]) {
   const res = await fetch("/api/tasks/reorder", {
@@ -18,22 +17,6 @@ export function useReorderTasks() {
 
   return useMutation({
     mutationFn: reorderTasks,
-    onMutate: async (items) => {
-      await queryClient.cancelQueries({ queryKey: ["tasks"] });
-      const previous = queryClient.getQueryData(["tasks"]);
-
-      const orderMap = new Map(items.map((i) => [i.id, i.sortOrder]));
-      queryClient.setQueryData<Task[]>(["tasks"], (old) =>
-        old?.map((t) =>
-          orderMap.has(t.id) ? { ...t, sortOrder: orderMap.get(t.id) } : t,
-        ) ?? [],
-      );
-
-      return { previous };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previous) queryClient.setQueryData(["tasks"], context.previous);
-    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },

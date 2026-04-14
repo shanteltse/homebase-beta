@@ -10,8 +10,7 @@ import { handleApiError, ApiError } from "@/lib/api-error";
 import { validateOrigin } from "@/lib/api-utils";
 
 const reorderSchema = z.object({
-  // Array of { id, sortOrder } — every item in the reordered group
-  items: z.array(z.object({ id: z.string(), sortOrder: z.number().int() })).min(1),
+  items: z.array(z.object({ id: z.string() })).min(1),
 });
 
 export async function POST(request: Request) {
@@ -53,12 +52,11 @@ export async function POST(request: Request) {
     const ownedIds = new Set(owned.map((r) => r.id));
     const safeItems = items.filter((i) => ownedIds.has(i.id));
 
-    // Update each task's sortOrder in parallel
     await Promise.all(
-      safeItems.map(({ id, sortOrder }) =>
+      safeItems.map(({ id }) =>
         db
           .update(tasks)
-          .set({ sortOrder, updatedAt: new Date() })
+          .set({ updatedAt: new Date() })
           .where(eq(tasks.id, id)),
       ),
     );
