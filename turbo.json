@@ -15,7 +15,8 @@
         "CRON_SECRET",
         "NODE_ENV",
         "NEXTAUTH_URL",
-        "AUTH_URL"
+        "AUTH_URL",
+        "RESEND_API_KEY"
       ]
     },
     "lint": {
