@@ -394,6 +394,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
             placeholder="e.g. dentist appointment next Tuesday"
             value={text}
             rows={1}
+            style={{ height: "40px" }}
             onChange={(e) => {
               setText(e.target.value);
               if (preview) setPreview(null);

@@ -241,26 +241,37 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push("/tasks")}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex flex-1 items-center gap-3">
-          <Checkbox
-            checked={task.completed}
-            onCheckedChange={handleToggleComplete}
-          />
-          <input
-            {...register("title")}
-            className="heading-sm flex-1 rounded-md bg-muted/40 px-1 py-0.5 text-foreground outline-none placeholder:text-muted-foreground sm:bg-transparent sm:hover:bg-muted/50 focus:bg-muted/50 focus:ring-1 focus:ring-ring transition-colors cursor-text"
-            placeholder="Task title"
-          />
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/tasks")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex flex-1 items-center gap-3">
+            <Checkbox
+              checked={task.completed}
+              onCheckedChange={handleToggleComplete}
+            />
+            <input
+              {...register("title")}
+              className="heading-sm flex-1 rounded-md bg-muted/40 px-1 py-0.5 text-foreground outline-none placeholder:text-muted-foreground sm:bg-transparent sm:hover:bg-muted/50 focus:bg-muted/50 focus:ring-1 focus:ring-ring transition-colors cursor-text"
+              placeholder="Task title"
+            />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Priority pill — below title, right-aligned */}
+        <div className="flex justify-end pr-1">
           <button
             type="button"
             title="Click to cycle priority"
@@ -286,13 +297,6 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
             {watch("priority") ?? task.priority}
             <Pencil className="h-2.5 w-2.5 opacity-50 sm:opacity-0 sm:group-hover:opacity-60 transition-opacity" />
           </button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowDeleteConfirm(true)}
-          >
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
         </div>
       </div>
 
@@ -356,6 +360,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
             id="dueDateDate"
             label="Due date"
             type="date"
+            className="h-10 text-sm"
             {...register("dueDateDate")}
           />
           <div className="relative">
@@ -363,7 +368,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
               id="dueDateTime"
               label="Time (optional)"
               type="time"
-              className="pr-8"
+              className="h-10 text-sm pr-8"
               {...register("dueDateTime")}
             />
             {watch("dueDateTime") && (

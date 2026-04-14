@@ -80,7 +80,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
         <Link
           href={`/tasks/${task.id}`}
           className={cn(
-            "body font-medium text-foreground hover:text-primary",
+            "body block font-medium text-foreground hover:text-primary break-words",
             task.completed && "line-through",
             task.starred && "font-bold",
           )}

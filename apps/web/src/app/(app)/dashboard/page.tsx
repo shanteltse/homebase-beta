@@ -195,7 +195,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 className="heading-md text-foreground">Here&apos;s the Rundown</h2>
         <p className="body text-muted-foreground">
@@ -252,7 +252,7 @@ export default function DashboardPage() {
 
       {/* Dashboard overview (summary + stats) */}
       {(profile?.showTaskSummaryOnDashboard ?? true) ? (
-        <div className="flex flex-col gap-4 -mt-8">
+        <div className="flex flex-col gap-4">
           <button
             type="button"
             onClick={async () => {
@@ -311,13 +311,13 @@ export default function DashboardPage() {
             await updateProfile({ showTaskSummaryOnDashboard: true, showStatsOnDashboard: true });
             await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
           }}
-          className="self-start -mt-8 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="self-start text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           + Show overview
         </button>
       )}
 
-      <div className="-mt-6">
+      <div>
       {!isLoading && allActiveTasks.length === 0 ? (
         <div className="flex flex-col items-center gap-5 py-16 text-center">
           <div className="text-4xl">📋</div>
