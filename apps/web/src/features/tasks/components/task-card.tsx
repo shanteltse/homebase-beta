@@ -68,7 +68,8 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
         <button
           onClick={() => onToggleStar(task.id, !task.starred)}
           className="mt-0.5 text-muted-foreground hover:text-primary transition-colors"
-          aria-label={task.starred ? "Unstar task" : "Star task"}
+          title={task.starred ? "Remove from today's focus" : "Focus on this today"}
+          aria-label={task.starred ? "Remove from today's focus" : "Focus on this today"}
         >
           <Star
             className={cn("h-4 w-4", task.starred && "fill-primary text-primary")}

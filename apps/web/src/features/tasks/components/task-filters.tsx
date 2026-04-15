@@ -29,6 +29,7 @@ type TaskFiltersProps = {
 
 const VIEWS: { value: TaskView; label: string }[] = [
   { value: "all", label: "All" },
+  { value: "starred", label: "⭐ Starred" },
   { value: "today", label: "Today" },
   { value: "this-week", label: "This Week" },
   { value: "overdue", label: "Overdue" },

@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  ScrollView,
   TouchableOpacity,
   TextInput,
   StyleSheet,
@@ -16,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTasks, useUpdateTask, useDeleteTask, useCreateTask } from "../../hooks/use-tasks";
+import { useHouseholdMembers } from "../../hooks/use-household";
 import { useNotifications } from "../../hooks/use-notifications";
 import { TaskSkeleton } from "../../components/task-skeleton";
 import { api } from "../../lib/api";
@@ -27,7 +29,7 @@ const serifFont = Platform.select({
   default: "Georgia",
 });
 
-type FilterTab = "all" | "active" | "completed";
+type FilterTab = "all" | "active" | "completed" | "starred";
 type SortMode = "newest" | "priority" | "dueDate";
 
 const SORT_LABELS: Record<SortMode, string> = {
@@ -63,6 +65,147 @@ const categoryStyles: Record<
   personal: { backgroundColor: "rgba(124,154,142,0.1)", color: "#7c9a8e" },
   work: { backgroundColor: "rgba(139,123,180,0.1)", color: "#8b7bb4" },
 };
+
+// The /api/households/members endpoint returns flat user objects (id = userId).
+// The mobile hook type has a nested shape; cast to this flat runtime type.
+type FlatMember = {
+  id: string; // user's ID — matches task.assignee and task.userId
+  name: string | null;
+  email: string | null;
+};
+
+const AVATAR_PALETTE = ["#b08068", "#7c9a8e", "#8b7bb4", "#4a7fa5", "#e8a838"];
+
+function MemberProgressCard({
+  member,
+  tasks,
+  colorIdx,
+  horizontal,
+}: {
+  member: FlatMember;
+  tasks: Task[];
+  colorIdx: number;
+  horizontal: boolean;
+}) {
+  const memberTasks = tasks.filter(
+    (t) => t.assignee === member.id || t.userId === member.id,
+  );
+  const activeCount = memberTasks.filter((t) => t.status !== "completed").length;
+  const total = memberTasks.length;
+  const completedCount = total - activeCount;
+  const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+  const displayName = member.name ?? member.email ?? "Member";
+  const initials = displayName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+  const color = AVATAR_PALETTE[colorIdx % AVATAR_PALETTE.length]!;
+
+  return (
+    <View
+      style={[
+        householdStyles.memberCard,
+        horizontal && householdStyles.memberCardH,
+      ]}
+    >
+      <View style={[householdStyles.avatar, { backgroundColor: color + "22" }]}>
+        <Text style={[householdStyles.avatarText, { color }]}>{initials}</Text>
+      </View>
+      <View style={householdStyles.memberInfo}>
+        <Text style={householdStyles.memberName} numberOfLines={1}>
+          {displayName}
+        </Text>
+        <View style={householdStyles.bar}>
+          <View
+            style={[
+              householdStyles.barFill,
+              { flex: pct > 0 ? pct : 0, backgroundColor: color },
+            ]}
+          />
+          <View style={{ flex: 100 - pct }} />
+        </View>
+        <Text style={householdStyles.memberStats}>
+          {activeCount} active · {pct}%
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function HouseholdOverview({
+  members,
+  tasks,
+}: {
+  members: FlatMember[];
+  tasks: Task[];
+}) {
+  const [open, setOpen] = useState(true);
+  const isHorizontal = members.length >= 3;
+
+  const sectionHeader = (
+    <View style={householdStyles.sectionHeader}>
+      <TouchableOpacity
+        onPress={() => setOpen((o) => !o)}
+        hitSlop={8}
+        style={householdStyles.toggleButton}
+      >
+        <Text style={householdStyles.sectionHeading}>Household</Text>
+        <Ionicons
+          name={open ? "chevron-down" : "chevron-forward"}
+          size={13}
+          color="#8a7f78"
+        />
+      </TouchableOpacity>
+      {open && (
+        <TouchableOpacity
+          onPress={() => router.push("/(tabs)/household")}
+          hitSlop={8}
+        >
+          <Text style={householdStyles.viewAll}>View all →</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  return (
+    <View style={householdStyles.container}>
+      {sectionHeader}
+      {open && (
+        isHorizontal ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={householdStyles.horizontalScroll}
+          >
+            {members.map((m, i) => (
+              <MemberProgressCard
+                key={m.id}
+                member={m}
+                tasks={tasks}
+                colorIdx={i}
+                horizontal
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <>
+            {members.map((m, i) => (
+              <MemberProgressCard
+                key={m.id}
+                member={m}
+                tasks={tasks}
+                colorIdx={i}
+                horizontal={false}
+              />
+            ))}
+          </>
+        )
+      )}
+    </View>
+  );
+}
 
 function TaskItem({ task }: { task: Task }) {
   const priority = priorityStyles[task.priority] ?? priorityStyles.low;
@@ -128,40 +271,46 @@ function TaskItem({ task }: { task: Task }) {
         </View>
       </TouchableOpacity>
       <View style={styles.taskContent}>
-        <Text
-          style={[
-            styles.taskTitle,
-            task.status === "completed" && styles.taskTitleCompleted,
-          ]}
-        >
-          {task.title}
-        </Text>
-        {task.dueDate ? (
-          <Text style={styles.dueDate}>
-            Due {new Date(task.dueDate).toLocaleDateString()}
-          </Text>
-        ) : null}
-      </View>
-      <View style={styles.badges}>
-        <View
-          style={[styles.priorityBadge, { backgroundColor: priority.backgroundColor }]}
-        >
-          <Text style={[styles.priorityText, { color: priority.color }]}>
-            {task.priority}
+        <View style={styles.taskTitleRow}>
+          {task.starred && (
+            <Ionicons name="star" size={12} color="#e8a838" style={styles.starIcon} />
+          )}
+          <Text
+            style={[
+              styles.taskTitle,
+              task.status === "completed" && styles.taskTitleCompleted,
+            ]}
+            numberOfLines={2}
+          >
+            {task.title}
           </Text>
         </View>
-        {category && (
+        <View style={styles.badgesRow}>
           <View
-            style={[
-              styles.categoryBadge,
-              { backgroundColor: category.backgroundColor },
-            ]}
+            style={[styles.priorityBadge, { backgroundColor: priority.backgroundColor }]}
           >
-            <Text style={[styles.categoryText, { color: category.color }]}>
-              {task.category}
+            <Text style={[styles.priorityText, { color: priority.color }]}>
+              {task.priority}
             </Text>
           </View>
-        )}
+          {category && (
+            <View
+              style={[
+                styles.categoryBadge,
+                { backgroundColor: category.backgroundColor },
+              ]}
+            >
+              <Text style={[styles.categoryText, { color: category.color }]}>
+                {task.category}
+              </Text>
+            </View>
+          )}
+          {task.dueDate ? (
+            <Text style={styles.dueDate}>
+              Due {new Date(task.dueDate).toLocaleDateString()}
+            </Text>
+          ) : null}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -198,17 +347,20 @@ function compareTasks(a: Task, b: Task, mode: SortMode): number {
 }
 
 function sortTasks(tasks: Task[], mode: SortMode): Task[] {
-  const active = tasks
-    .filter((t) => t.status !== "completed")
-    .sort((a, b) => compareTasks(a, b, mode));
-  const completed = tasks
-    .filter((t) => t.status === "completed")
-    .sort((a, b) => compareTasks(a, b, mode));
-  return [...active, ...completed];
+  const sortGroup = (group: Task[]) => {
+    const starred = group.filter((t) => t.starred).sort((a, b) => compareTasks(a, b, mode));
+    const rest = group.filter((t) => !t.starred).sort((a, b) => compareTasks(a, b, mode));
+    return [...starred, ...rest];
+  };
+  return [
+    ...sortGroup(tasks.filter((t) => t.status !== "completed")),
+    ...sortGroup(tasks.filter((t) => t.status === "completed")),
+  ];
 }
 
 const FILTER_TABS: { key: FilterTab; label: string }[] = [
   { key: "all", label: "All" },
+  { key: "starred", label: "⭐ Starred" },
   { key: "active", label: "Active" },
   { key: "completed", label: "Completed" },
 ];
@@ -228,6 +380,9 @@ interface ParsedTaskResponse {
 export default function TasksScreen() {
   const { data: tasks, isLoading, isError, refetch } = useTasks();
   const { data: notifications } = useNotifications();
+  const { data: rawMembers } = useHouseholdMembers();
+  const householdMembers = (rawMembers ?? []) as unknown as FlatMember[];
+  const showHouseholdOverview = householdMembers.length > 1;
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -300,6 +455,7 @@ export default function TasksScreen() {
     let result = (tasks ?? []).filter((task) => {
       if (activeFilter === "active") return task.status !== "completed";
       if (activeFilter === "completed") return task.status === "completed";
+      if (activeFilter === "starred") return task.starred === true;
       return true;
     });
 
@@ -313,7 +469,10 @@ export default function TasksScreen() {
     return sortTasks(result, sortMode);
   }, [tasks, activeFilter, searchQuery, sortMode]);
 
-  const filterLabel = activeFilter === "all" ? "" : `${activeFilter} `;
+  const filterLabel =
+    activeFilter === "all" ? "" :
+    activeFilter === "starred" ? "starred " :
+    `${activeFilter} `;
   const taskCountText = `${filteredTasks.length} ${filterLabel}task${filteredTasks.length !== 1 ? "s" : ""}`;
 
   return (
@@ -402,7 +561,7 @@ export default function TasksScreen() {
           <TextInput
             ref={smartInputRef}
             style={styles.smartInputText}
-            placeholder="Add a task naturally... e.g. 'Buy groceries tomorrow'"
+            placeholder="e.g. dentist appointment next Tuesday"
             placeholderTextColor="#b0a89f"
             value={smartInput}
             onChangeText={setSmartInput}
@@ -415,6 +574,10 @@ export default function TasksScreen() {
           <Text style={styles.smartInputErrorText}>{smartInputError}</Text>
         ) : null}
       </View>
+
+      {showHouseholdOverview && (
+        <HouseholdOverview members={householdMembers} tasks={tasks ?? []} />
+      )}
 
       {isLoading ? (
         <View style={styles.skeletonContainer}>
@@ -665,7 +828,6 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    marginRight: 12,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -678,8 +840,20 @@ const styles = StyleSheet.create({
   },
   taskContent: {
     flex: 1,
+    flexShrink: 1,
+    marginLeft: 12,
+  },
+  taskTitleRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 5,
+    marginBottom: 4,
+  },
+  starIcon: {
+    marginTop: 2,
   },
   taskTitle: {
+    flex: 1,
     fontSize: 15,
     color: "#4a3f3a",
   },
@@ -688,15 +862,15 @@ const styles = StyleSheet.create({
     textDecorationLine: "line-through",
     opacity: 0.6,
   },
+  badgesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 4,
+  },
   dueDate: {
     fontSize: 12,
     color: "#8a7f78",
-    marginTop: 4,
-  },
-  badges: {
-    flexDirection: "column",
-    alignItems: "flex-end",
-    gap: 4,
   },
   priorityBadge: {
     paddingHorizontal: 8,
@@ -717,5 +891,86 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     textTransform: "capitalize",
+  },
+});
+
+const householdStyles = StyleSheet.create({
+  container: {
+    marginHorizontal: 20,
+    marginBottom: 12,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  sectionHeading: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#4a3f3a",
+    fontFamily: serifFont,
+  },
+  viewAll: {
+    fontSize: 12,
+    color: "#b08068",
+    fontWeight: "500",
+  },
+  horizontalScroll: {
+    gap: 8,
+    paddingRight: 4,
+  },
+  memberCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e2d9d0",
+    padding: 10,
+    marginBottom: 6,
+    gap: 10,
+  },
+  memberCardH: {
+    width: 160,
+    marginBottom: 0,
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  avatarText: {
+    fontSize: 13,
+    fontWeight: "700",
+    fontFamily: serifFont,
+  },
+  memberInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  memberName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#4a3f3a",
+    fontFamily: serifFont,
+  },
+  bar: {
+    flexDirection: "row",
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#e2d9d0",
+    overflow: "hidden",
+  },
+  barFill: {
+    borderRadius: 2,
+  },
+  memberStats: {
+    fontSize: 11,
+    color: "#8a7f78",
+    fontFamily: serifFont,
   },
 });

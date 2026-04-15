@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { Task, TaskPriority } from "@/types/task";
 import type { HouseholdMember } from "@/features/household/api/get-members";
 
-export type TaskView = "all" | "overdue" | "today" | "this-week" | "upcoming" | "completed";
+export type TaskView = "all" | "overdue" | "today" | "this-week" | "upcoming" | "completed" | "starred";
 export type TaskSort = "due-date" | "priority" | "assignee" | "created";
 
 const ASSIGNEE_FILTER_KEY = "hb_assignee_filter";
@@ -71,7 +71,10 @@ export function useTaskFilters(currentUserId?: string, members?: HouseholdMember
     return (tasks: Task[]) => {
       let filtered = tasks;
 
-      if (view === "completed") {
+      if (view === "starred") {
+        // Focus list: active starred tasks only, sorted by priority
+        filtered = filtered.filter((t) => t.starred && !t.completed);
+      } else if (view === "completed") {
         filtered = filtered.filter((t) => t.completed);
       } else {
         filtered = filtered.filter((t) => !t.completed);

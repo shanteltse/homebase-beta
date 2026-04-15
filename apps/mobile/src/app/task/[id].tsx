@@ -198,7 +198,7 @@ export default function TaskDetailScreen() {
         </Text>
         <TouchableOpacity
           onPress={handleToggleStarred}
-          style={styles.headerButton}
+          style={styles.starButton}
           hitSlop={8}
         >
           <Ionicons
@@ -206,6 +206,9 @@ export default function TaskDetailScreen() {
             size={22}
             color={task.starred ? "#e8a838" : "#8a7f78"}
           />
+          {!task.starred && (
+            <Text style={styles.starHint}>prioritise</Text>
+          )}
         </TouchableOpacity>
         {/* Trash + priority pill stacked */}
         <View style={styles.headerRight}>
@@ -260,6 +263,8 @@ export default function TaskDetailScreen() {
           onBlur={handleTitleBlur}
           placeholder="Task title"
           placeholderTextColor="#8a7f78"
+          multiline={false}
+          scrollEnabled={true}
         />
 
         {/* Info Cards */}
@@ -435,6 +440,17 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: 4,
   },
+  starButton: {
+    padding: 4,
+    alignItems: "center",
+    gap: 2,
+  },
+  starHint: {
+    fontFamily: serifFont,
+    fontSize: 9,
+    color: "#b0a89f",
+    letterSpacing: 0.2,
+  },
   headerTitle: {
     flex: 1,
     fontFamily: serifFont,
@@ -464,6 +480,21 @@ const styles = StyleSheet.create({
   },
   statusTextCompleted: {
     color: "#b08068",
+  },
+  headerRight: {
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 6,
+  },
+  priorityPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  priorityPillText: {
+    fontFamily: serifFont,
+    fontSize: 11,
+    fontWeight: "600",
   },
   titleInput: {
     fontFamily: serifFont,

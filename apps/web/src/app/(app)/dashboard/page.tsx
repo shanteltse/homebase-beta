@@ -14,6 +14,7 @@ import { SmartTaskInput, type SmartTaskInputHandle } from "@/features/ai/compone
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog";
 import { ImportTasksDialog } from "@/features/tasks/components/import-tasks-dialog";
 import { StatsCard } from "@/features/gamification/components/stats-card";
+import { HouseholdOverview } from "@/features/household/components/household-overview";
 import { Upload, ArrowUpDown, Check, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -206,6 +207,9 @@ export default function DashboardPage() {
       {/* Smart quick add */}
       <div className="flex flex-col gap-2">
         <SmartTaskInput ref={smartInputRef} onOpenCreateDialog={handleOpenCreateDialog} />
+        {showMemberFilter && (
+          <HouseholdOverview members={members!} tasks={allTasks} />
+        )}
         <div className="flex items-center justify-between gap-2">
           {showMemberFilter ? (
             <Select

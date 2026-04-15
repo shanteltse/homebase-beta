@@ -95,7 +95,9 @@ export function TaskList() {
         <div className="rounded-lg border border-border bg-muted/50 p-12 text-center body text-muted-foreground">
           {view === "completed"
             ? "No completed tasks yet."
-            : "No tasks found. Create one to get started!"}
+            : view === "starred"
+              ? "No starred tasks. Star a task to add it to your focus list for today."
+              : "No tasks found. Create one to get started!"}
         </div>
       ) : (
         <div className="flex flex-col gap-6">
