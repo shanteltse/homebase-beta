@@ -7,7 +7,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/select";
-import { X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@repo/ui/dropdown-menu";
+import { ArrowUpDown, Check, X } from "lucide-react";
 import { DEFAULT_CATEGORIES } from "@/types/category";
 import { cn } from "@/utils/cn";
 import type { TaskView, TaskSort } from "../hooks/use-task-filters";
@@ -126,20 +132,28 @@ export function TaskFilters({
           </SelectContent>
         </Select>
 
-        <Select
-          value={sort}
-          onValueChange={(val) => onSortChange(val as TaskSort)}
-        >
-          <SelectTrigger className="h-7 text-xs flex-1 min-w-[7rem] max-w-[10rem]">
-            <SelectValue placeholder="Sort" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="due-date">Due Date</SelectItem>
-            <SelectItem value="priority">Priority</SelectItem>
-            <SelectItem value="assignee">Assignee</SelectItem>
-            <SelectItem value="created">Date Created</SelectItem>
-          </SelectContent>
-        </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="Sort tasks"
+            >
+              <ArrowUpDown className="h-3 w-3" />
+              <span className="hidden sm:inline">
+                {sort === "due-date" ? "Due Date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : "Date Created"}
+              </span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
+              <DropdownMenuItem key={s} onClick={() => onSortChange(s)} className="flex items-center justify-between gap-4">
+                {s === "due-date" ? "Due Date" : s === "priority" ? "Priority" : s === "assignee" ? "Assignee" : "Date Created"}
+                {sort === s && <Check className="h-3.5 w-3.5 text-primary" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {tag && (
           <button

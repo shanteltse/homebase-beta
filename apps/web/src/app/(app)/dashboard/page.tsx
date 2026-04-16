@@ -378,7 +378,7 @@ export default function DashboardPage() {
                       value={assigneeFilter || "all"}
                       onValueChange={(val) => setAssigneeFilter(val === "all" ? "" : val)}
                     >
-                      <SelectTrigger className="h-7 w-[9rem] text-xs">
+                      <SelectTrigger className="h-7 w-[8rem] text-xs">
                         <SelectValue placeholder="All members" />
                       </SelectTrigger>
                       <SelectContent>
