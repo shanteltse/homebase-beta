@@ -203,8 +203,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-3 pt-0">
+      <div className="flex flex-col gap-0.5">
         <h2 className="heading-md text-foreground">Here&apos;s the Rundown</h2>
         <p className="body text-muted-foreground">
           Your daily overview at a glance.
@@ -246,7 +246,7 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => setShowOverview(false)}
-            className="flex items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground transition-colors -mt-2 mb-0"
           >
             <X className="h-3 w-3" />
             Hide overview
@@ -391,40 +391,44 @@ export default function DashboardPage() {
                     </Select>
                   )}
                 </div>
-                {/* Row 2: sort dropdown + View all (right-aligned) */}
-                <div className="flex items-center justify-end gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                        aria-label="Sort tasks"
-                      >
-                        <ArrowUpDown className="h-3 w-3" />
-                        <span className="hidden sm:inline">
-                          {sort === "due-date" ? "Due Date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : "Date Created"}
-                        </span>
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
-                        <DropdownMenuItem key={s} onClick={() => setSort(s)} className="flex items-center justify-between gap-4">
-                          {s === "due-date" ? "Due Date" : s === "priority" ? "Priority" : s === "assignee" ? "Assignee" : "Date Created"}
-                          {sort === s && <Check className="h-3.5 w-3.5 text-primary" />}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Link href={`/tasks?view=${summaryView}`} className="caption shrink-0 mr-1 text-primary hover:underline">
-                    View all
-                  </Link>
+                {/* Row 2: Your Focus (left, when starred exist) + sort + View all (right) */}
+                <div className="flex items-center justify-between">
+                  {focusTasks.length > 0
+                    ? <h3 className="heading-xs text-primary">Your Focus</h3>
+                    : <span />}
+                  <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          aria-label="Sort tasks"
+                        >
+                          <ArrowUpDown className="h-3 w-3" />
+                          <span className="hidden sm:inline">
+                            {sort === "due-date" ? "Due Date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : "Date Created"}
+                          </span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
+                          <DropdownMenuItem key={s} onClick={() => setSort(s)} className="flex items-center justify-between gap-4">
+                            {s === "due-date" ? "Due Date" : s === "priority" ? "Priority" : s === "assignee" ? "Assignee" : "Date Created"}
+                            {sort === s && <Check className="h-3.5 w-3.5 text-primary" />}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Link href={`/tasks?view=${summaryView}`} className="caption shrink-0 mr-1 text-primary hover:underline">
+                      View all
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
 
             {focusTasks.length > 0 && (
               <div className="flex flex-col gap-3">
-                <h3 className="heading-xs text-primary">Your Focus</h3>
                 {focusTasks.map((task) => (
                   <div key={task.id} className="overflow-hidden rounded-lg border-l-2 border-primary">
                     <TaskCard

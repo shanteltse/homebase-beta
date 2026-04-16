@@ -387,7 +387,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
         (preview || (tasksPreview && tasksPreview.length > 0)) ? "rounded-t-xl" : "rounded-xl",
       )}>
         <p className="text-xs font-semibold text-primary uppercase tracking-widest select-none">Add a Task</p>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-1">
         <div className="relative">
           <textarea
             ref={inputRef}
