@@ -426,6 +426,21 @@ export default function DashboardPage() {
               <div className="flex flex-col gap-3">
                 <h3 className="heading-xs text-primary">Your Focus</h3>
                 {focusTasks.map((task) => (
+                  <div key={task.id} className="overflow-hidden rounded-lg border-l-2 border-primary">
+                    <TaskCard
+                      task={task}
+                      onToggleComplete={handleToggleComplete}
+                      onToggleStar={handleToggleStar}
+                      onTagClick={(t) => router.push(`/tasks?tag=${encodeURIComponent(t)}`)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {nonFocusTasks.length > 0 ? (
+              <div className={cn("flex flex-col gap-3", focusTasks.length > 0 && "mt-3")}>
+                {nonFocusTasks.map((task) => (
                   <TaskCard
                     key={task.id}
                     task={task}
@@ -435,18 +450,6 @@ export default function DashboardPage() {
                   />
                 ))}
               </div>
-            )}
-
-            {nonFocusTasks.length > 0 ? (
-              nonFocusTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onToggleComplete={handleToggleComplete}
-                  onToggleStar={handleToggleStar}
-                  onTagClick={(t) => router.push(`/tasks?tag=${encodeURIComponent(t)}`)}
-                />
-              ))
             ) : focusTasks.length === 0 ? (
               <div className="rounded-lg border border-border bg-muted/50 p-8 text-center body text-muted-foreground">
                 {dashboardView === "all"
