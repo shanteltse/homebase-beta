@@ -354,14 +354,14 @@ export default function DashboardPage() {
           {/* All / Today / This Week toggle section */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <div className="flex gap-1 rounded-lg border border-border p-0.5">
+              <div className="flex min-w-0 items-center justify-between overflow-hidden">
+                <div className="flex shrink-0 gap-1 rounded-lg border border-border p-0.5">
                   {(["all", "today", "this-week"] as DashboardView[]).map((v) => (
                     <button
                       key={v}
                       type="button"
                       onClick={() => setDashboardView(v)}
-                      className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                      className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
                         dashboardView === v
                           ? "bg-foreground text-background"
                           : "text-muted-foreground hover:text-foreground"
@@ -371,7 +371,7 @@ export default function DashboardPage() {
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   {showMemberFilter && (
                     <Select
                       value={assigneeFilter || "all"}
@@ -413,7 +413,7 @@ export default function DashboardPage() {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Link href={`/tasks?view=${summaryView}`} className="caption text-primary hover:underline">
+                  <Link href={`/tasks?view=${summaryView}`} className="caption shrink-0 mr-1 text-primary hover:underline">
                     View all
                   </Link>
                 </div>
