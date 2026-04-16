@@ -468,7 +468,7 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
                   className="gap-1"
                 >
                   <Plus className="h-3 w-3" />
-                  Quick Add
+                  Instant Add
                 </Button>
                 <Button
                   type="button"
@@ -483,10 +483,9 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
                   ) : (
                     <Sparkles className="h-3 w-3" />
                   )}
-                  {parseTask.isPending ? "Parsing..." : "Smart Add"}
+                  {parseTask.isPending ? "Parsing..." : "Review + Add"}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground text-right">Quick saves instantly · Smart reviews first</p>
             </div>
 
           </>

@@ -353,23 +353,24 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
               <div className="flex flex-col gap-1.5">
-                <div className="flex self-start gap-1 rounded-lg border border-border p-0.5">
-                  {(["all", "today", "this-week"] as DashboardView[]).map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setDashboardView(v)}
-                      className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                        dashboardView === v
-                          ? "bg-foreground text-background"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {v === "all" ? "All" : v === "today" ? "Today" : "This Week"}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
+                {/* Row 1: toggle pills (left) + member filter (right) */}
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-1 rounded-lg border border-border p-0.5">
+                    {(["all", "today", "this-week"] as DashboardView[]).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setDashboardView(v)}
+                        className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                          dashboardView === v
+                            ? "bg-foreground text-background"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {v === "all" ? "All" : v === "today" ? "Today" : "This Week"}
+                      </button>
+                    ))}
+                  </div>
                   {showMemberFilter && (
                     <Select
                       value={assigneeFilter || "all"}
@@ -389,6 +390,9 @@ export default function DashboardPage() {
                       </SelectContent>
                     </Select>
                   )}
+                </div>
+                {/* Row 2: sort dropdown + View all (right-aligned) */}
+                <div className="flex items-center justify-end gap-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
