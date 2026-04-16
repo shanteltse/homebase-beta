@@ -78,14 +78,14 @@ export function TaskFilters({
         ))}
       </div>
 
-      {/* Filter selects row — compact height */}
-      <div className="flex flex-wrap gap-1.5">
+      {/* Filter + sort row */}
+      <div className="flex flex-wrap items-center gap-2">
         {showMemberFilter && (
           <Select
             value={assigneeFilter ?? ""}
             onValueChange={(val) => onAssigneeFilterChange(val === "all" ? "" : val)}
           >
-            <SelectTrigger className="h-7 text-xs flex-1 min-w-[7rem] max-w-[10rem]">
+            <SelectTrigger className="h-7 w-[7rem] text-xs">
               <SelectValue placeholder="All members" />
             </SelectTrigger>
             <SelectContent>
@@ -104,7 +104,7 @@ export function TaskFilters({
           value={category}
           onValueChange={(val) => onFilterChange("category", val === "all" ? "" : val)}
         >
-          <SelectTrigger className="h-7 text-xs flex-1 min-w-[7rem] max-w-[10rem]">
+          <SelectTrigger className="h-7 w-[7rem] text-xs">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -121,7 +121,7 @@ export function TaskFilters({
           value={priority}
           onValueChange={(val) => onFilterChange("priority", val === "all" ? "" : val)}
         >
-          <SelectTrigger className="h-7 text-xs flex-1 min-w-[6rem] max-w-[9rem]">
+          <SelectTrigger className="h-7 w-[7rem] text-xs">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
