@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+
+const SHOW_HOUSEHOLD_KEY = "hb_show_household";
 import { MemberAvatar } from "./member-avatar";
 import type { HouseholdMember } from "../api/get-members";
 import type { Task } from "@/types/task";
@@ -14,6 +16,19 @@ type HouseholdOverviewProps = {
 export function HouseholdOverview({ members, tasks }: HouseholdOverviewProps) {
   const [open, setOpen] = useState(true);
 
+  useEffect(() => {
+    const stored = localStorage.getItem(SHOW_HOUSEHOLD_KEY);
+    if (stored !== null) setOpen(stored !== "false");
+  }, []);
+
+  function toggleOpen() {
+    setOpen((prev) => {
+      const next = !prev;
+      localStorage.setItem(SHOW_HOUSEHOLD_KEY, String(next));
+      return next;
+    });
+  }
+
   if (members.length <= 1) return null;
 
   return (
@@ -21,7 +36,7 @@ export function HouseholdOverview({ members, tasks }: HouseholdOverviewProps) {
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={() => setOpen((o) => !o)}
+          onClick={toggleOpen}
           className="flex items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           {open ? (

@@ -4,9 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useTasks } from "@/features/tasks/api/get-tasks";
 import { useUpdateTask } from "@/features/tasks/api/update-task";
-import { useUserProfile, useUpdateUserProfile } from "@/features/auth/api/get-user-profile";
 import { useUser } from "@/features/auth/api/get-user";
-import { useQueryClient } from "@tanstack/react-query";
 import { useHouseholdMembers } from "@/features/household/api/get-members";
 import { Spinner } from "@repo/ui/spinner";
 import { TaskCard } from "@/features/tasks/components/task-card";
@@ -44,16 +42,14 @@ type DashboardView = "all" | "today" | "this-week";
 
 const ASSIGNEE_FILTER_KEY = "hb_assignee_filter";
 const SORT_KEY = "hb_sort";
+const SHOW_OVERVIEW_KEY = "hb_show_overview";
 
 export default function DashboardPage() {
   const { data: tasks, isLoading } = useTasks();
   const updateTask = useUpdateTask();
-  const { data: profile } = useUserProfile();
   const { data: user } = useUser();
   const { data: members } = useHouseholdMembers();
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const { update: updateProfile } = useUpdateUserProfile();
   const smartInputRef = useRef<SmartTaskInputHandle>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogPrefill, setDialogPrefill] = useState<ParsedTask | undefined>();
@@ -61,13 +57,21 @@ export default function DashboardPage() {
   const [dashboardView, setDashboardView] = useState<DashboardView>("all");
   const [assigneeFilter, setAssigneeFilterState] = useState<string>("");
   const [sort, setSortState] = useState<TaskSort>("due-date");
+  const [showOverview, setShowOverviewState] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem(ASSIGNEE_FILTER_KEY) ?? "";
     setAssigneeFilterState(stored);
     const storedSort = localStorage.getItem(SORT_KEY) as TaskSort | null;
     if (storedSort) setSortState(storedSort);
+    const storedOverview = localStorage.getItem(SHOW_OVERVIEW_KEY);
+    if (storedOverview !== null) setShowOverviewState(storedOverview !== "false");
   }, []);
+
+  function setShowOverview(value: boolean) {
+    setShowOverviewState(value);
+    localStorage.setItem(SHOW_OVERVIEW_KEY, String(value));
+  }
 
   function setAssigneeFilter(value: string) {
     setAssigneeFilterState(value);
@@ -237,14 +241,11 @@ export default function DashboardPage() {
       <ImportTasksDialog open={importOpen} onOpenChange={setImportOpen} />
 
       {/* Dashboard overview (summary + stats) */}
-      {(profile?.showTaskSummaryOnDashboard ?? true) ? (
+      {showOverview ? (
         <div className="flex flex-col gap-4">
           <button
             type="button"
-            onClick={async () => {
-              await updateProfile({ showTaskSummaryOnDashboard: false, showStatsOnDashboard: false });
-              await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-            }}
+            onClick={() => setShowOverview(false)}
             className="flex items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-3 w-3" />
@@ -288,15 +289,12 @@ export default function DashboardPage() {
               </p>
             </Link>
           </div>
-          {(profile?.showStatsOnDashboard ?? true) && <StatsCard />}
+          <StatsCard />
         </div>
       ) : (
         <button
           type="button"
-          onClick={async () => {
-            await updateProfile({ showTaskSummaryOnDashboard: true, showStatsOnDashboard: true });
-            await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-          }}
+          onClick={() => setShowOverview(true)}
           className="self-start text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           + Show overview
@@ -354,8 +352,8 @@ export default function DashboardPage() {
           {/* All / Today / This Week toggle section */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
-              <div className="flex min-w-0 items-center justify-between overflow-hidden">
-                <div className="flex shrink-0 gap-1 rounded-lg border border-border p-0.5">
+              <div className="flex flex-col gap-1.5">
+                <div className="flex self-start gap-1 rounded-lg border border-border p-0.5">
                   {(["all", "today", "this-week"] as DashboardView[]).map((v) => (
                     <button
                       key={v}
@@ -371,7 +369,7 @@ export default function DashboardPage() {
                     </button>
                   ))}
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex items-center gap-2">
                   {showMemberFilter && (
                     <Select
                       value={assigneeFilter || "all"}

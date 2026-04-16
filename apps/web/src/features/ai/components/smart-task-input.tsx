@@ -394,16 +394,11 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
             placeholder="e.g. dentist appointment next Tuesday"
             value={text}
             rows={1}
-            style={{ height: "40px" }}
+            style={{ resize: "none", overflow: "hidden" }}
             onChange={(e) => {
               setText(e.target.value);
               if (preview) setPreview(null);
               if (tasksPreview) setTasksPreview(null);
-            }}
-            onInput={(e) => {
-              const el = e.currentTarget;
-              el.style.height = "auto";
-              el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
