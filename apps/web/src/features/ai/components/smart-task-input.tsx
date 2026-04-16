@@ -131,12 +131,13 @@ function formatDueDate(dueDate: string): string {
 
 type SmartTaskInputProps = {
   onOpenCreateDialog?: (prefill: ParsedTask) => void;
+  rightLabel?: React.ReactNode;
 };
 
 export type SmartTaskInputHandle = { focus: () => void };
 
 export const SmartTaskInput = forwardRef<SmartTaskInputHandle, SmartTaskInputProps>(
-function SmartTaskInput({ onOpenCreateDialog }, ref) {
+function SmartTaskInput({ onOpenCreateDialog, rightLabel }, ref) {
   const [text, setText] = useState("");
   const [preview, setPreview] = useState<ParsedTask | null>(null);
   const [tasksPreview, setTasksPreview] = useState<ParsedTask[] | null>(null);
@@ -386,7 +387,10 @@ function SmartTaskInput({ onOpenCreateDialog }, ref) {
         "border-2 border-primary/25 bg-background shadow-sm hover:border-primary/40 focus-within:border-primary/50 focus-within:shadow-md transition-all duration-200 p-3 flex flex-col gap-2",
         (preview || (tasksPreview && tasksPreview.length > 0)) ? "rounded-t-xl" : "rounded-xl",
       )}>
-        <p className="text-xs font-semibold text-primary uppercase tracking-widest select-none">Add a Task</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-primary uppercase tracking-widest select-none">Add a Task</p>
+          {rightLabel}
+        </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-1">
         <div className="relative">
           <textarea

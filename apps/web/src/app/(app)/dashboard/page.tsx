@@ -183,8 +183,7 @@ export default function DashboardPage() {
       : dashboardView === "today"
         ? todayTasks
         : thisWeekTasks;
-  const summaryView =
-    dashboardView === "all" ? "all" : dashboardView === "today" ? "today" : "this-week";
+
 
   const focusTasks = summaryTasks.filter((t) => t.starred);
   const nonFocusTasks = summaryTasks.filter((t) => !t.starred);
@@ -213,17 +212,20 @@ export default function DashboardPage() {
 
       {/* Smart quick add */}
       <div className="flex flex-col gap-2">
-        <SmartTaskInput ref={smartInputRef} onOpenCreateDialog={handleOpenCreateDialog} />
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Upload className="h-3.5 w-3.5" />
-            Import existing list
-          </button>
-        </div>
+        <SmartTaskInput
+          ref={smartInputRef}
+          onOpenCreateDialog={handleOpenCreateDialog}
+          rightLabel={
+            <button
+              type="button"
+              onClick={() => setImportOpen(true)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              Import existing list
+            </button>
+          }
+        />
         {showMemberFilter && (
           <HouseholdOverview members={members!} tasks={allTasks} />
         )}
@@ -352,25 +354,25 @@ export default function DashboardPage() {
           {/* All / Today / This Week toggle section */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
-              <div className="flex flex-col gap-1.5">
-                {/* Row 1: toggle pills (left) + member filter (right) */}
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-1 rounded-lg border border-border p-0.5">
-                    {(["all", "today", "this-week"] as DashboardView[]).map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => setDashboardView(v)}
-                        className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                          dashboardView === v
-                            ? "bg-foreground text-background"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {v === "all" ? "All" : v === "today" ? "Today" : "This Week"}
-                      </button>
-                    ))}
-                  </div>
+              {/* Single row: toggle pills (left) + member filter + sort (right) */}
+              <div className="flex items-center justify-between">
+                <div className="flex gap-1 rounded-lg border border-border p-0.5">
+                  {(["all", "today", "this-week"] as DashboardView[]).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setDashboardView(v)}
+                      className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                        dashboardView === v
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {v === "all" ? "All" : v === "today" ? "Today" : "This Week"}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
                   {showMemberFilter && (
                     <Select
                       value={assigneeFilter || "all"}
@@ -390,39 +392,28 @@ export default function DashboardPage() {
                       </SelectContent>
                     </Select>
                   )}
-                </div>
-                {/* Row 2: Your Focus (left, when starred exist) + sort + View all (right) */}
-                <div className="flex items-center justify-between">
-                  {focusTasks.length > 0
-                    ? <h3 className="heading-xs text-primary">Your Focus</h3>
-                    : <span />}
-                  <div className="flex items-center gap-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                          aria-label="Sort tasks"
-                        >
-                          <ArrowUpDown className="h-3 w-3" />
-                          <span className="hidden sm:inline">
-                            {sort === "due-date" ? "Due Date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : "Date Created"}
-                          </span>
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
-                          <DropdownMenuItem key={s} onClick={() => setSort(s)} className="flex items-center justify-between gap-4">
-                            {s === "due-date" ? "Due Date" : s === "priority" ? "Priority" : s === "assignee" ? "Assignee" : "Date Created"}
-                            {sort === s && <Check className="h-3.5 w-3.5 text-primary" />}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Link href={`/tasks?view=${summaryView}`} className="caption shrink-0 mr-1 text-primary hover:underline">
-                      View all
-                    </Link>
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        aria-label="Sort tasks"
+                      >
+                        <ArrowUpDown className="h-3 w-3" />
+                        <span className="hidden sm:inline">
+                          {sort === "due-date" ? "Due Date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : "Date Created"}
+                        </span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
+                        <DropdownMenuItem key={s} onClick={() => setSort(s)} className="flex items-center justify-between gap-4">
+                          {s === "due-date" ? "Due Date" : s === "priority" ? "Priority" : s === "assignee" ? "Assignee" : "Date Created"}
+                          {sort === s && <Check className="h-3.5 w-3.5 text-primary" />}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
