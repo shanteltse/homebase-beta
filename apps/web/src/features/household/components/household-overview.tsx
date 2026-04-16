@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ChevronDown } from "lucide-react";
-import { cn } from "@/utils/cn";
+import { X } from "lucide-react";
 import { MemberAvatar } from "./member-avatar";
 import type { HouseholdMember } from "../api/get-members";
 import type { Task } from "@/types/task";
@@ -24,26 +22,17 @@ export function HouseholdOverview({ members, tasks }: HouseholdOverviewProps) {
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="flex items-center gap-1 group"
+          className="flex items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          <p className="label text-muted-foreground group-hover:text-foreground transition-colors">
-            Household
-          </p>
-          <ChevronDown
-            className={cn(
-              "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200",
-              !open && "-rotate-90",
-            )}
-          />
+          {open ? (
+            <>
+              <X className="h-3 w-3" />
+              Household
+            </>
+          ) : (
+            "+ Household"
+          )}
         </button>
-        {open && (
-          <Link
-            href="/tasks?sort=assignee"
-            className="caption text-primary hover:underline"
-          >
-            View by member →
-          </Link>
-        )}
       </div>
       {open && (
         <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
@@ -61,7 +50,7 @@ export function HouseholdOverview({ members, tasks }: HouseholdOverviewProps) {
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <MemberAvatar name={member.name} image={member.image} size="sm" />
-                  <span className="body truncate font-medium text-foreground text-sm">
+                  <span className="text-sm font-medium text-foreground truncate">
                     {member.name ?? member.email}
                   </span>
                 </div>
@@ -72,7 +61,7 @@ export function HouseholdOverview({ members, tasks }: HouseholdOverviewProps) {
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <p className="caption text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {activeCount}/{total} tasks · {pct}%
                   </p>
                 </div>

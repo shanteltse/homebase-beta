@@ -182,6 +182,9 @@ export default function DashboardPage() {
   const summaryView =
     dashboardView === "all" ? "all" : dashboardView === "today" ? "today" : "this-week";
 
+  const focusTasks = summaryTasks.filter((t) => t.starred);
+  const nonFocusTasks = summaryTasks.filter((t) => !t.starred);
+
   function handleToggleComplete(taskId: string, completed: boolean) {
     updateTask.mutate({ id: taskId, completed });
   }
@@ -207,40 +210,19 @@ export default function DashboardPage() {
       {/* Smart quick add */}
       <div className="flex flex-col gap-2">
         <SmartTaskInput ref={smartInputRef} onOpenCreateDialog={handleOpenCreateDialog} />
-        {showMemberFilter && (
-          <HouseholdOverview members={members!} tasks={allTasks} />
-        )}
-        <div className="flex items-center justify-between gap-2">
-          {showMemberFilter ? (
-            <Select
-              value={assigneeFilter || "all"}
-              onValueChange={(val) => setAssigneeFilter(val === "all" ? "" : val)}
-            >
-              <SelectTrigger className="w-[12rem]">
-                <SelectValue placeholder="All members" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All members</SelectItem>
-                <SelectItem value="mine">Mine</SelectItem>
-                {members.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.name ?? m.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <div />
-          )}
+        <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <Upload className="h-3.5 w-3.5" />
             Import existing list
           </button>
         </div>
+        {showMemberFilter && (
+          <HouseholdOverview members={members!} tasks={allTasks} />
+        )}
       </div>
 
       <CreateTaskDialog
@@ -268,40 +250,40 @@ export default function DashboardPage() {
             <X className="h-3 w-3" />
             Hide overview
           </button>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <Link
               href="/tasks?view=overdue"
-              className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
+              className="flex flex-col gap-1 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
             >
-              <p className="label text-muted-foreground">Overdue</p>
-              <p className={cn("stat", !isLoading && overdueTasks.length === 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+              <p className="text-xs text-muted-foreground">Overdue</p>
+              <p className={cn("text-sm font-semibold", !isLoading && overdueTasks.length === 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
                 {isLoading ? "—" : overdueTasks.length}
               </p>
             </Link>
             <Link
               href="/tasks?view=today"
-              className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
+              className="flex flex-col gap-1 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
             >
-              <p className="label text-muted-foreground">Today</p>
-              <p className="stat text-foreground">
+              <p className="text-xs text-muted-foreground">Today</p>
+              <p className="text-sm font-semibold text-foreground">
                 {isLoading ? "—" : todayTasks.length}
               </p>
             </Link>
             <Link
               href="/tasks?view=this-week"
-              className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
+              className="flex flex-col gap-1 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
             >
-              <p className="label text-muted-foreground">This Week</p>
-              <p className="stat text-foreground">
+              <p className="text-xs text-muted-foreground">This Week</p>
+              <p className="text-sm font-semibold text-foreground">
                 {isLoading ? "—" : thisWeekTasksAll.length}
               </p>
             </Link>
             <Link
               href="/tasks?view=completed"
-              className="flex flex-col gap-1 rounded-lg border border-border p-5 transition-colors hover:bg-muted/50"
+              className="flex flex-col gap-1 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
             >
-              <p className="label text-muted-foreground">Completed</p>
-              <p className="stat text-foreground">
+              <p className="text-xs text-muted-foreground">Completed</p>
+              <p className="text-sm font-semibold text-foreground">
                 {isLoading ? "—" : completedCount}
               </p>
             </Link>
@@ -390,6 +372,25 @@ export default function DashboardPage() {
                   ))}
                 </div>
                 <div className="flex items-center gap-2">
+                  {showMemberFilter && (
+                    <Select
+                      value={assigneeFilter || "all"}
+                      onValueChange={(val) => setAssigneeFilter(val === "all" ? "" : val)}
+                    >
+                      <SelectTrigger className="h-7 w-[9rem] text-xs">
+                        <SelectValue placeholder="All members" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All members</SelectItem>
+                        <SelectItem value="mine">Mine</SelectItem>
+                        {members.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.name ?? m.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
@@ -419,8 +420,23 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {summaryTasks.length > 0 ? (
-              summaryTasks.map((task) => (
+            {focusTasks.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <h3 className="heading-xs text-primary">Your Focus</h3>
+                {focusTasks.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onToggleComplete={handleToggleComplete}
+                    onToggleStar={handleToggleStar}
+                    onTagClick={(t) => router.push(`/tasks?tag=${encodeURIComponent(t)}`)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {nonFocusTasks.length > 0 ? (
+              nonFocusTasks.map((task) => (
                 <TaskCard
                   key={task.id}
                   task={task}
@@ -429,7 +445,7 @@ export default function DashboardPage() {
                   onTagClick={(t) => router.push(`/tasks?tag=${encodeURIComponent(t)}`)}
                 />
               ))
-            ) : (
+            ) : focusTasks.length === 0 ? (
               <div className="rounded-lg border border-border bg-muted/50 p-8 text-center body text-muted-foreground">
                 {dashboardView === "all"
                   ? "No active tasks."
@@ -437,7 +453,7 @@ export default function DashboardPage() {
                     ? "Nothing scheduled for today."
                     : "Nothing scheduled this week."}
               </div>
-            )}
+            ) : null}
           </div>
         </>
       )}

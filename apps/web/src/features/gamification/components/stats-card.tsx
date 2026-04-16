@@ -81,29 +81,29 @@ export function StatsCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your Stats</CardTitle>
+        <CardTitle className="text-sm font-medium">Your Stats</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="flex flex-col gap-1">
-            <p className="label text-muted-foreground">Tasks Done</p>
-            <p className="stat text-foreground">{completedCount}</p>
+            <p className="text-xs text-muted-foreground">Tasks Done</p>
+            <p className="text-sm font-semibold text-foreground">{completedCount}</p>
           </div>
           <div className="flex flex-col gap-1">
-            <p className="label text-muted-foreground">Current Streak</p>
-            <p className="stat text-foreground">
+            <p className="text-xs text-muted-foreground">Current Streak</p>
+            <p className="text-sm font-semibold text-foreground">
               {streak.current} {streak.current === 1 ? "day" : "days"}
             </p>
           </div>
           <div className="flex flex-col gap-1">
-            <p className="label text-muted-foreground">Best Streak</p>
-            <p className="stat text-foreground">
+            <p className="text-xs text-muted-foreground">Best Streak</p>
+            <p className="text-sm font-semibold text-foreground">
               {streak.best} {streak.best === 1 ? "day" : "days"}
             </p>
           </div>
           <div className="flex flex-col gap-1">
-            <p className="label text-muted-foreground">Achievements</p>
-            <p className="stat text-foreground">
+            <p className="text-xs text-muted-foreground">Achievements</p>
+            <p className="text-sm font-semibold text-foreground">
               {achievementCount}/{ACHIEVEMENTS.length}
             </p>
           </div>
