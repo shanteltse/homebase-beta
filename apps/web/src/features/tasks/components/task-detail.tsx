@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useForm, type UseFormRegister, type UseFormWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { ArrowLeft, Calendar, ExternalLink, Pencil, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { ArrowLeft, Calendar, ExternalLink, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
@@ -267,41 +267,12 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           <textarea
             {...register("title")}
             rows={1}
-            onInput={(e) => {
-              const el = e.currentTarget;
-              el.style.height = "auto";
-              el.style.height = `${el.scrollHeight}px`;
-            }}
-            className="heading-sm flex-1 min-w-0 resize-none overflow-hidden rounded-md bg-muted/40 px-1 py-0.5 text-foreground outline-none placeholder:text-muted-foreground sm:bg-transparent sm:hover:bg-muted/50 focus:bg-muted/50 focus:ring-1 focus:ring-ring transition-colors cursor-text"
+            style={{ overflowX: "auto", whiteSpace: "nowrap" }}
+            className="heading-sm flex-1 min-w-0 resize-none rounded-md bg-muted/40 px-1 py-0.5 text-foreground outline-none placeholder:text-muted-foreground sm:bg-transparent sm:hover:bg-muted/50 focus:bg-muted/50 focus:ring-1 focus:ring-ring transition-colors cursor-text"
             placeholder="Task title"
           />
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            title="Click to cycle priority"
-            onClick={() => {
-              const order = ["high", "medium", "low"] as const;
-              const cur = watch("priority") ?? task.priority;
-              const next = order[(order.indexOf(cur) + 1) % 3]!;
-              setValue("priority", next, { shouldDirty: true });
-            }}
-            className={cn(
-              "group flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-              watch("priority") === "high"
-                ? "border-red-300 bg-red-50 text-red-700 hover:border-red-400 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
-                : watch("priority") === "low"
-                  ? "border-border bg-muted/50 text-muted-foreground hover:border-border/80 hover:bg-muted"
-                  : "border-yellow-300 bg-yellow-50 text-yellow-700 hover:border-yellow-400 hover:bg-yellow-100 dark:border-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400",
-            )}
-          >
-            <span className={cn(
-              "h-1.5 w-1.5 rounded-full",
-              watch("priority") === "high" ? "bg-red-500" : watch("priority") === "low" ? "bg-muted-foreground" : "bg-yellow-500",
-            )} />
-            {watch("priority") ?? task.priority}
-            <Pencil className="h-2.5 w-2.5 opacity-50 sm:opacity-0 sm:group-hover:opacity-60 transition-opacity" />
-          </button>
+        <div className="flex shrink-0 flex-col items-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"
@@ -309,6 +280,30 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
+          <Select
+            value={watch("priority") ?? task.priority}
+            onValueChange={(val) =>
+              setValue("priority", val as "high" | "medium" | "low", { shouldDirty: true })
+            }
+          >
+            <SelectTrigger
+              className={cn(
+                "h-auto w-auto min-w-0 gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium [&>svg]:h-2.5 [&>svg]:w-2.5",
+                watch("priority") === "high"
+                  ? "border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
+                  : watch("priority") === "low"
+                    ? "border-border bg-muted/50 text-muted-foreground"
+                    : "border-yellow-300 bg-yellow-50 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400",
+              )}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
