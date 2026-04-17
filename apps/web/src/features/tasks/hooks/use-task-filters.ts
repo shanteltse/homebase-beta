@@ -4,6 +4,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import type { Task, TaskPriority } from "@/types/task";
 import type { HouseholdMember } from "@/features/household/api/get-members";
+import { toLocalDateStr } from "@/lib/date-utils";
 
 export type TaskView = "all" | "overdue" | "today" | "this-week" | "upcoming" | "completed" | "starred";
 export type TaskSort = "due-date" | "priority" | "assignee" | "created";
@@ -80,7 +81,7 @@ export function useTaskFilters(currentUserId?: string, members?: HouseholdMember
         filtered = filtered.filter((t) => !t.completed);
       }
 
-      const today = new Date().toISOString().split("T")[0] ?? "";
+      const today = toLocalDateStr(new Date());
 
       if (view === "overdue") {
         filtered = filtered.filter((t) => {
@@ -103,7 +104,7 @@ export function useTaskFilters(currentUserId?: string, members?: HouseholdMember
         const daysUntilSunday = now.getDay() === 0 ? 0 : 7 - now.getDay();
         const weekEnd = new Date(now);
         weekEnd.setDate(now.getDate() + daysUntilSunday);
-        const weekEndStr = weekEnd.toISOString().split("T")[0] ?? "";
+        const weekEndStr = toLocalDateStr(weekEnd);
         filtered = filtered.filter((t) => {
           if (!t.dueDate) return false;
           const due = t.dueDate.split("T")[0] ?? "";
@@ -125,7 +126,7 @@ export function useTaskFilters(currentUserId?: string, members?: HouseholdMember
         const now = new Date();
         const sevenDaysOut = new Date(now);
         sevenDaysOut.setDate(now.getDate() + 7);
-        const sevenDaysStr = sevenDaysOut.toISOString().split("T")[0]!;
+        const sevenDaysStr = toLocalDateStr(sevenDaysOut);
 
         // Find the earliest due date for each recurring task title
         const earliestByTitle = new Map<string, string>();

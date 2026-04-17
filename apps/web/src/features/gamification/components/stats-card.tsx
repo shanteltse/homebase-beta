@@ -4,14 +4,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@repo/ui/card";
 import { useAchievements } from "@/features/gamification/api/get-achievements";
 import { useTasks } from "@/features/tasks/api/get-tasks";
 import { ACHIEVEMENTS } from "@/features/gamification/achievements";
+import { toLocalDateStr } from "@/lib/date-utils";
 import type { Task } from "@/types/task";
-
-function toLocalDateStr(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 function calculateStreakFromTasks(tasks: Task[]): {
   current: number;
@@ -19,7 +13,7 @@ function calculateStreakFromTasks(tasks: Task[]): {
 } {
   const completedDates = tasks
     .filter((t) => t.completed && t.completedAt)
-    .map((t) => toLocalDateStr(new Date(t.completedAt!)));
+    .map((t) => toLocalDateStr(t.completedAt!));
 
   const uniqueDates = [...new Set(completedDates)].sort().reverse();
 

@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/get-auth-user";
 import { db } from "@/db";
 import { achievements, tasks } from "@/db/schema";
-import { eq, and, count, sql } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { ACHIEVEMENTS } from "@/features/gamification/achievements";
+import { toLocalDateStr } from "@/lib/date-utils";
 
 export async function POST() {
   const user = await getAuthUser();
@@ -29,61 +30,38 @@ export async function POST() {
 
   const completedCount = taskCountResult?.value ?? 0;
 
-  // Get distinct completion dates for streak calculation
-  const completionDates = await db
-    .select({
-      date: sql<string>`DATE(${tasks.completedAt})`,
-    })
+  // Fetch raw completedAt timestamps — bucket into local dates in JS
+  // to avoid UTC-vs-local mismatch from SQL DATE() and EXTRACT(HOUR).
+  const completedTasks = await db
+    .select({ completedAt: tasks.completedAt, category: tasks.category })
     .from(tasks)
     .where(
       and(
         eq(tasks.userId, userId),
         eq(tasks.completed, true),
-        sql`${tasks.completedAt} IS NOT NULL`,
       ),
-    )
-    .groupBy(sql`DATE(${tasks.completedAt})`)
-    .orderBy(sql`DATE(${tasks.completedAt}) DESC`);
+    );
 
-  // Calculate current streak
-  const currentStreak = calculateStreak(
-    completionDates.map((d) => d.date),
+  // Date bucketing in local time
+  const localDates = completedTasks
+    .filter((t) => t.completedAt != null)
+    .map((t) => toLocalDateStr(t.completedAt!));
+
+  const uniqueDatesDesc = [...new Set(localDates)].sort().reverse();
+
+  // Calculate current streak from local-date-bucketed data
+  const currentStreak = calculateStreak(uniqueDatesDesc);
+
+  // Category set from fetched data
+  const categorySet = new Set(completedTasks.map((t) => t.category).filter(Boolean));
+
+  // Early bird / night owl using local hours
+  const hasEarlyBird = completedTasks.some(
+    (t) => t.completedAt != null && new Date(t.completedAt).getHours() < 8,
   );
-
-  // Get distinct categories of completed tasks
-  const completedCategories = await db
-    .select({ category: tasks.category })
-    .from(tasks)
-    .where(and(eq(tasks.userId, userId), eq(tasks.completed, true)))
-    .groupBy(tasks.category);
-
-  const categorySet = new Set(completedCategories.map((c) => c.category));
-
-  // Check for early bird / night owl across all completed tasks
-  const earlyBirdResult = await db
-    .select({ value: count() })
-    .from(tasks)
-    .where(
-      and(
-        eq(tasks.userId, userId),
-        eq(tasks.completed, true),
-        sql`EXTRACT(HOUR FROM ${tasks.completedAt}) < 8`,
-      ),
-    );
-
-  const nightOwlResult = await db
-    .select({ value: count() })
-    .from(tasks)
-    .where(
-      and(
-        eq(tasks.userId, userId),
-        eq(tasks.completed, true),
-        sql`EXTRACT(HOUR FROM ${tasks.completedAt}) >= 22`,
-      ),
-    );
-
-  const hasEarlyBird = (earlyBirdResult[0]?.value ?? 0) > 0;
-  const hasNightOwl = (nightOwlResult[0]?.value ?? 0) > 0;
+  const hasNightOwl = completedTasks.some(
+    (t) => t.completedAt != null && new Date(t.completedAt).getHours() >= 22,
+  );
 
   // Determine which achievements should be unlocked
   const newlyUnlocked: string[] = [];

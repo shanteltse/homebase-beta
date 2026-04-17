@@ -35,7 +35,7 @@ import type { ParsedTask } from "@/features/ai/api/parse-task";
 
 function getDateString(date: string | Date | null | undefined): string {
   if (!date) return "";
-  return new Date(date).toISOString().split("T")[0] ?? "";
+  return new Date(date).toLocaleDateString("en-CA");
 }
 
 type DashboardView = "all" | "today" | "this-week";
@@ -250,6 +250,7 @@ export default function DashboardPage() {
             <X className="h-3 w-3" />
             Hide overview
           </button>
+          <p className="text-sm font-medium">At a Glance</p>
           <div className="rounded-lg border border-border p-4">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Link href="/tasks?view=overdue" className="flex flex-col gap-1 transition-colors hover:opacity-70">
