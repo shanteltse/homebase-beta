@@ -250,8 +250,8 @@ export default function DashboardPage() {
             <X className="h-3 w-3" />
             Hide overview
           </button>
-          <p className="text-sm font-medium">At a Glance</p>
           <div className="rounded-lg border border-border p-4">
+            <p className="text-sm font-medium mb-3">At a Glance</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Link href="/tasks?view=overdue" className="flex flex-col gap-1 transition-colors hover:opacity-70">
                 <p className="text-xs text-muted-foreground">Overdue</p>
@@ -279,6 +279,7 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
+          <StatsCard />
           {showMemberFilter && (
             <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
               {(members ?? []).map((member) => {
@@ -314,7 +315,6 @@ export default function DashboardPage() {
               })}
             </div>
           )}
-          <StatsCard />
         </div>
       ) : (
         <button
