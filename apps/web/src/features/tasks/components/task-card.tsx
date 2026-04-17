@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Mail, Phone, Repeat, Star, UserRound } from "lucide-react";
+import { CalendarDays, Check, Mail, Phone, Repeat, Star, UserRound } from "lucide-react";
 import { Badge } from "@repo/ui/badge";
 import {
   DropdownMenu,
@@ -55,7 +55,6 @@ function getContactMeta(contact: string | null | undefined): { type: "email" | "
 export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: TaskCardProps) {
   const { data: members } = useHouseholdMembers();
   const updateTask = useUpdateTask();
-  const dateInputRef = useRef<HTMLInputElement>(null);
   const assignedMember = task.assignee
     ? members?.find((m) => m.id === task.assignee)
     : undefined;
@@ -110,16 +109,6 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
           {task.title}
         </Link>
 
-        {/* Hidden date input — always rendered so ref works for both add and change */}
-        <input
-          ref={dateInputRef}
-          type="date"
-          className="sr-only"
-          key={task.dueDate ?? "no-date"}
-          defaultValue={task.dueDate?.split("T")[0] ?? ""}
-          onChange={(e) => updateTask.mutate({ id: task.id, dueDate: e.target.value || undefined })}
-          tabIndex={-1}
-        />
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Category — controlled dropdown, modal={false} so no overlay blocks sibling triggers */}
@@ -180,13 +169,14 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Due date — tappable to change if set, icon to add if not set */}
+          {/* Due date — overlay <input type="date"> on the visual trigger so the native
+              picker opens on direct tap (works on iOS Safari; showPicker() does not). */}
           {task.dueDate ? (
-            <button
-              type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenDropdown(null); dateInputRef.current?.showPicker(); }}
+            <label
+              key={task.dueDate}
+              onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
               className={cn(
-                "caption flex items-center gap-1 hover:opacity-70 transition-opacity",
+                "caption relative flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity",
                 overdue ? "text-destructive" : "text-muted-foreground",
               )}
             >
@@ -199,7 +189,14 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   <Repeat className="h-3 w-3" />
                 </span>
               )}
-            </button>
+              <input
+                type="date"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                defaultValue={task.dueDate.split("T")[0]}
+                onChange={(e) => updateTask.mutate({ id: task.id, dueDate: e.target.value || undefined })}
+                tabIndex={-1}
+              />
+            </label>
           ) : (
             <>
               {task.recurring && (
@@ -211,15 +208,20 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   {(task.recurring as { frequency: string }).frequency}
                 </span>
               )}
-              <button
-                type="button"
+              <label
                 title="Add due date"
                 aria-label="Add due date"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenDropdown(null); dateInputRef.current?.showPicker(); }}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
+                className="relative cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
               >
                 <CalendarDays className="h-4 w-4" />
-              </button>
+                <input
+                  type="date"
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  onChange={(e) => updateTask.mutate({ id: task.id, dueDate: e.target.value || undefined })}
+                  tabIndex={-1}
+                />
+              </label>
             </>
           )}
 
@@ -313,13 +315,26 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
         type="button"
         onClick={() => onToggleComplete(task.id, !task.completed)}
         className={cn(
-          "shrink-0 self-center rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
+          "shrink-0 self-center transition-colors",
+          // Mobile: circle button
+          "flex items-center justify-center rounded-full border-[1.5px] bg-white",
+          "h-9 w-9",
+          // Desktop: revert to pill
+          "md:flex-none md:h-auto md:w-auto md:rounded-md md:border md:bg-transparent md:px-2.5 md:py-1 md:text-xs md:font-medium",
           task.completed
             ? "border-border text-muted-foreground hover:border-border hover:text-foreground"
-            : "border-border text-muted-foreground hover:border-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30",
+            : "border-[#D4A898] md:border-border md:text-muted-foreground md:hover:border-green-500 md:hover:text-green-600 md:hover:bg-green-50 dark:md:hover:bg-green-950/30",
         )}
       >
-        {task.completed ? "Undo" : "Complete ✓"}
+        {task.completed ? "Undo" : (
+          <>
+            <Check
+              className="h-3.5 w-3.5 md:hidden"
+              style={{ color: "#D4A898", strokeWidth: 1.8 }}
+            />
+            <span className="hidden md:inline">Complete ✓</span>
+          </>
+        )}
       </button>
     </div>
   );
