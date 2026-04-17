@@ -192,8 +192,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
               <input
                 type="date"
                 className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                defaultValue={task.dueDate.split("T")[0]}
-                onChange={(e) => updateTask.mutate({ id: task.id, dueDate: e.target.value || undefined })}
+                onChange={(e) => { if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
                 tabIndex={-1}
               />
             </label>
