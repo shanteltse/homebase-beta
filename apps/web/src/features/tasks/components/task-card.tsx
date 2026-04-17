@@ -1,12 +1,20 @@
 "use client";
 
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { Mail, Phone, Repeat, Star } from "lucide-react";
+import { CalendarDays, Mail, Phone, Repeat, Star, UserRound } from "lucide-react";
 import { Badge } from "@repo/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@repo/ui/dropdown-menu";
 import { cn } from "@/utils/cn";
 import type { Task } from "@/types/task";
 import { DEFAULT_CATEGORIES } from "@/types/category";
 import { useHouseholdMembers } from "@/features/household/api/get-members";
+import { useUpdateTask } from "@/features/tasks/api/update-task";
 import { MemberAvatar } from "@/features/household/components/member-avatar";
 
 type TaskCardProps = {
@@ -15,6 +23,8 @@ type TaskCardProps = {
   onToggleStar?: (taskId: string, starred: boolean) => void;
   onTagClick?: (tag: string) => void;
 };
+
+type OpenDropdown = "category" | "priority" | "assignee" | null;
 
 const PRIORITY_VARIANTS = {
   high: "high",
@@ -44,9 +54,12 @@ function getContactMeta(contact: string | null | undefined): { type: "email" | "
 
 export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: TaskCardProps) {
   const { data: members } = useHouseholdMembers();
+  const updateTask = useUpdateTask();
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const assignedMember = task.assignee
     ? members?.find((m) => m.id === task.assignee)
     : undefined;
+  const showAssignIcon = members && members.length > 1;
 
   const categoryName =
     DEFAULT_CATEGORIES.find((c) => c.id === task.category)?.name ??
@@ -55,8 +68,41 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
   const overdue = isOverdue(task.dueDate);
   const contactMeta = getContactMeta(task.contact);
 
+  // Shared controlled state for inline edit dropdowns.
+  // Only one can be open at a time — setting a new one automatically closes the previous.
+  const [openDropdown, setOpenDropdown] = useState<OpenDropdown>(null);
+
+  // Refs used by the document mousedown listener to detect outside clicks.
+  // cardRef covers the triggers; content refs cover Radix portals (rendered in document.body).
+  const cardRef = useRef<HTMLDivElement>(null);
+  const categoryContentRef = useRef<HTMLDivElement>(null);
+  const priorityContentRef = useRef<HTMLDivElement>(null);
+  const assigneeContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleMouseDown(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        cardRef.current?.contains(target) ||
+        categoryContentRef.current?.contains(target) ||
+        priorityContentRef.current?.contains(target) ||
+        assigneeContentRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpenDropdown(null);
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, []);
+
+  function toggleDropdown(name: OpenDropdown) {
+    setOpenDropdown((prev) => (prev === name ? null : name));
+  }
+
   return (
     <div
+      ref={cardRef}
       data-testid="task-card"
       data-task-title={task.title}
       className={cn(
@@ -89,17 +135,83 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
           {task.title}
         </Link>
 
+        {/* Hidden date input — always rendered so ref works for both add and change */}
+        <input
+          ref={dateInputRef}
+          type="date"
+          className="sr-only"
+          key={task.dueDate ?? "no-date"}
+          defaultValue={task.dueDate?.split("T")[0] ?? ""}
+          onChange={(e) => updateTask.mutate({ id: task.id, dueDate: e.target.value || undefined })}
+          tabIndex={-1}
+        />
+
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={CATEGORY_VARIANTS[task.category] ?? "default"}>
-            {categoryName}
-          </Badge>
-          <Badge variant={PRIORITY_VARIANTS[task.priority]}>
-            {task.priority}
-          </Badge>
-          {task.dueDate && (
-            <span
+          {/* Category — controlled dropdown, modal={false} so no overlay blocks sibling triggers */}
+          <DropdownMenu
+            open={openDropdown === "category"}
+            onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}
+            modal={false}
+          >
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("category"); }}
+              >
+                <Badge variant={CATEGORY_VARIANTS[task.category] ?? "default"}>
+                  {categoryName}
+                </Badge>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent ref={categoryContentRef} align="start">
+              {DEFAULT_CATEGORIES.map((cat) => (
+                <DropdownMenuItem
+                  key={cat.id}
+                  onClick={() => { updateTask.mutate({ id: task.id, category: cat.id }); setOpenDropdown(null); }}
+                  className={cn("flex items-center justify-between gap-4", task.category === cat.id && "font-medium")}
+                >
+                  {cat.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Priority — controlled dropdown */}
+          <DropdownMenu
+            open={openDropdown === "priority"}
+            onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}
+            modal={false}
+          >
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("priority"); }}
+              >
+                <Badge variant={PRIORITY_VARIANTS[task.priority]}>
+                  {task.priority}
+                </Badge>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent ref={priorityContentRef} align="start">
+              {(["high", "medium", "low"] as const).map((p) => (
+                <DropdownMenuItem
+                  key={p}
+                  onClick={() => { updateTask.mutate({ id: task.id, priority: p }); setOpenDropdown(null); }}
+                  className={cn("flex items-center justify-between gap-4", task.priority === p && "font-medium")}
+                >
+                  {p}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Due date — tappable to change if set, icon to add if not set */}
+          {task.dueDate ? (
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenDropdown(null); dateInputRef.current?.showPicker(); }}
               className={cn(
-                "caption flex items-center gap-1",
+                "caption flex items-center gap-1 hover:opacity-70 transition-opacity",
                 overdue ? "text-destructive" : "text-muted-foreground",
               )}
             >
@@ -112,32 +224,30 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   <Repeat className="h-3 w-3" />
                 </span>
               )}
-            </span>
-          )}
-          {!task.dueDate && task.recurring && (
-            <span
-              className="caption flex items-center gap-1 text-muted-foreground"
-              title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}
-            >
-              <Repeat className="h-3 w-3" />
-              {(task.recurring as { frequency: string }).frequency}
-            </span>
-          )}
-          {task.tags.length > 0 &&
-            task.tags.map((tag) =>
-              onTagClick ? (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTagClick(tag); }}
-                  className="hover:opacity-70 transition-opacity"
+            </button>
+          ) : (
+            <>
+              {task.recurring && (
+                <span
+                  className="caption flex items-center gap-1 text-muted-foreground"
+                  title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}
                 >
-                  <Badge variant="secondary">{tag}</Badge>
-                </button>
-              ) : (
-                <Badge key={tag} variant="secondary">{tag}</Badge>
-              )
-            )}
+                  <Repeat className="h-3 w-3" />
+                  {(task.recurring as { frequency: string }).frequency}
+                </span>
+              )}
+              <button
+                type="button"
+                title="Add due date"
+                aria-label="Add due date"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenDropdown(null); dateInputRef.current?.showPicker(); }}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <CalendarDays className="h-4 w-4" />
+              </button>
+            </>
+          )}
+
           {contactMeta && (
             <a
               href={contactMeta.href}
@@ -169,17 +279,56 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
               </div>
             );
           })()}
-          {assignedMember && (
-            <div className="flex items-center gap-1.5">
-              <MemberAvatar
-                name={assignedMember.name}
-                image={assignedMember.image}
-                size="sm"
-              />
-              <span className="caption text-muted-foreground">
-                {assignedMember.name ?? assignedMember.email}
-              </span>
-            </div>
+
+          {/* Assignee — controlled dropdown */}
+          {showAssignIcon && (
+            <DropdownMenu
+              open={openDropdown === "assignee"}
+              onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}
+              modal={false}
+            >
+              <DropdownMenuTrigger asChild>
+                {assignedMember ? (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("assignee"); }}
+                    className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+                  >
+                    <MemberAvatar name={assignedMember.name} image={assignedMember.image} size="sm" />
+                    <span className="caption text-muted-foreground">
+                      {assignedMember.name ?? assignedMember.email}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    title="Assign to member"
+                    aria-label="Assign to member"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("assignee"); }}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <UserRound className="h-4 w-4" />
+                  </button>
+                )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent ref={assigneeContentRef} align="end">
+                {assignedMember && (
+                  <DropdownMenuItem onClick={() => { updateTask.mutate({ id: task.id, assignee: null }); setOpenDropdown(null); }}>
+                    Unassigned
+                  </DropdownMenuItem>
+                )}
+                {members?.map((m) => (
+                  <DropdownMenuItem
+                    key={m.id}
+                    onClick={() => { updateTask.mutate({ id: task.id, assignee: m.id }); setOpenDropdown(null); }}
+                    className={cn("flex items-center gap-2", task.assignee === m.id && "font-medium")}
+                  >
+                    <MemberAvatar name={m.name} image={m.image} size="sm" />
+                    {m.name ?? m.email}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>

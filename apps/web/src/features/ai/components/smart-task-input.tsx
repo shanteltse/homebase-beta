@@ -527,11 +527,6 @@ function SmartTaskInput({ onOpenCreateDialog, rightLabel }, ref) {
             {preview.category && (
               <Badge variant="secondary">{getCategoryName(preview.category)}</Badge>
             )}
-            {preview.subcategory && preview.category && (
-              <Badge variant="outline">
-                {getSubcategoryName(preview.category, preview.subcategory)}
-              </Badge>
-            )}
             {preview.priority && (
               <Badge
                 variant={
@@ -616,11 +611,6 @@ function SmartTaskInput({ onOpenCreateDialog, rightLabel }, ref) {
                   <div className="flex flex-wrap items-center gap-1.5">
                     {task.category && (
                       <Badge variant="secondary">{getCategoryName(task.category)}</Badge>
-                    )}
-                    {task.subcategory && task.category && (
-                      <Badge variant="outline">
-                        {getSubcategoryName(task.category, task.subcategory)}
-                      </Badge>
                     )}
                     {task.priority && (
                       <Badge

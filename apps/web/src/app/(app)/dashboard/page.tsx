@@ -423,8 +423,8 @@ export default function DashboardPage() {
                         aria-label="Sort tasks"
                       >
                         <ArrowUpDown className="h-3 w-3" />
-                        <span className="hidden sm:inline">
-                          {sort === "due-date" ? "Due Date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : "Date Created"}
+                        <span className="hidden md:inline">
+                          {sort === "due-date" ? "Due date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : sort === "created" ? "Date created" : "Sort"}
                         </span>
                       </button>
                     </DropdownMenuTrigger>
@@ -443,6 +443,7 @@ export default function DashboardPage() {
 
             {focusTasks.length > 0 && (
               <div className="flex flex-col gap-3">
+                <h3 className="heading-xs text-primary">Your Focus</h3>
                 {focusTasks.map((task) => (
                   <div key={task.id} className="overflow-hidden rounded-lg border-l-2 border-primary">
                     <TaskCard

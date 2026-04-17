@@ -140,8 +140,8 @@ export function TaskFilters({
               aria-label="Sort tasks"
             >
               <ArrowUpDown className="h-3 w-3" />
-              <span>
-                {sort === "due-date" ? "Due Date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : "Date Created"}
+              <span className="hidden md:inline">
+                {sort === "due-date" ? "Due date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : sort === "created" ? "Date created" : "Sort"}
               </span>
             </button>
           </DropdownMenuTrigger>
