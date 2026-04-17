@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, Mail, Phone, Repeat, Star, UserRound } from "lucide-react";
 import { Badge } from "@repo/ui/badge";
@@ -72,37 +72,12 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
   // Only one can be open at a time — setting a new one automatically closes the previous.
   const [openDropdown, setOpenDropdown] = useState<OpenDropdown>(null);
 
-  // Refs used by the document mousedown listener to detect outside clicks.
-  // cardRef covers the triggers; content refs cover Radix portals (rendered in document.body).
-  const cardRef = useRef<HTMLDivElement>(null);
-  const categoryContentRef = useRef<HTMLDivElement>(null);
-  const priorityContentRef = useRef<HTMLDivElement>(null);
-  const assigneeContentRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleMouseDown(e: MouseEvent) {
-      const target = e.target as Node;
-      if (
-        cardRef.current?.contains(target) ||
-        categoryContentRef.current?.contains(target) ||
-        priorityContentRef.current?.contains(target) ||
-        assigneeContentRef.current?.contains(target)
-      ) {
-        return;
-      }
-      setOpenDropdown(null);
-    }
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
-  }, []);
-
   function toggleDropdown(name: OpenDropdown) {
     setOpenDropdown((prev) => (prev === name ? null : name));
   }
 
   return (
     <div
-      ref={cardRef}
       data-testid="task-card"
       data-task-title={task.title}
       className={cn(
@@ -163,7 +138,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                 </Badge>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent ref={categoryContentRef} align="start">
+            <DropdownMenuContent align="start" onInteractOutside={() => setOpenDropdown(null)}>
               {DEFAULT_CATEGORIES.map((cat) => (
                 <DropdownMenuItem
                   key={cat.id}
@@ -192,7 +167,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                 </Badge>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent ref={priorityContentRef} align="start">
+            <DropdownMenuContent align="start" onInteractOutside={() => setOpenDropdown(null)}>
               {(["high", "medium", "low"] as const).map((p) => (
                 <DropdownMenuItem
                   key={p}
@@ -298,7 +273,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   </button>
                 )}
               </DropdownMenuTrigger>
-              <DropdownMenuContent ref={assigneeContentRef} align="end">
+              <DropdownMenuContent align="end" onInteractOutside={() => setOpenDropdown(null)}>
                 {assignedMember && (
                   <DropdownMenuItem onClick={() => { updateTask.mutate({ id: task.id, assignee: null }); setOpenDropdown(null); }}>
                     Unassigned
