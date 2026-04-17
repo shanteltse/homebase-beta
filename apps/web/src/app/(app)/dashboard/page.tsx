@@ -250,43 +250,33 @@ export default function DashboardPage() {
             <X className="h-3 w-3" />
             Hide overview
           </button>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <Link
-              href="/tasks?view=overdue"
-              className="flex flex-col gap-1 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
-            >
-              <p className="text-xs text-muted-foreground">Overdue</p>
-              <p className={cn("text-sm font-semibold", !isLoading && overdueTasks.length === 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
-                {isLoading ? "—" : overdueTasks.length}
-              </p>
-            </Link>
-            <Link
-              href="/tasks?view=today"
-              className="flex flex-col gap-1 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
-            >
-              <p className="text-xs text-muted-foreground">Today</p>
-              <p className="text-sm font-semibold text-foreground">
-                {isLoading ? "—" : todayTasks.length}
-              </p>
-            </Link>
-            <Link
-              href="/tasks?view=this-week"
-              className="flex flex-col gap-1 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
-            >
-              <p className="text-xs text-muted-foreground">This Week</p>
-              <p className="text-sm font-semibold text-foreground">
-                {isLoading ? "—" : thisWeekTasksAll.length}
-              </p>
-            </Link>
-            <Link
-              href="/tasks?view=completed"
-              className="flex flex-col gap-1 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
-            >
-              <p className="text-xs text-muted-foreground">Completed</p>
-              <p className="text-sm font-semibold text-foreground">
-                {isLoading ? "—" : completedCount}
-              </p>
-            </Link>
+          <div className="rounded-lg border border-border p-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Link href="/tasks?view=overdue" className="flex flex-col gap-1 transition-colors hover:opacity-70">
+                <p className="text-xs text-muted-foreground">Overdue</p>
+                <p className={cn("text-sm font-semibold", !isLoading && overdueTasks.length === 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+                  {isLoading ? "—" : overdueTasks.length}
+                </p>
+              </Link>
+              <Link href="/tasks?view=today" className="flex flex-col gap-1 transition-colors hover:opacity-70">
+                <p className="text-xs text-muted-foreground">Today</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {isLoading ? "—" : todayTasks.length}
+                </p>
+              </Link>
+              <Link href="/tasks?view=this-week" className="flex flex-col gap-1 transition-colors hover:opacity-70">
+                <p className="text-xs text-muted-foreground">This Week</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {isLoading ? "—" : thisWeekTasksAll.length}
+                </p>
+              </Link>
+              <Link href="/tasks?view=completed" className="flex flex-col gap-1 transition-colors hover:opacity-70">
+                <p className="text-xs text-muted-foreground">Completed</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {isLoading ? "—" : completedCount}
+                </p>
+              </Link>
+            </div>
           </div>
           {showMemberFilter && (
             <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">

@@ -78,14 +78,14 @@ export function TaskFilters({
         ))}
       </div>
 
-      {/* Filter + sort row */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Filter + sort row — single scrollable row */}
+      <div className="flex flex-nowrap items-center gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {showMemberFilter && (
           <Select
             value={assigneeFilter ?? ""}
             onValueChange={(val) => onAssigneeFilterChange(val === "all" ? "" : val)}
           >
-            <SelectTrigger className="h-7 w-[7rem] text-xs">
+            <SelectTrigger className="h-7 w-[6rem] shrink-0 text-xs">
               <SelectValue placeholder="All members" />
             </SelectTrigger>
             <SelectContent>
@@ -104,7 +104,7 @@ export function TaskFilters({
           value={category}
           onValueChange={(val) => onFilterChange("category", val === "all" ? "" : val)}
         >
-          <SelectTrigger className="h-7 w-[7rem] text-xs">
+          <SelectTrigger className="h-7 w-[6rem] shrink-0 text-xs">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -121,7 +121,7 @@ export function TaskFilters({
           value={priority}
           onValueChange={(val) => onFilterChange("priority", val === "all" ? "" : val)}
         >
-          <SelectTrigger className="h-7 w-[7rem] text-xs">
+          <SelectTrigger className="h-7 w-[6rem] shrink-0 text-xs">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -136,11 +136,11 @@ export function TaskFilters({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               aria-label="Sort tasks"
             >
               <ArrowUpDown className="h-3 w-3" />
-              <span className="hidden sm:inline">
+              <span>
                 {sort === "due-date" ? "Due Date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : "Date Created"}
               </span>
             </button>
@@ -159,7 +159,7 @@ export function TaskFilters({
           <button
             type="button"
             onClick={() => onFilterChange("tag", "")}
-            className="flex items-center gap-1 h-7 px-2 text-xs rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            className="flex shrink-0 items-center gap-1 h-7 px-2 text-xs rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
           >
             #{tag}
             <X className="h-3 w-3" />
