@@ -38,8 +38,8 @@ const VIEWS: { value: TaskView; label: string }[] = [
   { value: "starred", label: "⭐ Starred" },
   { value: "today", label: "Today" },
   { value: "this-week", label: "This Week" },
-  { value: "overdue", label: "Overdue" },
-  { value: "completed", label: "Completed" },
+  { value: "overdue", label: "Late" },
+  { value: "completed", label: "Done" },
 ];
 
 export function TaskFilters({

@@ -100,17 +100,31 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
       )}
 
       <div className="flex flex-1 flex-col gap-1.5 min-w-0">
-        <Link
-          href={`/tasks/${task.id}`}
-          className={cn(
-            "body block font-medium text-foreground hover:text-primary break-words",
-            task.completed && "line-through",
-            task.starred && "font-bold",
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href={`/tasks/${task.id}`}
+            className={cn(
+              "body font-medium text-foreground hover:text-primary break-words min-w-0",
+              task.completed && "line-through",
+              task.starred && "font-bold",
+            )}
+          >
+            {task.title}
+          </Link>
+          {contactMeta && (
+            <a
+              href={contactMeta.href}
+              aria-label={contactMeta.type === "email" ? `Email ${task.contact}` : `Call ${task.contact}`}
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary max-w-[160px]"
+            >
+              {contactMeta.type === "email"
+                ? <Mail className="h-3 w-3 shrink-0" />
+                : <Phone className="h-3 w-3 shrink-0" />}
+              <span className="truncate">{task.contact}</span>
+            </a>
           )}
-        >
-          {task.title}
-        </Link>
-
+        </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Category — controlled dropdown, modal={false} so no overlay blocks sibling triggers */}
@@ -296,19 +310,6 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
             </DropdownMenu>
           )}
 
-          {contactMeta && (
-            <a
-              href={contactMeta.href}
-              aria-label={contactMeta.type === "email" ? `Email ${task.contact}` : `Call ${task.contact}`}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary max-w-[160px]"
-            >
-              {contactMeta.type === "email"
-                ? <Mail className="h-3 w-3 shrink-0" />
-                : <Phone className="h-3 w-3 shrink-0" />}
-              <span className="truncate">{task.contact}</span>
-            </a>
-          )}
         </div>
       </div>
 
