@@ -395,10 +395,14 @@ function SmartTaskInput({ onOpenCreateDialog, rightLabel }, ref) {
         <div className="relative">
           <textarea
             ref={inputRef}
-            placeholder="e.g. dentist appointment next Tuesday"
+            placeholder="e.g. dentist appt next Tuesday"
             value={text}
             rows={1}
             style={{ resize: "none", overflow: "hidden", maxHeight: "40px" }}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
             onChange={(e) => {
               setText(e.target.value);
               if (preview) setPreview(null);
