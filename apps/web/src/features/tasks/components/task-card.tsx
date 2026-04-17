@@ -70,6 +70,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
   // Shared controlled state for inline edit dropdowns.
   // Only one can be open at a time — setting a new one automatically closes the previous.
   const [openDropdown, setOpenDropdown] = useState<OpenDropdown>(null);
+  const [showDateInput, setShowDateInput] = useState(false);
 
   function toggleDropdown(name: OpenDropdown) {
     setOpenDropdown((prev) => (prev === name ? null : name));
@@ -169,15 +170,31 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Due date — overlay <input type="date"> on the visual trigger so the native
-              picker opens on direct tap (works on iOS Safari; showPicker() does not). */}
-          {task.dueDate ? (
-            <label
-              key={task.dueDate}
+          {/* Due date — plain inline input appears on tap; works on all browsers incl. iOS Safari */}
+          {showDateInput ? (
+            <input
+              type="date"
+              autoFocus
+              className="caption rounded border border-border px-1 py-0.5 text-foreground"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                e.stopPropagation();
+                if (e.target.value) {
+                  updateTask.mutate({ id: task.id, dueDate: e.target.value });
+                  setShowDateInput(false);
+                }
+              }}
+              onBlur={(e) => { e.stopPropagation(); setShowDateInput(false); }}
+            />
+          ) : task.dueDate ? (
+            <span
+              role="button"
+              tabIndex={0}
               className={cn(
-                "caption relative flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity",
+                "caption flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity",
                 overdue ? "text-destructive" : "text-muted-foreground",
               )}
+              onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); setShowDateInput(true); }}
             >
               {overdue && "Overdue: "}
               {/^\d{4}-\d{2}-\d{2}$/.test(task.dueDate)
@@ -188,14 +205,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   <Repeat className="h-3 w-3" />
                 </span>
               )}
-              <input
-                type="date"
-                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
-                onChange={(e) => { if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
-                tabIndex={-1}
-              />
-            </label>
+            </span>
           ) : (
             <>
               {task.recurring && (
@@ -207,20 +217,14 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   {(task.recurring as { frequency: string }).frequency}
                 </span>
               )}
-              <label
-                title="Add due date"
+              <button
+                type="button"
                 aria-label="Add due date"
-                className="relative cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); setShowDateInput(true); }}
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <CalendarDays className="h-4 w-4" />
-                <input
-                  type="date"
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
-                  onChange={(e) => { if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
-                  tabIndex={-1}
-                />
-              </label>
+              </button>
             </>
           )}
 

@@ -13,7 +13,7 @@ import { HouseholdSettings } from "@/features/household/components/household-set
 import { NotificationSettings } from "@/features/notifications/components/notification-settings";
 import { ReminderSettings } from "@/features/notifications/components/reminder-settings";
 import { AchievementsGrid } from "@/features/gamification/components/achievements-grid";
-import { GoogleCalendarSettings } from "@/features/calendar/components/google-calendar-settings";
+// import { GoogleCalendarSettings } from "@/features/calendar/components/google-calendar-settings";
 import { ImportTasksDialog } from "@/features/tasks/components/import-tasks-dialog";
 import { Suspense } from "react";
 import { Wand2, Upload } from "lucide-react";
@@ -52,7 +52,7 @@ export default function SettingsPage() {
         <TabsList className="flex w-full">
           <TabsTrigger value="general" className="flex-1 px-1 text-xs sm:px-3 sm:text-sm">General</TabsTrigger>
           <TabsTrigger value="notifications" className="flex-1 px-1 text-xs sm:px-3 sm:text-sm">Notifications</TabsTrigger>
-          <TabsTrigger value="calendar" className="flex-1 px-1 text-xs sm:px-3 sm:text-sm">Calendar</TabsTrigger>
+          {/* <TabsTrigger value="calendar" className="flex-1 px-1 text-xs sm:px-3 sm:text-sm">Calendar</TabsTrigger> */}
           <TabsTrigger value="account" className="flex-1 px-1 text-xs sm:px-3 sm:text-sm">Account</TabsTrigger>
         </TabsList>
 
@@ -153,12 +153,13 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* Calendar Tab */}
+        {/* Calendar Tab — hidden
         <TabsContent value="calendar" className="flex flex-col gap-6 mt-4">
           <Suspense fallback={null}>
             <GoogleCalendarSettings />
           </Suspense>
         </TabsContent>
+        */}
 
         {/* Account Tab */}
         <TabsContent value="account" className="flex flex-col gap-6 mt-4">
