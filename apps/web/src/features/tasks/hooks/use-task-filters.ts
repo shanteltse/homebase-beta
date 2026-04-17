@@ -95,7 +95,7 @@ export function useTaskFilters(currentUserId?: string, members?: HouseholdMember
         filtered = filtered.filter((t) => {
           if (!t.dueDate) return false;
           const due = t.dueDate.split("T")[0] ?? "";
-          return due <= today;
+          return due === today;
         });
       }
 

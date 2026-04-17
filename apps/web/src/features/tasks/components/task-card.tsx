@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Mail, Phone, Repeat, Star, UserRound } from "lucide-react";
+import { CalendarDays, Check, Mail, Phone, Repeat, Star, UserRound } from "lucide-react";
 import { Badge } from "@repo/ui/badge";
 import {
   DropdownMenu,
@@ -126,7 +126,8 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Row 2: mobile-only category + priority */}
+        <div className="flex md:hidden items-center gap-2">
           {/* Category — controlled dropdown, modal={false} so no overlay blocks sibling triggers */}
           <DropdownMenu
             open={openDropdown === "category"}
@@ -184,19 +185,80 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
+
+        {/* Row 3: [desktop: category + priority] + due date + assignee + subtasks */}
+        <div className="flex items-center gap-2">
+          {/* Desktop-only: category + priority inline in row 3 */}
+          <div className="hidden md:flex items-center gap-2">
+            <DropdownMenu
+              open={openDropdown === "category"}
+              onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}
+              modal={false}
+            >
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("category"); }}
+                >
+                  <Badge variant={CATEGORY_VARIANTS[task.category] ?? "default"}>
+                    {categoryName}
+                  </Badge>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" onInteractOutside={() => setOpenDropdown(null)}>
+                {DEFAULT_CATEGORIES.map((cat) => (
+                  <DropdownMenuItem
+                    key={cat.id}
+                    onClick={() => { updateTask.mutate({ id: task.id, category: cat.id }); setOpenDropdown(null); }}
+                    className={cn("flex items-center justify-between gap-4", task.category === cat.id && "font-medium")}
+                  >
+                    {cat.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu
+              open={openDropdown === "priority"}
+              onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}
+              modal={false}
+            >
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("priority"); }}
+                >
+                  <Badge variant={PRIORITY_VARIANTS[task.priority]}>
+                    {task.priority}
+                  </Badge>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" onInteractOutside={() => setOpenDropdown(null)}>
+                {(["high", "medium", "low"] as const).map((p) => (
+                  <DropdownMenuItem
+                    key={p}
+                    onClick={() => { updateTask.mutate({ id: task.id, priority: p }); setOpenDropdown(null); }}
+                    className={cn("flex items-center justify-between gap-4", task.priority === p && "font-medium")}
+                  >
+                    {p}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Due date — always-visible native <input type="date">; iOS Safari opens the date wheel on tap */}
-          {task.dueDate ? (
-            <span className={cn("caption flex items-center gap-1", overdue ? "text-destructive" : "text-muted-foreground")}>
+          {task.dueDate && task.dueDate !== "" ? (
+            <span key={task.dueDate ?? "no-date"} className={cn("caption flex items-center gap-1", overdue ? "text-destructive" : "text-muted-foreground")}>
               {overdue && <span>Overdue:&nbsp;</span>}
               <div className={cn(
                 "caption inline-flex items-center rounded-full px-2 py-0.5",
                 overdue ? "bg-red-100 text-destructive" : "bg-muted text-muted-foreground",
               )}>
                 <input
-                  key={task.dueDate}
                   type="date"
-                  defaultValue={task.dueDate.split("T")[0]}
+                  value={task.dueDate.split("T")[0]}
                   onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
                   onChange={(e) => { e.stopPropagation(); console.log("date onChange value:", JSON.stringify(e.target.value)); updateTask.mutate({ id: task.id, dueDate: e.target.value || null }); }}
                   className={cn(
@@ -230,34 +292,21 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   {(task.recurring as { frequency: string }).frequency}
                 </span>
               )}
-              <input
-                type="date"
-                aria-label="Add due date"
-                onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
-                onChange={(e) => { e.stopPropagation(); console.log("date onChange value:", JSON.stringify(e.target.value)); updateTask.mutate({ id: task.id, dueDate: e.target.value || null }); }}
-                className="h-4 w-4 cursor-pointer bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0 text-muted-foreground opacity-60 hover:opacity-100 transition-opacity overflow-hidden"
-              />
+              <div
+                className="relative cursor-pointer text-muted-foreground hover:text-foreground transition-colors flex items-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <CalendarDays className="h-4 w-4" />
+                <input
+                  type="date"
+                  aria-label="Add due date"
+                  onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
+                  onChange={(e) => { e.stopPropagation(); if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                />
+              </div>
             </>
           )}
-
-          {task.subtasks.length > 0 && (() => {
-            const completed = task.subtasks.filter((s) => s.completed).length;
-            const total = task.subtasks.length;
-            const pct = Math.round((completed / total) * 100);
-            return (
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <span className="caption text-muted-foreground">
-                  {completed}/{total} subtasks
-                </span>
-              </div>
-            );
-          })()}
 
           {/* Assignee — controlled dropdown */}
           {showAssignIcon && (
@@ -309,6 +358,25 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
+          {task.subtasks.length > 0 && (() => {
+            const completed = task.subtasks.filter((s) => s.completed).length;
+            const total = task.subtasks.length;
+            const pct = Math.round((completed / total) * 100);
+            return (
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="caption text-muted-foreground">
+                  {completed}/{total} subtasks
+                </span>
+              </div>
+            );
+          })()}
 
         </div>
       </div>

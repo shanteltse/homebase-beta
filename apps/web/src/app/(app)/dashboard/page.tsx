@@ -35,6 +35,8 @@ import type { ParsedTask } from "@/features/ai/api/parse-task";
 
 function getDateString(date: string | Date | null | undefined): string {
   if (!date) return "";
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  if (typeof date === "string" && date.length > 10) return date.split("T")[0]!;
   return new Date(date).toLocaleDateString("en-CA");
 }
 

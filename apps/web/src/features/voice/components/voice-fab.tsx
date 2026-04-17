@@ -270,7 +270,7 @@ export function VoiceFab() {
   const showBubble = isRequesting || isListening || isProcessing || isSuccess || hasError;
 
   return (
-    <div className="fixed right-[20px] z-50 flex flex-col items-center gap-2" style={{ bottom: "calc(max(env(safe-area-inset-bottom), 20px) + 60px)" }}>
+    <div className="fixed right-[20px] z-50 flex flex-col items-center gap-2" style={{ bottom: "calc(max(env(safe-area-inset-bottom), 20px) + 85px)" }}>
       {/* Status bubble — drops below the button */}
       {showBubble && (
         <div
