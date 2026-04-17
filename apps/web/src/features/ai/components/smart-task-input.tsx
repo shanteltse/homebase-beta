@@ -462,6 +462,11 @@ function SmartTaskInput({ onOpenCreateDialog, rightLabel }, ref) {
             </button>
           )}
         </div>
+        {!text && getInlineSpeechAPI() && (
+          <p className="caption text-muted-foreground/60 text-center select-none">
+            or tap 🎤 to dictate
+          </p>
+        )}
         {!preview && !(tasksPreview && tasksPreview.length > 0) && (
           <>
             {/* Quick Add / Smart Add — right under the textarea */}

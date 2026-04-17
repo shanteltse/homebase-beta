@@ -392,6 +392,7 @@ export function OnboardingWizard({
             <div className="w-full rounded-xl bg-muted/50 border border-border p-4 text-left flex flex-col gap-3">
               {[
                 { icon: "✨", tip: 'Add tasks with the "Smart Add" box — it understands plain language' },
+                { icon: "🎤", tip: "Tap the mic button to add tasks by voice — just say it out loud" },
                 { icon: "📋", tip: "Import an existing to-do list from the Tasks page" },
                 { icon: "📅", tip: "Sync with Google Calendar in Settings" },
               ].map(({ icon, tip }) => (
