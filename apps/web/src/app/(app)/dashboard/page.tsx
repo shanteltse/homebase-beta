@@ -421,26 +421,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {overdueTasks.length > 0 && (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="heading-xs text-destructive">Overdue</h3>
-                  <Link href="/tasks?view=overdue" className="caption text-primary hover:underline">
-                    View all
-                  </Link>
-                </div>
-                {overdueTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onToggleComplete={handleToggleComplete}
-                    onToggleStar={handleToggleStar}
-                    onTagClick={(t) => router.push(`/tasks?tag=${encodeURIComponent(t)}`)}
-                  />
-                ))}
-              </div>
-            )}
-
             {focusTasks.length > 0 && (
               <div className="flex flex-col gap-3">
                 <h3 className="heading-xs text-primary">Your Focus</h3>

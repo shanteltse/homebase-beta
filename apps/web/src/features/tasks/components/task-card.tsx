@@ -174,7 +174,6 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
           {task.dueDate ? (
             <label
               key={task.dueDate}
-              onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
               className={cn(
                 "caption relative flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity",
                 overdue ? "text-destructive" : "text-muted-foreground",
@@ -192,6 +191,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
               <input
                 type="date"
                 className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
                 onChange={(e) => { if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
                 tabIndex={-1}
               />
@@ -210,14 +210,14 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
               <label
                 title="Add due date"
                 aria-label="Add due date"
-                onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
                 className="relative cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
               >
                 <CalendarDays className="h-4 w-4" />
                 <input
                   type="date"
                   className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  onChange={(e) => updateTask.mutate({ id: task.id, dueDate: e.target.value || undefined })}
+                  onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
+                  onChange={(e) => { if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
                   tabIndex={-1}
                 />
               </label>
