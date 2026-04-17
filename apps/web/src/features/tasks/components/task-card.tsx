@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Check, Mail, Phone, Repeat, Star, UserRound } from "lucide-react";
+import { Check, Mail, Phone, Repeat, Star, UserRound } from "lucide-react";
 import { Badge } from "@repo/ui/badge";
 import {
   DropdownMenu,
@@ -70,7 +70,6 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
   // Shared controlled state for inline edit dropdowns.
   // Only one can be open at a time — setting a new one automatically closes the previous.
   const [openDropdown, setOpenDropdown] = useState<OpenDropdown>(null);
-  const [showDateInput, setShowDateInput] = useState(false);
 
   function toggleDropdown(name: OpenDropdown) {
     setOpenDropdown((prev) => (prev === name ? null : name));
@@ -170,41 +169,34 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Due date — plain inline input appears on tap; works on all browsers incl. iOS Safari */}
-          {showDateInput ? (
-            <input
-              type="date"
-              autoFocus
-              className="caption rounded border border-border px-1 py-0.5 text-foreground"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                e.stopPropagation();
-                if (e.target.value) {
-                  updateTask.mutate({ id: task.id, dueDate: e.target.value });
-                  setShowDateInput(false);
-                }
-              }}
-              onBlur={(e) => { e.stopPropagation(); setShowDateInput(false); }}
-            />
-          ) : task.dueDate ? (
-            <span
-              role="button"
-              tabIndex={0}
-              className={cn(
-                "caption flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity",
-                overdue ? "text-destructive" : "text-muted-foreground",
-              )}
-              onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); setShowDateInput(true); }}
-            >
-              {overdue && "Overdue: "}
-              {/^\d{4}-\d{2}-\d{2}$/.test(task.dueDate)
-                ? new Date(task.dueDate + "T12:00:00").toLocaleDateString()
-                : new Date(task.dueDate).toLocaleDateString()}
+          {/* Due date — always-visible native <input type="date">; iOS Safari opens the date wheel on tap */}
+          {task.dueDate ? (
+            <span className={cn("caption flex items-center gap-1", overdue ? "text-destructive" : "text-muted-foreground")}>
+              {overdue && <span>Overdue:&nbsp;</span>}
+              <input
+                key={task.dueDate}
+                type="date"
+                defaultValue={task.dueDate.split("T")[0]}
+                onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
+                onChange={(e) => { e.stopPropagation(); if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
+                className={cn(
+                  "caption cursor-pointer bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0",
+                  overdue ? "text-destructive" : "text-muted-foreground",
+                )}
+              />
               {task.recurring && (
                 <span title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}>
                   <Repeat className="h-3 w-3" />
                 </span>
               )}
+              <button
+                type="button"
+                aria-label="Remove due date"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateTask.mutate({ id: task.id, dueDate: null }); }}
+                className="caption text-muted-foreground hover:text-foreground transition-colors leading-none"
+              >
+                ×
+              </button>
             </span>
           ) : (
             <>
@@ -217,14 +209,13 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   {(task.recurring as { frequency: string }).frequency}
                 </span>
               )}
-              <button
-                type="button"
+              <input
+                type="date"
                 aria-label="Add due date"
-                onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); setShowDateInput(true); }}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <CalendarDays className="h-4 w-4" />
-              </button>
+                onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
+                onChange={(e) => { e.stopPropagation(); if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
+                className="h-4 w-4 cursor-pointer bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0 text-muted-foreground opacity-60 hover:opacity-100 transition-opacity overflow-hidden"
+              />
             </>
           )}
 
