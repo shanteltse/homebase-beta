@@ -12,7 +12,7 @@ import { SmartTaskInput, type SmartTaskInputHandle } from "@/features/ai/compone
 import { CreateTaskDialog } from "@/features/tasks/components/create-task-dialog";
 import { ImportTasksDialog } from "@/features/tasks/components/import-tasks-dialog";
 import { StatsCard } from "@/features/gamification/components/stats-card";
-import { HouseholdOverview } from "@/features/household/components/household-overview";
+import { MemberAvatar } from "@/features/household/components/member-avatar";
 import { Upload, ArrowUpDown, Check, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -226,9 +226,6 @@ export default function DashboardPage() {
             </button>
           }
         />
-        {showMemberFilter && (
-          <HouseholdOverview members={members!} tasks={allTasks} />
-        )}
       </div>
 
       <CreateTaskDialog
@@ -291,6 +288,41 @@ export default function DashboardPage() {
               </p>
             </Link>
           </div>
+          {showMemberFilter && (
+            <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
+              {(members ?? []).map((member) => {
+                const memberTasks = allTasks.filter((t) => t.assignee === member.id);
+                const activeCount = memberTasks.filter((t) => !t.completed).length;
+                const total = memberTasks.length;
+                const completedCount = total - activeCount;
+                const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+                return (
+                  <div
+                    key={member.id}
+                    className="flex min-w-[148px] shrink-0 flex-col gap-2.5 rounded-lg border border-border bg-card p-3"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <MemberAvatar name={member.name} image={member.image} size="sm" />
+                      <span className="text-sm font-medium text-foreground truncate">
+                        {member.name ?? member.email}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {activeCount}/{total} tasks · {pct}%
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <StatsCard />
         </div>
       ) : (
