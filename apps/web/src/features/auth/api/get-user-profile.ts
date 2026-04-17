@@ -29,6 +29,8 @@ export type UserProfile = {
   reminderWeeklyEnabled: boolean;
   reminderWeeklyTime: string;
   pwaInstalled: boolean;
+  avatarColor: string | null;
+  useGooglePhoto: boolean;
 };
 
 async function fetchUserProfile(): Promise<UserProfile> {

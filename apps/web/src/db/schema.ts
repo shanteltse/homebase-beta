@@ -60,6 +60,9 @@ export const users = pgTable("users", {
   reminderWeeklyTime: text("reminder_weekly_time").notNull().default("08:00"),
   // PWA tracking
   pwaInstalled: boolean("pwa_installed").notNull().default(false),
+  // Avatar customization
+  avatarColor: text("avatar_color"),
+  useGooglePhoto: boolean("use_google_photo").notNull().default(true),
 });
 
 export const accounts = pgTable(

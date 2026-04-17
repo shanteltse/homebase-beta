@@ -7,6 +7,8 @@ export type HouseholdMember = {
   image: string | null;
   role: "owner" | "member";
   joinedAt: string;
+  avatarColor: string | null;
+  useGooglePhoto: boolean;
 };
 
 async function fetchMembers(): Promise<HouseholdMember[]> {

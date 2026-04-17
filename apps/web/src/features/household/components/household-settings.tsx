@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Copy, Check, Send } from "lucide-react";
+import { useState, useRef } from "react";
+import { Copy, Check, Send, Pencil } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { Spinner } from "@repo/ui/spinner";
@@ -30,6 +31,7 @@ export function HouseholdSettings() {
   const createHousehold = useCreateHousehold();
   const joinHousehold = useJoinHousehold();
   const leaveHousehold = useLeaveHousehold();
+  const queryClient = useQueryClient();
 
   const [householdName, setHouseholdName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -38,6 +40,48 @@ export function HouseholdSettings() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteStatus, setInviteStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [inviteError, setInviteError] = useState("");
+
+  // Household name editing
+  const [editingName, setEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  function startEditName() {
+    setEditNameValue(household?.name ?? "");
+    setEditingName(true);
+    setTimeout(() => nameInputRef.current?.focus(), 0);
+  }
+
+  async function handleSaveName() {
+    const trimmed = editNameValue.trim();
+    if (!trimmed || trimmed === household?.name) {
+      setEditingName(false);
+      return;
+    }
+    setSavingName(true);
+    try {
+      const res = await fetch("/api/households", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      if (!res.ok) throw new Error("Failed to rename household");
+      await queryClient.invalidateQueries({ queryKey: ["household"] });
+      setEditingName(false);
+    } catch {
+      // keep editing open on error
+    } finally {
+      setSavingName(false);
+    }
+  }
+
+  function handleNameBlur() {
+    // Slight delay so a Save button click registers before blur cancels
+    setTimeout(() => {
+      if (!savingName) setEditingName(false);
+    }, 150);
+  }
 
   function handleCreate() {
     const name = householdName.trim();
@@ -210,7 +254,45 @@ export function HouseholdSettings() {
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
                 <p className="label text-muted-foreground">Name</p>
-                <p className="body text-foreground">{household.name}</p>
+                {editingName ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={nameInputRef}
+                      type="text"
+                      value={editNameValue}
+                      onChange={(e) => setEditNameValue(e.target.value)}
+                      onBlur={handleNameBlur}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") void handleSaveName();
+                        if (e.key === "Escape") setEditingName(false);
+                      }}
+                      className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      maxLength={100}
+                      disabled={savingName}
+                    />
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => void handleSaveName()}
+                      disabled={savingName || !editNameValue.trim()}
+                      className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                    >
+                      {savingName ? "Saving…" : "Save"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="body text-foreground">{household.name}</p>
+                    <button
+                      type="button"
+                      onClick={startEditName}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Edit household name"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col gap-1">
                 <p className="label text-muted-foreground">Invite Code</p>

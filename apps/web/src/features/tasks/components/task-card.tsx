@@ -322,7 +322,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("assignee"); }}
                     className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
                   >
-                    <MemberAvatar name={assignedMember.name} image={assignedMember.image} size="sm" />
+                    <MemberAvatar name={assignedMember.name} image={assignedMember.image} size="sm" avatarColor={assignedMember.avatarColor} useGooglePhoto={assignedMember.useGooglePhoto} />
                     <span className="caption text-muted-foreground">
                       {assignedMember.name ?? assignedMember.email}
                     </span>
@@ -351,7 +351,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                     onClick={() => { updateTask.mutate({ id: task.id, assignee: m.id }); setOpenDropdown(null); }}
                     className={cn("flex items-center gap-2", task.assignee === m.id && "font-medium")}
                   >
-                    <MemberAvatar name={m.name} image={m.image} size="sm" />
+                    <MemberAvatar name={m.name} image={m.image} size="sm" avatarColor={m.avatarColor} useGooglePhoto={m.useGooglePhoto} />
                     {m.name ?? m.email}
                   </DropdownMenuItem>
                 ))}

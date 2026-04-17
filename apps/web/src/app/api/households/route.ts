@@ -15,6 +15,10 @@ const createHouseholdSchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name is too long"),
 });
 
+const updateHouseholdSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100, "Name is too long"),
+});
+
 export async function GET(request: Request) {
   const user = await getAuthUser(request);
   if (!user) {
@@ -40,6 +44,43 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json(membership[0]);
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const user = await getAuthUser(request);
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    const body = await request.json();
+    const validated = updateHouseholdSchema.parse(body);
+    const name = validated.name.trim();
+
+    // Find the user's household and verify they are the owner
+    const [membership] = await db
+      .select({ householdId: householdMembers.householdId, role: householdMembers.role })
+      .from(householdMembers)
+      .where(eq(householdMembers.userId, user.id))
+      .limit(1);
+
+    if (!membership) {
+      throw new ApiError(404, "Household not found");
+    }
+    if (membership.role !== "owner") {
+      throw new ApiError(403, "Only the owner can rename the household");
+    }
+
+    const [updated] = await db
+      .update(households)
+      .set({ name })
+      .where(eq(households.id, membership.householdId))
+      .returning({ id: households.id, name: households.name });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
 export async function POST(request: Request) {

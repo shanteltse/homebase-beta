@@ -32,6 +32,8 @@ export async function GET(request: Request) {
       image: users.image,
       role: householdMembers.role,
       joinedAt: householdMembers.joinedAt,
+      avatarColor: users.avatarColor,
+      useGooglePhoto: users.useGooglePhoto,
     })
     .from(householdMembers)
     .innerJoin(users, eq(householdMembers.userId, users.id))

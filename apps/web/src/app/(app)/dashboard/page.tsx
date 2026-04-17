@@ -296,7 +296,7 @@ export default function DashboardPage() {
                     className="flex min-w-[148px] shrink-0 flex-col gap-2.5 rounded-lg border border-border bg-card p-3"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <MemberAvatar name={member.name} image={member.image} size="sm" />
+                      <MemberAvatar name={member.name} image={member.image} size="sm" avatarColor={member.avatarColor} useGooglePhoto={member.useGooglePhoto} />
                       <span className="text-sm font-medium text-foreground truncate">
                         {member.name ?? member.email}
                       </span>
