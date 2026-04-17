@@ -52,7 +52,7 @@ export const createTaskInputSchema = z.object({
   priority: taskPrioritySchema.default("medium"),
   // Accept any date string (ISO with or without timezone, datetime-local format, etc.)
   // new Date() handles all of these; strict .datetime() rejected datetime-local input
-  dueDate: z.string().refine((v) => !isNaN(Date.parse(v)), "Invalid date").optional(),
+  dueDate: z.string().refine((v) => v === "" || !isNaN(Date.parse(v)), "Invalid date").nullable().optional(),
   subtasks: z.array(subtaskSchema).default([]),
   tags: z.array(z.string()).default([]),
   assignee: z.string().optional(),

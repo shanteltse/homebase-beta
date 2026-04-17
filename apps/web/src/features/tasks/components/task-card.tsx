@@ -40,7 +40,9 @@ const CATEGORY_VARIANTS: Record<string, "home" | "personal" | "work"> = {
 
 function isOverdue(dueDate: string | undefined): boolean {
   if (!dueDate) return false;
-  return new Date(dueDate) < new Date(new Date().toDateString());
+  const dueDateStr = dueDate.split("T")[0]!;
+  const todayStr = new Date().toLocaleDateString("en-CA");
+  return dueDateStr < todayStr;
 }
 
 function getContactMeta(contact: string | null | undefined): { type: "email" | "phone"; href: string } | null {
@@ -173,30 +175,35 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
           {task.dueDate ? (
             <span className={cn("caption flex items-center gap-1", overdue ? "text-destructive" : "text-muted-foreground")}>
               {overdue && <span>Overdue:&nbsp;</span>}
-              <input
-                key={task.dueDate}
-                type="date"
-                defaultValue={task.dueDate.split("T")[0]}
-                onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
-                onChange={(e) => { e.stopPropagation(); if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
-                className={cn(
-                  "caption cursor-pointer bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0",
-                  overdue ? "text-destructive" : "text-muted-foreground",
-                )}
-              />
+              <div className={cn(
+                "caption inline-flex items-center rounded-full px-2 py-0.5",
+                overdue ? "bg-red-100 text-destructive" : "bg-muted text-muted-foreground",
+              )}>
+                <input
+                  key={task.dueDate}
+                  type="date"
+                  defaultValue={task.dueDate.split("T")[0]}
+                  onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
+                  onChange={(e) => { e.stopPropagation(); console.log("date onChange value:", JSON.stringify(e.target.value)); updateTask.mutate({ id: task.id, dueDate: e.target.value || null }); }}
+                  className={cn(
+                    "caption cursor-pointer bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0 mr-0",
+                    overdue ? "text-destructive" : "text-muted-foreground",
+                  )}
+                />
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateTask.mutate({ id: task.id, dueDate: null }); }}
+                  className="leading-none hover:opacity-70 transition-opacity p-0 m-0"
+                  aria-label="Clear due date"
+                >
+                  ×
+                </button>
+              </div>
               {task.recurring && (
                 <span title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}>
                   <Repeat className="h-3 w-3" />
                 </span>
               )}
-              <button
-                type="button"
-                aria-label="Remove due date"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateTask.mutate({ id: task.id, dueDate: null }); }}
-                className="caption text-muted-foreground hover:text-foreground transition-colors leading-none"
-              >
-                ×
-              </button>
             </span>
           ) : (
             <>
@@ -213,7 +220,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                 type="date"
                 aria-label="Add due date"
                 onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
-                onChange={(e) => { e.stopPropagation(); if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
+                onChange={(e) => { e.stopPropagation(); console.log("date onChange value:", JSON.stringify(e.target.value)); updateTask.mutate({ id: task.id, dueDate: e.target.value || null }); }}
                 className="h-4 w-4 cursor-pointer bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0 text-muted-foreground opacity-60 hover:opacity-100 transition-opacity overflow-hidden"
               />
             </>
