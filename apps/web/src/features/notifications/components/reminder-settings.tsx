@@ -3,6 +3,22 @@
 import { useUserProfile, useUpdateUserProfile } from "@/features/auth/api/get-user-profile";
 import { useQueryClient } from "@tanstack/react-query";
 
+function utcTimeToLocal(utcTime: string): string {
+  const [h, m] = utcTime.split(":").map(Number);
+  const d = new Date();
+  d.setUTCHours(h!, m!, 0, 0);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function localTimeToUtc(localTime: string): string {
+  const [h, m] = localTime.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h!, m!, 0, 0);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 export function ReminderSettings() {
   const { data: profile } = useUserProfile();
   const { update } = useUpdateUserProfile();
@@ -36,11 +52,11 @@ export function ReminderSettings() {
             <label className="text-xs text-muted-foreground">Send at</label>
             <input
               type="time"
-              value={profile.reminderDailyTime}
-              onChange={(e) => void handleChange("reminderDailyTime", e.target.value)}
+              value={utcTimeToLocal(profile.reminderDailyTime)}
+              onChange={(e) => void handleChange("reminderDailyTime", localTimeToUtc(e.target.value))}
               className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
             />
-            <span className="text-xs text-muted-foreground">UTC</span>
+            <span className="text-xs text-muted-foreground">{localTimezone}</span>
           </div>
         )}
       </div>
@@ -68,11 +84,11 @@ export function ReminderSettings() {
             <label className="text-xs text-muted-foreground">Send at</label>
             <input
               type="time"
-              value={profile.reminderWeeklyTime}
-              onChange={(e) => void handleChange("reminderWeeklyTime", e.target.value)}
+              value={utcTimeToLocal(profile.reminderWeeklyTime)}
+              onChange={(e) => void handleChange("reminderWeeklyTime", localTimeToUtc(e.target.value))}
               className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
             />
-            <span className="text-xs text-muted-foreground">UTC</span>
+            <span className="text-xs text-muted-foreground">{localTimezone}</span>
           </div>
         )}
       </div>

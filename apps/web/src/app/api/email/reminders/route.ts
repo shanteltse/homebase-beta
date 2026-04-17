@@ -34,7 +34,8 @@ export async function POST(request: Request) {
   const now = new Date();
   const currentHour = now.getUTCHours();
   const currentHourStr = String(currentHour).padStart(2, "0");
-  const isMonday = now.getUTCDay() === 1;
+  const utcDay = now.getUTCDay();
+  const isMonday = utcDay === 1 || (utcDay === 0 && now.getUTCHours() >= 12) || (utcDay === 2 && now.getUTCHours() < 12);
 
   const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const todayEnd = new Date(todayStart);
