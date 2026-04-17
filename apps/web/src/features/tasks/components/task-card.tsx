@@ -248,19 +248,6 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
             </>
           )}
 
-          {contactMeta && (
-            <a
-              href={contactMeta.href}
-              aria-label={contactMeta.type === "email" ? `Email ${task.contact}` : `Call ${task.contact}`}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary max-w-[160px]"
-            >
-              {contactMeta.type === "email"
-                ? <Mail className="h-3 w-3 shrink-0" />
-                : <Phone className="h-3 w-3 shrink-0" />}
-              <span className="truncate">{task.contact}</span>
-            </a>
-          )}
           {task.subtasks.length > 0 && (() => {
             const completed = task.subtasks.filter((s) => s.completed).length;
             const total = task.subtasks.length;
@@ -329,6 +316,20 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+
+          {contactMeta && (
+            <a
+              href={contactMeta.href}
+              aria-label={contactMeta.type === "email" ? `Email ${task.contact}` : `Call ${task.contact}`}
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary max-w-[160px]"
+            >
+              {contactMeta.type === "email"
+                ? <Mail className="h-3 w-3 shrink-0" />
+                : <Phone className="h-3 w-3 shrink-0" />}
+              <span className="truncate">{task.contact}</span>
+            </a>
           )}
         </div>
       </div>
