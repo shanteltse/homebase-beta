@@ -51,6 +51,7 @@ export function TaskFilters({
   onFilterChange,
   onSortChange,
   members,
+  currentUserId,
   assigneeFilter,
   onAssigneeFilterChange,
 }: TaskFiltersProps) {
@@ -91,7 +92,7 @@ export function TaskFilters({
             <SelectContent>
               <SelectItem value="all">All members</SelectItem>
               <SelectItem value="mine">Mine</SelectItem>
-              {members.map((m) => (
+              {members.filter((m) => m.id !== currentUserId).map((m) => (
                 <SelectItem key={m.id} value={m.id}>
                   {m.name ?? m.email}
                 </SelectItem>

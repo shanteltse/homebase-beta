@@ -8,8 +8,45 @@ import { useTasks } from "../api/get-tasks";
 import { useUpdateTask } from "../api/update-task";
 import { useUser } from "@/features/auth/api/get-user";
 import { useHouseholdMembers } from "@/features/household/api/get-members";
+import { DEFAULT_CATEGORIES } from "@/types/category";
+import type { Task } from "@/types/task";
 
+const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
+function getSubcategoryName(subcategoryId: string): string {
+  for (const cat of DEFAULT_CATEGORIES) {
+    const sub = cat.subcategories.find((s) => s.id === subcategoryId);
+    if (sub) return sub.name;
+  }
+  return subcategoryId;
+}
+
+function groupBySubcategory(tasks: Task[]): { key: string; name: string; tasks: Task[] }[] {
+  const groups = new Map<string, { name: string; tasks: Task[] }>();
+
+  for (const task of tasks) {
+    const key = task.subcategory ?? "__other__";
+    if (!groups.has(key)) {
+      groups.set(key, {
+        name: key === "__other__" ? "Other" : getSubcategoryName(key),
+        tasks: [],
+      });
+    }
+    groups.get(key)!.tasks.push(task);
+  }
+
+  for (const group of groups.values()) {
+    group.tasks.sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1));
+  }
+
+  return Array.from(groups.entries())
+    .sort(([keyA, groupA], [keyB, groupB]) => {
+      if (keyA === "__other__") return 1;
+      if (keyB === "__other__") return -1;
+      return groupA.name.localeCompare(groupB.name);
+    })
+    .map(([key, group]) => ({ key, ...group }));
+}
 
 export function TaskList() {
   const { data: tasks, isLoading } = useTasks();
@@ -60,6 +97,25 @@ export function TaskList() {
             : view === "starred"
               ? "No starred tasks. Star a task to add it to your focus list for today."
               : "No tasks found. Create one to get started!"}
+        </div>
+      ) : view === "all" ? (
+        <div className="flex flex-col gap-4">
+          {groupBySubcategory(filtered).map(({ key, name, tasks }) => (
+            <div key={key} className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
+                {name}
+              </p>
+              {tasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onToggleComplete={handleToggleComplete}
+                  onToggleStar={handleToggleStar}
+                  onTagClick={(t) => setFilter("tag", t)}
+                />
+              ))}
+            </div>
+          ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2">

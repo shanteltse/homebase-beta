@@ -389,7 +389,7 @@ export default function DashboardPage() {
                       <SelectContent>
                         <SelectItem value="all">All members</SelectItem>
                         <SelectItem value="mine">Mine</SelectItem>
-                        {members.map((m) => (
+                        {members.filter((m) => m.id !== user?.id).map((m) => (
                           <SelectItem key={m.id} value={m.id}>
                             {m.name ?? m.email}
                           </SelectItem>

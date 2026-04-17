@@ -48,16 +48,7 @@ export function ReminderSettings() {
           />
         </label>
         {profile?.reminderDailyEnabled && (
-          <div className="flex items-center gap-2 pl-0">
-            <label className="text-xs text-muted-foreground">Send at</label>
-            <input
-              type="time"
-              value={utcTimeToLocal(profile.reminderDailyTime)}
-              onChange={(e) => void handleChange("reminderDailyTime", localTimeToUtc(e.target.value))}
-              className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
-            />
-            <span className="text-xs text-muted-foreground">{localTimezone}</span>
-          </div>
+          <p className="text-xs text-muted-foreground">Sent each evening</p>
         )}
       </div>
 
