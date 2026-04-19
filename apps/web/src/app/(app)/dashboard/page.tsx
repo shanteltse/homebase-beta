@@ -221,10 +221,10 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setImportOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
               <Upload className="h-3.5 w-3.5" />
-              Import existing list
+              Import list
             </button>
           }
         />

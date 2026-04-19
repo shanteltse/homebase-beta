@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, ExternalLink, Plus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
+import { cn } from "@/utils/cn";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { Textarea } from "@repo/ui/textarea";
+import { Checkbox } from "@repo/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -23,7 +25,7 @@ import {
   DialogDescription,
 } from "@repo/ui/dialog";
 import { DEFAULT_CATEGORIES } from "@/types/category";
-import type { CreateTaskInput, RecurringPattern } from "@/types/task";
+import type { CreateTaskInput, RecurringPattern, Subtask } from "@/types/task";
 import { useCreateTask } from "../api/create-task";
 import { TagPicker } from "./tag-picker";
 import { RecurringPicker } from "./recurring-picker";
@@ -38,6 +40,7 @@ const formSchema = z.object({
   dueDateDate: z.string().optional(),
   dueDateTime: z.string().optional(),
   notes: z.string().optional(),
+  contact: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -58,11 +61,27 @@ type CreateTaskDialogProps = {
   prefill?: CreateTaskDialogPrefill;
 };
 
+function detectContactType(value: string): "email" | "phone" | "address" | null {
+  if (!value.trim()) return null;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "email";
+  if (/^[+\d][\d\s\-().]{6,}$/.test(value)) return "phone";
+  if (/\d/.test(value) && value.trim().split(/\s+/).length >= 2) return "address";
+  return null;
+}
+
+function getContactHref(value: string, type: "email" | "phone" | "address"): string {
+  if (type === "email") return `mailto:${value}`;
+  if (type === "phone") return `tel:${value.replace(/\s/g, "")}`;
+  return `https://maps.apple.com/?q=${encodeURIComponent(value)}`;
+}
+
 export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDialogProps) {
   const createTask = useCreateTask();
   const [tags, setTags] = useState<string[]>(prefill?.tags ?? []);
   const [recurring, setRecurring] = useState<RecurringPattern | undefined>();
   const [assignee, setAssignee] = useState<string | undefined>();
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
 
   const {
     register,
@@ -95,6 +114,7 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
           })()
         : "",
       notes: prefill?.notes,
+      contact: "",
     },
   });
 
@@ -102,6 +122,17 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
   const subcategories =
     DEFAULT_CATEGORIES.find((c) => c.id === selectedCategory)?.subcategories ??
     [];
+
+  function handleAddSubtask() {
+    const title = newSubtaskTitle.trim();
+    if (!title) return;
+    setSubtasks((prev) => [...prev, { id: crypto.randomUUID(), title, completed: false }]);
+    setNewSubtaskTitle("");
+  }
+
+  function handleRemoveSubtask(id: string) {
+    setSubtasks((prev) => prev.filter((s) => s.id !== id));
+  }
 
   function onSubmit(data: FormValues) {
     const { dueDateDate, dueDateTime, ...rest } = data;
@@ -112,7 +143,7 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
           ? new Date(`${dueDateDate}T${dueDateTime}`).toISOString()
           : dueDateDate
         : undefined,
-      subtasks: [],
+      subtasks,
       tags,
       links: [],
       recurring,
@@ -124,25 +155,59 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
         setTags([]);
         setRecurring(undefined);
         setAssignee(undefined);
+        setSubtasks([]);
+        setNewSubtaskTitle("");
         onOpenChange(false);
       },
     });
   }
 
+  const priority = watch("priority");
+  const contactValue = watch("contact") ?? "";
+  const contactType = detectContactType(contactValue);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Create task</DialogTitle>
-          <DialogDescription>Add a new task to your list.</DialogDescription>
+          <div className="flex items-start justify-between gap-3 pr-6">
+            <div>
+              <DialogTitle>Create task</DialogTitle>
+              <DialogDescription>Add a new task to your list.</DialogDescription>
+            </div>
+            {/* Priority pill — matches task-detail header */}
+            <Select
+              value={priority}
+              onValueChange={(val) => setValue("priority", val as "high" | "medium" | "low")}
+            >
+              <SelectTrigger
+                className={cn(
+                  "h-auto w-auto min-w-0 gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium [&>svg]:h-2.5 [&>svg]:w-2.5",
+                  priority === "high"
+                    ? "border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400"
+                    : priority === "low"
+                      ? "border-border bg-muted/50 text-muted-foreground"
+                      : "border-yellow-300 bg-yellow-50 text-yellow-700 dark:border-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400",
+                )}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </DialogHeader>
 
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-4"
         >
+          {/* Title */}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="title" className="text-sm font-medium text-foreground">
+            <label htmlFor="title" className="label text-foreground">
               Title
             </label>
             <div className="flex items-start gap-2">
@@ -161,6 +226,7 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
             </div>
           </div>
 
+          {/* Category + Subcategory */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="label text-foreground">Category</label>
@@ -199,7 +265,7 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Optional" />
+                    <SelectValue placeholder="None" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
@@ -214,55 +280,73 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="label text-foreground">Priority</label>
-            <Select
-              value={watch("priority")}
-              onValueChange={(val) =>
-                setValue("priority", val as "high" | "medium" | "low")
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Due date + Time */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="dueDateDate" className="label text-foreground">Due date</label>
+              <input
+                id="dueDateDate"
+                type="date"
+                {...register("dueDateDate")}
+                className="flex h-10 max-h-10 min-h-0 w-full appearance-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-date-and-time-value]:text-left"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="dueDateTime" className="label text-foreground">Time (optional)</label>
+              <div className="relative">
+                <input
+                  id="dueDateTime"
+                  type="time"
+                  {...register("dueDateTime")}
+                  className="flex h-10 max-h-10 min-h-0 w-full appearance-none rounded-md border border-border bg-background px-3 py-2 pr-8 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-date-and-time-value]:text-left"
+                />
+                {watch("dueDateTime") && (
+                  <button
+                    type="button"
+                    onClick={() => setValue("dueDateTime", "")}
+                    aria-label="Clear time"
+                    className="absolute right-2 bottom-0 flex h-10 items-center px-1 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
+          {/* Recurring */}
+          <div className="flex items-center gap-2">
+            <RecurringPicker value={recurring} onChange={setRecurring} />
+          </div>
+
+          {/* Assignee + Contact */}
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              id="dueDateDate"
-              label="Due date"
-              type="date"
-              {...register("dueDateDate")}
-            />
-            <div className="relative">
+            <AssigneePicker value={assignee} onChange={setAssignee} />
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="contact" className="label text-foreground">
+                Contact
+              </label>
               <Input
-                id="dueDateTime"
-                label="Time (optional)"
-                type="time"
-                className="pr-8"
-                {...register("dueDateTime")}
+                id="contact"
+                placeholder="Email, phone, or address"
+                {...register("contact")}
               />
-              {watch("dueDateTime") && (
-                <button
-                  type="button"
-                  onClick={() => setValue("dueDateTime", "")}
-                  aria-label="Clear time"
-                  className="absolute right-8 bottom-0 flex h-10 items-center px-1 text-muted-foreground hover:text-foreground"
+              {contactType && contactValue && (
+                <a
+                  href={getContactHref(contactValue, contactType)}
+                  target={contactType === "address" ? "_blank" : undefined}
+                  rel={contactType === "address" ? "noopener noreferrer" : undefined}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline w-fit"
                 >
-                  <X className="h-3 w-3" />
-                </button>
+                  <ExternalLink className="h-3 w-3" />
+                  {contactType === "email" ? "Send email" : contactType === "phone" ? "Call" : "Open in Maps"}
+                </a>
               )}
             </div>
           </div>
 
-          <AssigneePicker value={assignee} onChange={setAssignee} />
-
+          {/* Notes */}
           <Textarea
             id="notes"
             label="Notes"
@@ -270,9 +354,67 @@ export function CreateTaskDialog({ open, onOpenChange, prefill }: CreateTaskDial
             {...register("notes")}
           />
 
-          <TagPicker value={tags} onChange={setTags} />
+          {/* Subtasks */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <label className="label text-foreground">Subtasks</label>
+              {subtasks.length > 0 && (
+                <span className="caption text-muted-foreground">
+                  {subtasks.length} subtask{subtasks.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
 
-          <RecurringPicker value={recurring} onChange={setRecurring} />
+            {subtasks.length > 0 && (
+              <div className="flex flex-col gap-1">
+                {subtasks.map((subtask) => (
+                  <div
+                    key={subtask.id}
+                    className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50"
+                  >
+                    <Checkbox checked={false} disabled />
+                    <span className="body flex-1 text-foreground">{subtask.title}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleRemoveSubtask(subtask.id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <Input
+                id="new-subtask"
+                placeholder="Add a subtask..."
+                value={newSubtaskTitle}
+                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddSubtask();
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleAddSubtask}
+                disabled={!newSubtaskTitle.trim()}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Tags */}
+          <TagPicker value={tags} onChange={setTags} />
 
           {createTask.error && (
             <p className="body text-destructive">
