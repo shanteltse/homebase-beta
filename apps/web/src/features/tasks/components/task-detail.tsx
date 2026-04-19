@@ -486,7 +486,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         )}
       </form>
 
-      <div className="sticky bottom-16 md:bottom-0 bg-background pt-2 pb-4 border-t border-border mt-4">
+      <div className="fixed bottom-16 left-0 right-0 z-30 bg-background border-t border-border px-6 pt-2 pb-4 md:static md:bottom-auto md:left-auto md:right-auto md:z-auto md:px-0 md:mt-4">
         <div className="flex justify-end gap-3">
           <Button
             type="button"
