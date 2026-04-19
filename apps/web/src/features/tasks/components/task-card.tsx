@@ -292,13 +292,19 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   {(task.recurring as { frequency: string }).frequency}
                 </span>
               )}
-              <Link
-                href={`/tasks/${task.id}`}
+              <div
+                className="relative cursor-pointer text-muted-foreground opacity-60 hover:opacity-100 transition-opacity flex items-center"
                 onClick={(e) => e.stopPropagation()}
-                className="text-muted-foreground opacity-60 hover:opacity-100 transition-opacity"
               >
                 <CalendarDays className="h-4 w-4" />
-              </Link>
+                <input
+                  type="date"
+                  aria-label="Add due date"
+                  onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
+                  onBlur={(e) => { e.stopPropagation(); if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                />
+              </div>
             </>
           )}
 
