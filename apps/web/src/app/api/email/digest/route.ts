@@ -7,6 +7,7 @@ import {
   type DigestData,
   type DigestTask,
 } from "@/lib/email-templates";
+import { sendEmail } from "@/lib/send-email";
 
 /**
  * POST /api/email/digest
@@ -164,17 +165,19 @@ export async function POST(request: Request) {
         appUrl,
       };
 
-      // Generate email HTML (will be sent once email provider is integrated)
-      generateDigestHtml(digestData);
+      const html = generateDigestHtml(digestData);
 
-      // TODO: integrate Resend/SendGrid here
-      // const html = generateDigestHtml(digestData);
-      // await sendEmail({ to: user.email, subject: "HomeBase Daily Digest", html });
-      console.log(
-        `[email-digest] Generated digest for ${user.email} — ` +
-          `overdue: ${overdueTasks.length}, today: ${dueTodayTasks.length}, ` +
-          `week: ${dueThisWeekTasks.length}, completed: ${recentlyCompletedTasks.length}`,
-      );
+      try {
+        await sendEmail({ to: user.email, subject: "Your HomeBase Daily Digest", html });
+        console.log(
+          `[email-digest] Sent digest to ${user.email} — ` +
+            `overdue: ${overdueTasks.length}, today: ${dueTodayTasks.length}, ` +
+            `week: ${dueThisWeekTasks.length}, completed: ${recentlyCompletedTasks.length}`,
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[email-digest] Failed to send to ${user.email}:`, msg);
+      }
 
       emails.push({
         email: user.email,

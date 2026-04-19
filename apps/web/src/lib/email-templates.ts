@@ -52,6 +52,206 @@ export function generateReminderHtml(data: ReminderData): string {
 </html>`;
 }
 
+export interface DailyReminderData {
+  userName: string | null;
+  userEmail: string;
+  appUrl: string;
+  dueToday: string[];
+  overdue: string[];
+  comingUp: string[];
+  noDate: string[];
+}
+
+export function generateDailyReminderHtml(data: DailyReminderData): string {
+  const { userName, appUrl, dueToday, overdue, comingUp, noDate } = data;
+  const greeting = userName ? `Hi ${userName}` : "Hi there";
+  const totalCount = dueToday.length + overdue.length + comingUp.length + noDate.length;
+
+  const C = {
+    primary: "#b08068",
+    bg: "#faf7f4",
+    text: "#4a3f3a",
+    textLight: "#7a6f6a",
+    danger: "#c0392b",
+    dangerBg: "#fdf0ef",
+    warning: "#e67e22",
+    warningBg: "#fef9e7",
+    neutral: "#b08068",
+    neutralBg: "#f5f0ec",
+    muted: "#888",
+    mutedBg: "#f7f7f7",
+    border: "#e8e0da",
+    white: "#ffffff",
+  };
+
+  function taskList(titles: string[], color: string): string {
+    return `<ul style="margin:6px 0 0 0;padding-left:20px;">
+      ${titles.map((t) => `<li style="margin-bottom:5px;font-size:14px;color:${color};">${t}</li>`).join("")}
+    </ul>`;
+  }
+
+  function sectionHtml(
+    title: string,
+    titles: string[],
+    bgColor: string,
+    accentColor: string,
+    textColor: string,
+    note?: string,
+  ): string {
+    if (titles.length === 0) return "";
+    return `
+    <div style="margin-bottom:20px;background:${bgColor};border-radius:8px;padding:14px 16px;border-left:4px solid ${accentColor};">
+      <h2 style="margin:0 0 4px 0;font-size:15px;font-weight:600;color:${accentColor};">${title} (${titles.length})</h2>
+      ${note ? `<p style="margin:0 0 4px 0;font-size:12px;color:${accentColor};">${note}</p>` : ""}
+      ${taskList(titles, textColor)}
+    </div>`;
+  }
+
+  const overdueSection = sectionHtml("Overdue", overdue, C.dangerBg, C.danger, C.text, "Past their due date");
+  const todaySection = sectionHtml("Due Today", dueToday, C.warningBg, C.warning, C.text);
+  const comingUpSection = sectionHtml("Coming Up", comingUp, C.neutralBg, C.neutral, C.text);
+  const noDateSection = sectionHtml("No Due Date", noDate, C.mutedBg, C.muted, C.textLight);
+
+  const emptyState = totalCount === 0
+    ? `<div style="text-align:center;padding:24px;color:${C.textLight};font-size:14px;">
+        <p style="margin:0;">You&apos;re all caught up — no pending tasks right now. 🎉</p>
+      </div>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your HomeBase Daily Reminder</title>
+</head>
+<body style="margin:0;padding:0;background:${C.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:520px;margin:0 auto;padding:36px 16px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <h1 style="margin:0;font-size:26px;color:${C.primary};font-weight:700;">HomeBase</h1>
+      <p style="margin:4px 0 0 0;font-size:12px;color:${C.textLight};">Daily Reminder</p>
+    </div>
+    <p style="font-size:15px;color:${C.text};margin:0 0 20px 0;">${greeting},</p>
+    <p style="font-size:14px;color:${C.textLight};margin:0 0 20px 0;">Here&apos;s a snapshot of your tasks:</p>
+    ${overdueSection}
+    ${todaySection}
+    ${comingUpSection}
+    ${noDateSection}
+    ${emptyState}
+    <div style="text-align:center;margin:28px 0 0 0;">
+      <a href="${appUrl}/tasks" style="display:inline-block;padding:11px 28px;background:${C.primary};color:${C.white};text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">View Tasks</a>
+    </div>
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid ${C.border};text-align:center;">
+      <p style="margin:0;font-size:11px;color:${C.textLight};">
+        You&apos;re receiving this because you enabled daily reminders in HomeBase.
+        <br/>Manage preferences in <a href="${appUrl}/settings" style="color:${C.primary};">Settings</a>.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+export interface WeeklyReminderData {
+  userName: string | null;
+  userEmail: string;
+  appUrl: string;
+  dueThisWeek: string[];
+  overdue: string[];
+  comingUp: string[];
+  noDate: string[];
+}
+
+export function generateWeeklyReminderHtml(data: WeeklyReminderData): string {
+  const { userName, appUrl, dueThisWeek, overdue, comingUp, noDate } = data;
+  const greeting = userName ? `Hi ${userName}` : "Hi there";
+  const totalCount = dueThisWeek.length + overdue.length + comingUp.length + noDate.length;
+
+  const C = {
+    primary: "#b08068",
+    bg: "#faf7f4",
+    text: "#4a3f3a",
+    textLight: "#7a6f6a",
+    danger: "#c0392b",
+    dangerBg: "#fdf0ef",
+    warning: "#e67e22",
+    warningBg: "#fef9e7",
+    neutral: "#b08068",
+    neutralBg: "#f5f0ec",
+    muted: "#888",
+    mutedBg: "#f7f7f7",
+    border: "#e8e0da",
+    white: "#ffffff",
+  };
+
+  function taskList(titles: string[], color: string): string {
+    return `<ul style="margin:6px 0 0 0;padding-left:20px;">
+      ${titles.map((t) => `<li style="margin-bottom:5px;font-size:14px;color:${color};">${t}</li>`).join("")}
+    </ul>`;
+  }
+
+  function sectionHtml(
+    title: string,
+    titles: string[],
+    bgColor: string,
+    accentColor: string,
+    textColor: string,
+    note?: string,
+  ): string {
+    if (titles.length === 0) return "";
+    return `
+    <div style="margin-bottom:20px;background:${bgColor};border-radius:8px;padding:14px 16px;border-left:4px solid ${accentColor};">
+      <h2 style="margin:0 0 4px 0;font-size:15px;font-weight:600;color:${accentColor};">${title} (${titles.length})</h2>
+      ${note ? `<p style="margin:0 0 4px 0;font-size:12px;color:${accentColor};">${note}</p>` : ""}
+      ${taskList(titles, textColor)}
+    </div>`;
+  }
+
+  const overdueSection = sectionHtml("Overdue", overdue, C.dangerBg, C.danger, C.text, "Past their due date");
+  const thisWeekSection = sectionHtml("Due This Week", dueThisWeek, C.warningBg, C.warning, C.text);
+  const comingUpSection = sectionHtml("Coming Up", comingUp, C.neutralBg, C.neutral, C.text);
+  const noDateSection = sectionHtml("No Due Date", noDate, C.mutedBg, C.muted, C.textLight);
+
+  const emptyState = totalCount === 0
+    ? `<div style="text-align:center;padding:24px;color:${C.textLight};font-size:14px;">
+        <p style="margin:0;">You&apos;re all caught up — no pending tasks right now. 🎉</p>
+      </div>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your HomeBase Weekly Reminder</title>
+</head>
+<body style="margin:0;padding:0;background:${C.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:520px;margin:0 auto;padding:36px 16px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <h1 style="margin:0;font-size:26px;color:${C.primary};font-weight:700;">HomeBase</h1>
+      <p style="margin:4px 0 0 0;font-size:12px;color:${C.textLight};">Weekly Reminder</p>
+    </div>
+    <p style="font-size:15px;color:${C.text};margin:0 0 20px 0;">${greeting},</p>
+    <p style="font-size:14px;color:${C.textLight};margin:0 0 20px 0;">Here&apos;s a snapshot of your tasks for the week:</p>
+    ${overdueSection}
+    ${thisWeekSection}
+    ${comingUpSection}
+    ${noDateSection}
+    ${emptyState}
+    <div style="text-align:center;margin:28px 0 0 0;">
+      <a href="${appUrl}/tasks" style="display:inline-block;padding:11px 28px;background:${C.primary};color:${C.white};text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">View Tasks</a>
+    </div>
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid ${C.border};text-align:center;">
+      <p style="margin:0;font-size:11px;color:${C.textLight};">
+        You&apos;re receiving this because you enabled weekly reminders in HomeBase.
+        <br/>Manage preferences in <a href="${appUrl}/settings" style="color:${C.primary};">Settings</a>.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 export interface HouseholdInviteData {
   inviterName: string | null;
   householdName: string;
