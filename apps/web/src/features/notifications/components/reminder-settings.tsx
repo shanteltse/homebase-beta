@@ -70,18 +70,6 @@ export function ReminderSettings() {
             className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
           />
         </label>
-        {profile?.reminderWeeklyEnabled && (
-          <div className="flex items-center gap-2 pl-0">
-            <label className="text-xs text-muted-foreground">Send at</label>
-            <input
-              type="time"
-              value={utcTimeToLocal(profile.reminderWeeklyTime)}
-              onChange={(e) => void handleChange("reminderWeeklyTime", localTimeToUtc(e.target.value))}
-              className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
-            />
-            <span className="text-xs text-muted-foreground">{localTimezone}</span>
-          </div>
-        )}
       </div>
     </div>
   );

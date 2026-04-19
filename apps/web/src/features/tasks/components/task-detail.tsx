@@ -76,7 +76,7 @@ function ContactField({ register, watch }: ContactFieldProps) {
   const value = watch("contact") ?? "";
   const type = detectContactType(value);
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1">
       <label htmlFor="contact" className="label text-foreground">
         Contact
       </label>
@@ -307,13 +307,13 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         </div>
       </div>
 
-      <form id="task-detail-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
+      <form id="task-detail-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
         {errors.title?.message && (
           <p className="text-xs text-destructive">{errors.title.message}</p>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-1">
             <label className="label text-foreground">Category</label>
             <Select
               value={selectedCategory}
@@ -336,7 +336,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           </div>
 
           {subcategories.length > 0 && (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1">
               <label className="label text-foreground">Subcategory</label>
               <Select
                 value={watch("subcategory") ?? ""}
@@ -362,8 +362,8 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-1">
             <label htmlFor="dueDateDate" className="label text-foreground">Due date</label>
             <input
               id="dueDateDate"
@@ -372,7 +372,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
               className="flex h-10 w-full appearance-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-date-and-time-value]:text-left"
             />
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <label htmlFor="dueDateTime" className="label text-foreground">Time (optional)</label>
             <div className="relative">
               <input
@@ -399,7 +399,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           <RecurringPicker value={recurring} onChange={setRecurring} />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2">
           <AssigneePicker value={assignee} onChange={setAssignee} />
           <ContactField register={register} watch={watch} />
         </div>
@@ -407,7 +407,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         <Textarea id="notes" label="Notes" rows={2} {...register("notes")} />
 
         {/* Subtasks */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <label className="label text-foreground">Subtasks</label>
             {task.subtasks.length > 0 && (
@@ -486,22 +486,23 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         )}
       </form>
 
-      {/* Sticky save bar */}
-      <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border py-3 flex justify-end gap-3">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => router.push("/tasks")}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          form="task-detail-form"
-          disabled={(!isDirty && !isExtraDirty) || updateTask.isPending}
-        >
-          {updateTask.isPending ? "Saving..." : "Save changes"}
-        </Button>
+      <div className="sticky bottom-16 md:bottom-0 bg-background pt-2 pb-4 border-t border-border mt-4">
+        <div className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => router.push("/tasks")}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="task-detail-form"
+            disabled={(!isDirty && !isExtraDirty) || updateTask.isPending}
+          >
+            {updateTask.isPending ? "Saving..." : "Save changes"}
+          </Button>
+        </div>
       </div>
 
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
