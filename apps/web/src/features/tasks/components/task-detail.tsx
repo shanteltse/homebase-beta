@@ -250,7 +250,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -307,7 +307,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <form id="task-detail-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
         {errors.title?.message && (
           <p className="text-xs text-destructive">{errors.title.message}</p>
         )}
@@ -404,7 +404,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           <ContactField register={register} watch={watch} />
         </div>
 
-        <Textarea id="notes" label="Notes" {...register("notes")} />
+        <Textarea id="notes" label="Notes" rows={2} {...register("notes")} />
 
         {/* Subtasks */}
         <div className="flex flex-col gap-3">
@@ -484,20 +484,25 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
             Failed to update task. Please try again.
           </p>
         )}
-
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => router.push("/tasks")}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={(!isDirty && !isExtraDirty) || updateTask.isPending}>
-            {updateTask.isPending ? "Saving..." : "Save changes"}
-          </Button>
-        </div>
       </form>
+
+      {/* Sticky save bar */}
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border py-3 flex justify-end gap-3">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => router.push("/tasks")}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          form="task-detail-form"
+          disabled={(!isDirty && !isExtraDirty) || updateTask.isPending}
+        >
+          {updateTask.isPending ? "Saving..." : "Save changes"}
+        </Button>
+      </div>
 
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>

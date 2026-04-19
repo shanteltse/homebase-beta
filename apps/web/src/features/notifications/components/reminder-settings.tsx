@@ -48,7 +48,7 @@ export function ReminderSettings() {
           />
         </label>
         {profile?.reminderDailyEnabled && (
-          <p className="text-xs text-muted-foreground">Sent each evening</p>
+          <p className="text-xs text-muted-foreground">Sent each evening!</p>
         )}
       </div>
 

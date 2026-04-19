@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Mic, MicOff, Loader2, Check } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { usePathname } from "next/navigation";
 import { useParseTask } from "@/features/ai/api/parse-task";
 import { useCreateTask } from "@/features/tasks/api/create-task";
 import { MIC_PREF_KEY, MIC_DENIED_EVENT, MIC_GRANTED_EVENT } from "./mic-permission-banner";
@@ -49,6 +50,7 @@ function getSpeechRecognitionConstructor(): (new () => SpeechRecognitionInstance
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function VoiceFab() {
+  const pathname = usePathname();
   const [isSupported, setIsSupported] = useState<boolean | null>(null);
   const [fabState, setFabState] = useState<FabState>("idle");
   const [interimText, setInterimText] = useState("");
@@ -261,6 +263,9 @@ export function VoiceFab() {
 
   // Don't render until we know if speech is supported
   if (isSupported === null || !isSupported) return null;
+
+  // Hide on task detail pages
+  if (pathname.startsWith("/tasks/")) return null;
 
   const isRequesting = fabState === "requesting";
   const isListening = fabState === "listening";
