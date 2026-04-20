@@ -33,17 +33,22 @@ export async function POST(request: Request) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const now = new Date();
-  const utcDay = now.getUTCDay();
-  const isMonday = utcDay === 1;
 
-  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  // NOTE: This cron runs server-side (Vercel, UTC). Using local-time constructors here
+  // means on Vercel these equal UTC midnight, which is correct for date-only tasks stored
+  // as YYYY-MM-DD strings. Per-user timezone bucketing would require storing a timezone
+  // preference on the user record — that's a known limitation.
+  const day = now.getDay();
+  const isMonday = day === 1;
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart);
-  todayEnd.setUTCDate(todayEnd.getUTCDate() + 1);
+  todayEnd.setDate(todayEnd.getDate() + 1);
 
-  // End of this week (Sunday 23:59:59 UTC)
-  const daysUntilSunday = utcDay === 0 ? 7 : 7 - utcDay;
+  // End of this week (Sunday midnight, exclusive upper bound)
+  const daysUntilSunday = day === 0 ? 7 : 7 - day;
   const weekEnd = new Date(todayStart);
-  weekEnd.setUTCDate(weekEnd.getUTCDate() + daysUntilSunday + 1); // exclusive upper bound
+  weekEnd.setDate(weekEnd.getDate() + daysUntilSunday + 1);
 
   const allUsers = await db
     .select({
