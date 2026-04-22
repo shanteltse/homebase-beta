@@ -108,6 +108,7 @@ export function TaskList() {
               {tasks.map((task) => (
                 <TaskCard
                   key={task.id}
+                  compact
                   task={task}
                   onToggleComplete={handleToggleComplete}
                   onToggleStar={handleToggleStar}
@@ -122,6 +123,7 @@ export function TaskList() {
           {filtered.map((task) => (
             <TaskCard
               key={task.id}
+              compact
               task={task}
               onToggleComplete={handleToggleComplete}
               onToggleStar={handleToggleStar}

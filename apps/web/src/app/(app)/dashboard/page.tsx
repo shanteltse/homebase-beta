@@ -434,6 +434,7 @@ export default function DashboardPage() {
                     <TaskCard
                       key={task.id}
                       compact
+                      grouped
                       task={task}
                       onToggleComplete={handleToggleComplete}
                       onToggleStar={handleToggleStar}
@@ -452,6 +453,7 @@ export default function DashboardPage() {
                     <TaskCard
                       key={task.id}
                       compact
+                      grouped
                       task={task}
                       onToggleComplete={handleToggleComplete}
                       onToggleStar={handleToggleStar}

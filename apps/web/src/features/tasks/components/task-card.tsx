@@ -23,6 +23,7 @@ type TaskCardProps = {
   onToggleStar?: (taskId: string, starred: boolean) => void;
   onTagClick?: (tag: string) => void;
   compact?: boolean;
+  grouped?: boolean;
 };
 
 function formatCompactDate(dueDate: string): string {
@@ -63,7 +64,7 @@ function getContactMeta(contact: string | null | undefined): { type: "email" | "
   return null;
 }
 
-export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, compact = false }: TaskCardProps) {
+export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, compact = false, grouped = false }: TaskCardProps) {
   const { data: members } = useHouseholdMembers();
   const updateTask = useUpdateTask();
   const assignedMember = task.assignee
@@ -92,7 +93,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
       data-task-title={task.title}
       className={cn(
         "flex items-start gap-3 p-4 transition-colors hover:bg-muted/50",
-        !compact && "rounded-lg border border-border",
+        !grouped && "rounded-lg border border-border",
         task.completed && "opacity-60",
       )}
     >
