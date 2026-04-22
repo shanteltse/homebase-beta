@@ -285,11 +285,14 @@ export default function DashboardPage() {
           {showMemberFilter && (
             <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
               {(members ?? []).map((member) => {
+                const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
                 const memberTasks = allTasks.filter((t) => t.assignee === member.id);
                 const activeCount = memberTasks.filter((t) => !t.completed).length;
-                const total = memberTasks.length;
-                const completedCount = total - activeCount;
-                const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+                const completedThisWeek = memberTasks.filter(
+                  (t) => t.completed && t.completedAt && new Date(t.completedAt) >= sevenDaysAgo,
+                ).length;
+                const total = activeCount + completedThisWeek;
+                const pct = total > 0 ? Math.round((completedThisWeek / total) * 100) : 0;
                 return (
                   <div
                     key={member.id}
@@ -309,7 +312,7 @@ export default function DashboardPage() {
                         />
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {activeCount}/{total} tasks · {pct}%
+                        {activeCount} left · {completedThisWeek} done this week · {pct}%
                       </p>
                     </div>
                   </div>
