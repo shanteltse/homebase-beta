@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@repo/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@repo/ui/popover";
 import { cn } from "@/utils/cn";
 import type { Task } from "@/types/task";
 import { DEFAULT_CATEGORIES } from "@/types/category";
@@ -159,178 +160,77 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
           )}
         </div>
 
-        {/* Row 2: mobile-only category + priority (hidden in compact — unified row 3 is used instead) */}
-        <div className={cn(compact ? "hidden" : "flex md:hidden", "items-center gap-2")}>
-          {/* Category — controlled dropdown, modal={false} so no overlay blocks sibling triggers */}
-          <DropdownMenu
-            open={openDropdown === "category"}
-            onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}
-            modal={false}
-          >
-            <DropdownMenuTrigger asChild>
+        {/* Row 2: category · priority · date · assignee */}
+        <div className={cn("flex items-center", compact ? "gap-1.5 min-w-0 overflow-hidden flex-nowrap" : "gap-2")}>
+          <Popover open={openDropdown === "category"} onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}>
+            <PopoverTrigger asChild>
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("category"); }}
               >
-                <Badge variant={CATEGORY_VARIANTS[task.category] ?? "default"}>
+                <Badge variant={CATEGORY_VARIANTS[task.category] ?? "default"} className={compact ? "px-1.5 py-0.5 text-xs" : undefined}>
                   {categoryName}
                 </Badge>
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" onInteractOutside={() => setOpenDropdown(null)}>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-40 p-1">
               {DEFAULT_CATEGORIES.map((cat) => (
-                <DropdownMenuItem
+                <button
                   key={cat.id}
+                  type="button"
                   onClick={() => { updateTask.mutate({ id: task.id, category: cat.id }); setOpenDropdown(null); }}
-                  className={cn("flex items-center justify-between gap-4", task.category === cat.id && "font-medium")}
+                  className={cn("flex w-full items-center rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-muted", task.category === cat.id && "font-medium")}
                 >
                   {cat.name}
-                </DropdownMenuItem>
+                </button>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </PopoverContent>
+          </Popover>
 
-          {/* Priority — controlled dropdown */}
-          <DropdownMenu
-            open={openDropdown === "priority"}
-            onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}
-            modal={false}
-          >
-            <DropdownMenuTrigger asChild>
+          <Popover open={openDropdown === "priority"} onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}>
+            <PopoverTrigger asChild>
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("priority"); }}
               >
-                <Badge variant={PRIORITY_VARIANTS[task.priority]}>
+                <Badge variant={PRIORITY_VARIANTS[task.priority]} className={compact ? "px-1.5 py-0.5 text-xs" : undefined}>
                   {task.priority}
                 </Badge>
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" onInteractOutside={() => setOpenDropdown(null)}>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-32 p-1">
               {(["high", "medium", "low"] as const).map((p) => (
-                <DropdownMenuItem
+                <button
                   key={p}
+                  type="button"
                   onClick={() => { updateTask.mutate({ id: task.id, priority: p }); setOpenDropdown(null); }}
-                  className={cn("flex items-center justify-between gap-4", task.priority === p && "font-medium")}
+                  className={cn("flex w-full items-center rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-muted", task.priority === p && "font-medium")}
                 >
                   {p}
-                </DropdownMenuItem>
+                </button>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+            </PopoverContent>
+          </Popover>
 
-        {/* Row 3: [category + priority] + due date + assignee + subtasks */}
-        <div className={cn("flex items-center", compact ? "gap-1.5 min-w-0 overflow-hidden flex-nowrap" : "gap-2")}>
-          {/* Category + priority: desktop-only in normal mode; always shown in compact */}
-          <div className={cn("items-center", compact ? "flex gap-1.5 shrink-0" : "hidden md:flex gap-2")}>
-            <DropdownMenu
-              open={openDropdown === "category"}
-              onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}
-              modal={false}
-            >
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("category"); }}
-                >
-                  <Badge variant={CATEGORY_VARIANTS[task.category] ?? "default"} className={compact ? "px-1.5 py-0.5 text-xs" : undefined}>
-                    {categoryName}
-                  </Badge>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" onInteractOutside={() => setOpenDropdown(null)}>
-                {DEFAULT_CATEGORIES.map((cat) => (
-                  <DropdownMenuItem
-                    key={cat.id}
-                    onClick={() => { updateTask.mutate({ id: task.id, category: cat.id }); setOpenDropdown(null); }}
-                    className={cn("flex items-center justify-between gap-4", task.category === cat.id && "font-medium")}
-                  >
-                    {cat.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu
-              open={openDropdown === "priority"}
-              onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}
-              modal={false}
-            >
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("priority"); }}
-                >
-                  <Badge variant={PRIORITY_VARIANTS[task.priority]} className={compact ? "px-1.5 py-0.5 text-xs" : undefined}>
-                    {task.priority}
-                  </Badge>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" onInteractOutside={() => setOpenDropdown(null)}>
-                {(["high", "medium", "low"] as const).map((p) => (
-                  <DropdownMenuItem
-                    key={p}
-                    onClick={() => { updateTask.mutate({ id: task.id, priority: p }); setOpenDropdown(null); }}
-                    className={cn("flex items-center justify-between gap-4", task.priority === p && "font-medium")}
-                  >
-                    {p}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Due date */}
+          {/* Due date — read-only; navigates to task detail for editing */}
           {task.dueDate && task.dueDate !== "" ? (
-            compact ? (
-              <span className="caption flex items-center gap-1">
-                <span className={cn(
-                  "caption inline-flex items-center rounded-full px-2 py-0.5",
-                  overdue ? "bg-red-100 text-destructive" : "bg-muted text-muted-foreground",
-                )}>
-                  {formatCompactDate(task.dueDate)}
+            <Link
+              href={`/tasks/${task.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="caption flex items-center gap-1"
+            >
+              <span className={cn(
+                "caption inline-flex items-center rounded-full px-2 py-0.5",
+                overdue ? "bg-red-100 text-destructive" : "bg-muted text-muted-foreground",
+              )}>
+                {formatCompactDate(task.dueDate)}
+              </span>
+              {task.recurring && (
+                <span title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}>
+                  <Repeat className="h-3 w-3 text-muted-foreground" />
                 </span>
-                {task.recurring && (
-                  <span title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}>
-                    <Repeat className="h-3 w-3 text-muted-foreground" />
-                  </span>
-                )}
-              </span>
-            ) : (
-              /* Full editable date input — always-visible native <input type="date">; iOS Safari opens the date wheel on tap */
-              <span key={task.dueDate ?? "no-date"} className={cn("caption flex items-center gap-1", overdue ? "text-destructive" : "text-muted-foreground")}>
-                {overdue && <span>Overdue:&nbsp;</span>}
-                <div className={cn(
-                  "caption inline-flex items-center rounded-full px-2 py-0.5",
-                  overdue ? "bg-red-100 text-destructive" : "bg-muted text-muted-foreground",
-                )}>
-                  <input
-                    type="date"
-                    value={task.dueDate.split("T")[0]}
-                    onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
-                    onChange={(e) => { e.stopPropagation(); console.log("date onChange value:", JSON.stringify(e.target.value)); updateTask.mutate({ id: task.id, dueDate: e.target.value || null }); }}
-                    className={cn(
-                      "caption cursor-pointer bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0 mr-0",
-                      overdue ? "text-destructive" : "text-muted-foreground",
-                    )}
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateTask.mutate({ id: task.id, dueDate: null }); }}
-                    className="leading-none hover:opacity-70 transition-opacity p-0 m-0"
-                    aria-label="Clear due date"
-                  >
-                    ×
-                  </button>
-                </div>
-                {task.recurring && (
-                  <span title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}>
-                    <Repeat className="h-3 w-3" />
-                  </span>
-                )}
-              </span>
-            )
+              )}
+            </Link>
           ) : (
             <>
               {task.recurring && (
@@ -339,24 +239,17 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
                   title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}
                 >
                   <Repeat className="h-3 w-3" />
-                  {(task.recurring as { frequency: string }).frequency}
+                  {!compact && (task.recurring as { frequency: string }).frequency}
                 </span>
               )}
-              {!compact && (
-                <div
-                  className="relative cursor-pointer text-muted-foreground opacity-60 hover:opacity-100 transition-opacity flex items-center"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <CalendarDays className="h-4 w-4" />
-                  <input
-                    type="date"
-                    aria-label="Add due date"
-                    onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
-                    onBlur={(e) => { e.stopPropagation(); if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  />
-                </div>
-              )}
+              <Link
+                href={`/tasks/${task.id}`}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Set due date"
+                className="text-muted-foreground opacity-60 hover:opacity-100 transition-opacity"
+              >
+                <CalendarDays className="h-4 w-4" />
+              </Link>
             </>
           )}
 
