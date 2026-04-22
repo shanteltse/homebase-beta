@@ -447,7 +447,7 @@ export default function DashboardPage() {
 
             {nonFocusTasks.length > 0 ? (
               <div className={cn("flex flex-col gap-3", focusTasks.length > 0 && "mt-3")}>
-                <h3 className="heading-xs text-muted-foreground">Everything Else</h3>
+                {focusTasks.length > 0 && <h3 className="heading-xs text-muted-foreground">Everything Else</h3>}
                 <div className="overflow-hidden rounded-lg border border-border divide-y divide-border">
                   {nonFocusTasks.map((task) => (
                     <TaskCard
