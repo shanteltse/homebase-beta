@@ -429,30 +429,36 @@ export default function DashboardPage() {
             {focusTasks.length > 0 && (
               <div className="flex flex-col gap-3">
                 <h3 className="heading-xs text-primary">Your Focus</h3>
-                {focusTasks.map((task) => (
-                  <div key={task.id} className="overflow-hidden rounded-lg border-l-2 border-primary">
+                <div className="overflow-hidden rounded-lg border border-border border-l-2 border-l-primary divide-y divide-border">
+                  {focusTasks.map((task) => (
                     <TaskCard
+                      key={task.id}
+                      compact
                       task={task}
                       onToggleComplete={handleToggleComplete}
                       onToggleStar={handleToggleStar}
                       onTagClick={(t) => router.push(`/tasks?tag=${encodeURIComponent(t)}`)}
                     />
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
 
             {nonFocusTasks.length > 0 ? (
               <div className={cn("flex flex-col gap-3", focusTasks.length > 0 && "mt-3")}>
-                {nonFocusTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onToggleComplete={handleToggleComplete}
-                    onToggleStar={handleToggleStar}
-                    onTagClick={(t) => router.push(`/tasks?tag=${encodeURIComponent(t)}`)}
-                  />
-                ))}
+                <h3 className="heading-xs text-muted-foreground">Everything Else</h3>
+                <div className="overflow-hidden rounded-lg border border-border divide-y divide-border">
+                  {nonFocusTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      compact
+                      task={task}
+                      onToggleComplete={handleToggleComplete}
+                      onToggleStar={handleToggleStar}
+                      onTagClick={(t) => router.push(`/tasks?tag=${encodeURIComponent(t)}`)}
+                    />
+                  ))}
+                </div>
               </div>
             ) : focusTasks.length === 0 ? (
               <div className="rounded-lg border border-border bg-muted/50 p-8 text-center body text-muted-foreground">

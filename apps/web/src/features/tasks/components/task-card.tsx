@@ -22,7 +22,16 @@ type TaskCardProps = {
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onToggleStar?: (taskId: string, starred: boolean) => void;
   onTagClick?: (tag: string) => void;
+  compact?: boolean;
 };
+
+function formatCompactDate(dueDate: string): string {
+  const parts = dueDate.split("T")[0]!.split("-").map(Number);
+  return new Date(parts[0]!, parts[1]! - 1, parts[2]!).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
 
 type OpenDropdown = "category" | "priority" | "assignee" | null;
 
@@ -54,7 +63,7 @@ function getContactMeta(contact: string | null | undefined): { type: "email" | "
   return null;
 }
 
-export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: TaskCardProps) {
+export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, compact = false }: TaskCardProps) {
   const { data: members } = useHouseholdMembers();
   const updateTask = useUpdateTask();
   const assignedMember = task.assignee
@@ -82,7 +91,8 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
       data-testid="task-card"
       data-task-title={task.title}
       className={cn(
-        "flex items-start gap-3 rounded-lg border border-border p-4 transition-colors hover:bg-muted/50",
+        "flex items-start gap-3 p-4 transition-colors hover:bg-muted/50",
+        !compact && "rounded-lg border border-border",
         task.completed && "opacity-60",
       )}
     >
@@ -104,7 +114,8 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
           <Link
             href={`/tasks/${task.id}`}
             className={cn(
-              "body font-medium text-foreground hover:text-primary break-words min-w-0",
+              "body font-medium text-foreground hover:text-primary min-w-0",
+              compact ? "shrink truncate" : "break-words flex-1",
               task.completed && "line-through",
               task.starred && "font-bold",
             )}
@@ -124,10 +135,31 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
               <span className="truncate">{task.contact}</span>
             </a>
           )}
+          {compact && (
+            <>
+              <div className="flex-1" />
+              <button
+                type="button"
+                onClick={() => onToggleComplete(task.id, !task.completed)}
+                className={cn(
+                  "shrink-0 flex items-center justify-center rounded-full border-[1.5px] bg-white h-7 w-7 transition-colors",
+                  task.completed ? "border-border" : "border-[#D4A898]",
+                )}
+                aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
+              >
+                <Check
+                  className="h-3.5 w-3.5"
+                  style={task.completed
+                    ? { color: "var(--muted-foreground)", strokeWidth: 1.8 }
+                    : { color: "#D4A898", strokeWidth: 1.8 }}
+                />
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Row 2: mobile-only category + priority */}
-        <div className="flex md:hidden items-center gap-2">
+        {/* Row 2: mobile-only category + priority (hidden in compact — unified row 3 is used instead) */}
+        <div className={cn(compact ? "hidden" : "flex md:hidden", "items-center gap-2")}>
           {/* Category — controlled dropdown, modal={false} so no overlay blocks sibling triggers */}
           <DropdownMenu
             open={openDropdown === "category"}
@@ -187,10 +219,10 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
           </DropdownMenu>
         </div>
 
-        {/* Row 3: [desktop: category + priority] + due date + assignee + subtasks */}
-        <div className="flex items-center gap-2">
-          {/* Desktop-only: category + priority inline in row 3 */}
-          <div className="hidden md:flex items-center gap-2">
+        {/* Row 3: [category + priority] + due date + assignee + subtasks */}
+        <div className={cn("flex items-center", compact ? "gap-1.5 min-w-0 overflow-hidden flex-nowrap" : "gap-2")}>
+          {/* Category + priority: desktop-only in normal mode; always shown in compact */}
+          <div className={cn("items-center", compact ? "flex gap-1.5 shrink-0" : "hidden md:flex gap-2")}>
             <DropdownMenu
               open={openDropdown === "category"}
               onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}
@@ -201,7 +233,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   type="button"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("category"); }}
                 >
-                  <Badge variant={CATEGORY_VARIANTS[task.category] ?? "default"}>
+                  <Badge variant={CATEGORY_VARIANTS[task.category] ?? "default"} className={compact ? "px-1.5 py-0.5 text-xs" : undefined}>
                     {categoryName}
                   </Badge>
                 </button>
@@ -229,7 +261,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   type="button"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("priority"); }}
                 >
-                  <Badge variant={PRIORITY_VARIANTS[task.priority]}>
+                  <Badge variant={PRIORITY_VARIANTS[task.priority]} className={compact ? "px-1.5 py-0.5 text-xs" : undefined}>
                     {task.priority}
                   </Badge>
                 </button>
@@ -248,39 +280,56 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
             </DropdownMenu>
           </div>
 
-          {/* Due date — always-visible native <input type="date">; iOS Safari opens the date wheel on tap */}
+          {/* Due date */}
           {task.dueDate && task.dueDate !== "" ? (
-            <span key={task.dueDate ?? "no-date"} className={cn("caption flex items-center gap-1", overdue ? "text-destructive" : "text-muted-foreground")}>
-              {overdue && <span>Overdue:&nbsp;</span>}
-              <div className={cn(
-                "caption inline-flex items-center rounded-full px-2 py-0.5",
-                overdue ? "bg-red-100 text-destructive" : "bg-muted text-muted-foreground",
-              )}>
-                <input
-                  type="date"
-                  value={task.dueDate.split("T")[0]}
-                  onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
-                  onChange={(e) => { e.stopPropagation(); console.log("date onChange value:", JSON.stringify(e.target.value)); updateTask.mutate({ id: task.id, dueDate: e.target.value || null }); }}
-                  className={cn(
-                    "caption cursor-pointer bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0 mr-0",
-                    overdue ? "text-destructive" : "text-muted-foreground",
-                  )}
-                />
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateTask.mutate({ id: task.id, dueDate: null }); }}
-                  className="leading-none hover:opacity-70 transition-opacity p-0 m-0"
-                  aria-label="Clear due date"
-                >
-                  ×
-                </button>
-              </div>
-              {task.recurring && (
-                <span title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}>
-                  <Repeat className="h-3 w-3" />
+            compact ? (
+              <span className="caption flex items-center gap-1">
+                <span className={cn(
+                  "caption inline-flex items-center rounded-full px-2 py-0.5",
+                  overdue ? "bg-red-100 text-destructive" : "bg-muted text-muted-foreground",
+                )}>
+                  {formatCompactDate(task.dueDate)}
                 </span>
-              )}
-            </span>
+                {task.recurring && (
+                  <span title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}>
+                    <Repeat className="h-3 w-3 text-muted-foreground" />
+                  </span>
+                )}
+              </span>
+            ) : (
+              /* Full editable date input — always-visible native <input type="date">; iOS Safari opens the date wheel on tap */
+              <span key={task.dueDate ?? "no-date"} className={cn("caption flex items-center gap-1", overdue ? "text-destructive" : "text-muted-foreground")}>
+                {overdue && <span>Overdue:&nbsp;</span>}
+                <div className={cn(
+                  "caption inline-flex items-center rounded-full px-2 py-0.5",
+                  overdue ? "bg-red-100 text-destructive" : "bg-muted text-muted-foreground",
+                )}>
+                  <input
+                    type="date"
+                    value={task.dueDate.split("T")[0]}
+                    onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
+                    onChange={(e) => { e.stopPropagation(); console.log("date onChange value:", JSON.stringify(e.target.value)); updateTask.mutate({ id: task.id, dueDate: e.target.value || null }); }}
+                    className={cn(
+                      "caption cursor-pointer bg-transparent border-0 outline-none focus:outline-none focus:ring-0 p-0 mr-0",
+                      overdue ? "text-destructive" : "text-muted-foreground",
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateTask.mutate({ id: task.id, dueDate: null }); }}
+                    className="leading-none hover:opacity-70 transition-opacity p-0 m-0"
+                    aria-label="Clear due date"
+                  >
+                    ×
+                  </button>
+                </div>
+                {task.recurring && (
+                  <span title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}>
+                    <Repeat className="h-3 w-3" />
+                  </span>
+                )}
+              </span>
+            )
           ) : (
             <>
               {task.recurring && (
@@ -292,19 +341,21 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   {(task.recurring as { frequency: string }).frequency}
                 </span>
               )}
-              <div
-                className="relative cursor-pointer text-muted-foreground opacity-60 hover:opacity-100 transition-opacity flex items-center"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <CalendarDays className="h-4 w-4" />
-                <input
-                  type="date"
-                  aria-label="Add due date"
-                  onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
-                  onBlur={(e) => { e.stopPropagation(); if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                />
-              </div>
+              {!compact && (
+                <div
+                  className="relative cursor-pointer text-muted-foreground opacity-60 hover:opacity-100 transition-opacity flex items-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  <input
+                    type="date"
+                    aria-label="Add due date"
+                    onClick={(e) => { e.stopPropagation(); setOpenDropdown(null); }}
+                    onBlur={(e) => { e.stopPropagation(); if (e.target.value) updateTask.mutate({ id: task.id, dueDate: e.target.value }); }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                </div>
+              )}
             </>
           )}
 
@@ -320,12 +371,14 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
                   <button
                     type="button"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("assignee"); }}
-                    className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+                    className={cn("flex items-center gap-1.5 hover:opacity-70 transition-opacity", compact && "shrink-0")}
                   >
                     <MemberAvatar name={assignedMember.name} image={assignedMember.image} size="sm" avatarColor={assignedMember.avatarColor} useGooglePhoto={assignedMember.useGooglePhoto} />
-                    <span className="caption text-muted-foreground">
-                      {assignedMember.name ?? assignedMember.email}
-                    </span>
+                    {!compact && (
+                      <span className="caption text-muted-foreground">
+                        {assignedMember.name ?? assignedMember.email}
+                      </span>
+                    )}
                   </button>
                 ) : (
                   <button
@@ -381,31 +434,33 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick }: T
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => onToggleComplete(task.id, !task.completed)}
-        className={cn(
-          "shrink-0 self-center transition-colors",
-          // Mobile: circle button
-          "flex items-center justify-center rounded-full border-[1.5px] bg-white",
-          "h-9 w-9",
-          // Desktop: revert to pill
-          "md:flex-none md:h-auto md:w-auto md:rounded-md md:border md:bg-transparent md:px-2.5 md:py-1 md:text-xs md:font-medium",
-          task.completed
-            ? "border-border text-muted-foreground hover:border-border hover:text-foreground"
-            : "border-[#D4A898] md:border-border md:text-muted-foreground md:hover:border-green-500 md:hover:text-green-600 md:hover:bg-green-50 dark:md:hover:bg-green-950/30",
-        )}
-      >
-        {task.completed ? "Undo" : (
-          <>
-            <Check
-              className="h-3.5 w-3.5 md:hidden"
-              style={{ color: "#D4A898", strokeWidth: 1.8 }}
-            />
-            <span className="hidden md:inline">Complete ✓</span>
-          </>
-        )}
-      </button>
+      {!compact && (
+        <button
+          type="button"
+          onClick={() => onToggleComplete(task.id, !task.completed)}
+          className={cn(
+            "shrink-0 self-center transition-colors",
+            // Mobile: circle button
+            "flex items-center justify-center rounded-full border-[1.5px] bg-white",
+            "h-9 w-9",
+            // Desktop: revert to pill
+            "md:flex-none md:h-auto md:w-auto md:rounded-md md:border md:bg-transparent md:px-2.5 md:py-1 md:text-xs md:font-medium",
+            task.completed
+              ? "border-border text-muted-foreground hover:border-border hover:text-foreground"
+              : "border-[#D4A898] md:border-border md:text-muted-foreground md:hover:border-green-500 md:hover:text-green-600 md:hover:bg-green-50 dark:md:hover:bg-green-950/30",
+          )}
+        >
+          {task.completed ? "Undo" : (
+            <>
+              <Check
+                className="h-3.5 w-3.5 md:hidden"
+                style={{ color: "#D4A898", strokeWidth: 1.8 }}
+              />
+              <span className="hidden md:inline">Complete ✓</span>
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
