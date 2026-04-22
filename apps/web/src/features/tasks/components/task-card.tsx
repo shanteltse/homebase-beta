@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { format } from "date-fns";
 import { CalendarDays, Check, Mail, Phone, Repeat, Star, UserRound } from "lucide-react";
 import { Badge } from "@repo/ui/badge";
 import {
@@ -11,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@repo/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/utils/cn";
 import type { Task } from "@/types/task";
 import { DEFAULT_CATEGORIES } from "@/types/category";
@@ -35,7 +37,12 @@ function formatCompactDate(dueDate: string): string {
   });
 }
 
-type OpenDropdown = "category" | "priority" | "assignee" | null;
+type OpenDropdown = "category" | "priority" | "assignee" | "date" | null;
+
+function parseTaskDate(dueDate: string): Date {
+  const parts = dueDate.split("T")[0]!.split("-").map(Number);
+  return new Date(parts[0]!, parts[1]! - 1, parts[2]!);
+}
 
 const PRIORITY_VARIANTS = {
   high: "high",
@@ -212,25 +219,45 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
             </PopoverContent>
           </Popover>
 
-          {/* Due date — read-only; navigates to task detail for editing */}
+          {/* Due date — inline editable Popover */}
           {task.dueDate && task.dueDate !== "" ? (
-            <Link
-              href={`/tasks/${task.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="caption flex items-center gap-1"
-            >
-              <span className={cn(
-                "caption inline-flex items-center rounded-full px-2 py-0.5",
-                overdue ? "bg-red-100 text-destructive" : "bg-muted text-muted-foreground",
-              )}>
-                {formatCompactDate(task.dueDate)}
-              </span>
+            <span className="caption flex items-center gap-1">
+              <Popover open={openDropdown === "date"} onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("date"); }}
+                    className={cn(
+                      "caption inline-flex items-center rounded-full px-2 py-0.5 transition-opacity hover:opacity-80",
+                      overdue ? "bg-red-100 text-destructive" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {formatCompactDate(task.dueDate)}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto p-2">
+                  <Calendar
+                    selected={parseTaskDate(task.dueDate)}
+                    onSelect={(date) => {
+                      if (date) updateTask.mutate({ id: task.id, dueDate: format(date, "yyyy-MM-dd") });
+                      setOpenDropdown(null);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { updateTask.mutate({ id: task.id, dueDate: null }); setOpenDropdown(null); }}
+                    className="mt-1 w-full rounded-sm px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    Clear date
+                  </button>
+                </PopoverContent>
+              </Popover>
               {task.recurring && (
                 <span title={`Repeats ${(task.recurring as { frequency: string }).frequency}`}>
                   <Repeat className="h-3 w-3 text-muted-foreground" />
                 </span>
               )}
-            </Link>
+            </span>
           ) : (
             <>
               {task.recurring && (
@@ -242,14 +269,27 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
                   {!compact && (task.recurring as { frequency: string }).frequency}
                 </span>
               )}
-              <Link
-                href={`/tasks/${task.id}`}
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Set due date"
-                className="text-muted-foreground opacity-60 hover:opacity-100 transition-opacity"
-              >
-                <CalendarDays className="h-4 w-4" />
-              </Link>
+              <Popover open={openDropdown === "date"} onOpenChange={(open) => { if (!open) setOpenDropdown(null); }}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Set due date"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleDropdown("date"); }}
+                    className="text-muted-foreground opacity-60 hover:opacity-100 transition-opacity"
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto p-2">
+                  <Calendar
+                    selected={undefined}
+                    onSelect={(date) => {
+                      if (date) updateTask.mutate({ id: task.id, dueDate: format(date, "yyyy-MM-dd") });
+                      setOpenDropdown(null);
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
             </>
           )}
 
