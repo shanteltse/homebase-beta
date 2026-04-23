@@ -39,7 +39,6 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
       return;
     }
 
-    alert("Registering appUrlOpen listener now");
     const { App } = await import("@capacitor/app");
     const { Browser } = await import("@capacitor/browser");
 

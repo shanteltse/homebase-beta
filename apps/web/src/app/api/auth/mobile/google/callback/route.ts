@@ -62,9 +62,13 @@ export async function GET(request: Request) {
     const token = await createMobileToken({ id: user.id, email: user.email!, name: user.name });
     console.log("[callback] token created, length:", token.length, "last20:", token.slice(-20));
 
-    // JWT tokens are base64url-encoded (URL-safe chars only) — no encodeURIComponent needed.
-    // Applying it causes double-encoding when Next.js re-encodes the Location header.
-    return NextResponse.redirect(`${APP_DEEP_LINK}?token=${token}`);
+    // SFSafariViewController (used by @capacitor/browser) doesn't reliably follow
+    // HTTP 302 redirects to custom URL schemes on modern iOS. Return an HTML page
+    // that JS-redirects instead — this works reliably in SFSafariViewController.
+    return new Response(
+      `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${APP_DEEP_LINK}?token=${token}"></head><body><script>window.location.href="${APP_DEEP_LINK}?token=${token}";</script><p>Redirecting back to HomeBase...</p></body></html>`,
+      { headers: { "Content-Type": "text/html" } },
+    );
   } catch {
     return NextResponse.redirect(`${APP_DEEP_LINK}?error=server_error`);
   }
