@@ -57,6 +57,7 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
         await setMobileToken(token);
         // Warm the in-memory cache so the patched fetch can read it synchronously
         await getMobileToken();
+        alert("token stored, length: " + token.length);
         alert("Token stored. Closing browser...");
         await Browser.close();
         await queryClient.invalidateQueries({ queryKey: ["mobile-user"] });
