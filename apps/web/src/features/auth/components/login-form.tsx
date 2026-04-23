@@ -134,7 +134,11 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
         variant="outline"
         size="lg"
         className="w-full"
-        onClick={() => googleLogin.mutate()}
+        onClick={async () => {
+          const isNative = !!(window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+          alert(`isNative: ${isNative}, userAgent: ${navigator.userAgent.slice(0, 100)}`);
+          googleLogin.mutate();
+        }}
         disabled={googleLogin.isPending}
       >
         {googleLogin.isPending ? "Connecting..." : "Continue with Google"}
