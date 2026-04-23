@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
+import { Capacitor } from "@capacitor/core";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { useLogin, useGoogleLogin } from "../api/login";
@@ -22,8 +25,37 @@ interface LoginFormProps {
 
 export function LoginForm({ inviteToken }: LoginFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const login = useLogin();
   const googleLogin = useGoogleLogin();
+
+  // On native: listen for the deep link that carries the JWT after Google OAuth
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let removeListener: (() => void) | undefined;
+
+    void (async () => {
+      const { App } = await import("@capacitor/app");
+      const handle = await App.addListener("appUrlOpen", async (event: { url: string }) => {
+        if (!event.url.startsWith("com.homebase.app://auth/callback")) return;
+
+        const qs = event.url.includes("?") ? event.url.split("?")[1]! : "";
+        const params = new URLSearchParams(qs);
+        const token = params.get("token");
+
+        if (token) {
+          const { setMobileToken } = await import("@/lib/mobile-auth-storage");
+          await setMobileToken(token);
+          await queryClient.invalidateQueries({ queryKey: ["mobile-user"] });
+          router.push(inviteToken ? `/invite/${inviteToken}` : "/dashboard");
+        }
+      });
+      removeListener = () => void handle.remove();
+    })();
+
+    return () => { removeListener?.(); };
+  }, [router, queryClient, inviteToken]);
 
   const {
     register,
