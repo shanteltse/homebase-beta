@@ -28,14 +28,17 @@ export async function verifyMobileToken(
   token: string,
 ): Promise<MobileTokenPayload | null> {
   try {
+    console.log("[verifyMobileToken] token prefix:", token.slice(0, 20));
     const { payload } = await jwtVerify(token, SECRET);
+    console.log("[verifyMobileToken] payload:", JSON.stringify(payload));
     if (!payload.sub) return null;
     return {
       sub: payload.sub,
       email: payload.email as string,
       name: payload.name as string | null,
     };
-  } catch {
+  } catch (err) {
+    console.log("[verifyMobileToken] error:", err);
     return null;
   }
 }

@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { handleApiError, ApiError } from "@/lib/api-error";
 
 export async function GET(request: Request) {
+  console.log("[profile] auth header:", request.headers.get("authorization")?.slice(0, 30));
   const user = await getAuthUser(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
