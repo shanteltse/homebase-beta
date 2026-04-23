@@ -48,6 +48,7 @@ export function useGoogleLogin() {
           !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.());
       console.log("[mobile-auth] isNative:", isNative, "clientId:", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? "SET" : "MISSING", "ua:", typeof window !== "undefined" ? window.navigator.userAgent : "SSR");
       if (isNative) {
+        alert("Opening browser with clientId: " + (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? "SET" : "MISSING"));
         const { Browser } = await import("@capacitor/browser");
         const params = new URLSearchParams({
           client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
@@ -57,7 +58,9 @@ export function useGoogleLogin() {
           access_type: "offline",
           prompt: "select_account",
         });
-        await Browser.open({ url: `${GOOGLE_AUTH_BASE}?${params.toString()}` });
+        const url = `${GOOGLE_AUTH_BASE}?${params.toString()}`;
+        alert("URL: " + url.slice(0, 100));
+        await Browser.open({ url });
         return;
       }
 
