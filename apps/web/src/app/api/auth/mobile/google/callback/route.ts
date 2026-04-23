@@ -61,7 +61,9 @@ export async function GET(request: Request) {
 
     const token = await createMobileToken({ id: user.id, email: user.email!, name: user.name });
 
-    return NextResponse.redirect(`${APP_DEEP_LINK}?token=${encodeURIComponent(token)}`);
+    // JWT tokens are base64url-encoded (URL-safe chars only) — no encodeURIComponent needed.
+    // Applying it causes double-encoding when Next.js re-encodes the Location header.
+    return NextResponse.redirect(`${APP_DEEP_LINK}?token=${token}`);
   } catch {
     return NextResponse.redirect(`${APP_DEEP_LINK}?error=server_error`);
   }
