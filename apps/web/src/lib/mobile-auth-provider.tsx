@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { Capacitor } from "@capacitor/core";
 import { getMobileToken } from "./mobile-auth-storage";
+
+function isNative(): boolean {
+  return typeof window !== "undefined" &&
+    !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.();
+}
 
 export function MobileAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
+    if (!isNative()) return;
 
     const original = window.fetch.bind(window);
 
