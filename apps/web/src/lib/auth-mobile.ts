@@ -29,6 +29,7 @@ export async function verifyMobileToken(
 ): Promise<MobileTokenPayload | null> {
   try {
     console.log("[verifyMobileToken] token prefix:", token.slice(0, 20));
+    console.log("[verifyMobileToken] full token:", token);
     const { payload } = await jwtVerify(token, SECRET);
     console.log("[verifyMobileToken] payload:", JSON.stringify(payload));
     if (!payload.sub) return null;
