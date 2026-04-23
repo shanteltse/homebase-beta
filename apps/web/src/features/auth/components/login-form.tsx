@@ -49,6 +49,7 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
       const qs = event.url.includes("?") ? event.url.split("?")[1]! : "";
       const params = new URLSearchParams(qs);
       const token = params.get("token");
+      alert("raw token last 30: " + (token ?? "NULL").slice(-30) + " length: " + (token?.length ?? 0));
 
       if (token) {
         await handle.remove();
