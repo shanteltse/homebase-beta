@@ -54,7 +54,7 @@
 			<array>
 				<string>com.homebase.app</string>
 			</array>
-		</dict>
+		<key>NSMicrophoneUsageDescription</key><string>HomeBase uses the microphone to let you add tasks by voice.</string></dict>
 	</array>
-</dict>
+<key>NSMicrophoneUsageDescription</key><string>HomeBase uses the microphone to let you add tasks by voice.</string></dict>
 </plist>
