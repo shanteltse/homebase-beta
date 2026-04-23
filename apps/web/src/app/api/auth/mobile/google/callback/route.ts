@@ -60,6 +60,7 @@ export async function GET(request: Request) {
     if (!user) throw new Error("Failed to upsert user");
 
     const token = await createMobileToken({ id: user.id, email: user.email!, name: user.name });
+    console.log("[callback] token created, length:", token.length, "last20:", token.slice(-20));
 
     // JWT tokens are base64url-encoded (URL-safe chars only) — no encodeURIComponent needed.
     // Applying it causes double-encoding when Next.js re-encodes the Location header.
