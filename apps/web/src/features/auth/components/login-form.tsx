@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { Capacitor } from "@capacitor/core";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
-import { useLogin, useGoogleLogin } from "../api/login";
+import { useLogin, useGoogleLogin, buildGoogleAuthUrl } from "../api/login";
 
 const loginSchema = z.object({
   email: z.email("Enter a valid email"),
@@ -29,33 +27,45 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
   const login = useLogin();
   const googleLogin = useGoogleLogin();
 
-  // On native: listen for the deep link that carries the JWT after Google OAuth
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
+  async function handleNativeGoogleLogin() {
+    const isNative = !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.();
+    alert("handleNativeGoogleLogin — isNative: " + isNative);
 
-    let removeListener: (() => void) | undefined;
+    if (!isNative) {
+      googleLogin.mutate();
+      return;
+    }
 
-    void (async () => {
-      const { App } = await import("@capacitor/app");
-      const handle = await App.addListener("appUrlOpen", async (event: { url: string }) => {
-        if (!event.url.startsWith("com.homebase.app://auth/callback")) return;
+    const { App } = await import("@capacitor/app");
+    const { Browser } = await import("@capacitor/browser");
 
-        const qs = event.url.includes("?") ? event.url.split("?")[1]! : "";
-        const params = new URLSearchParams(qs);
-        const token = params.get("token");
+    // Register listener BEFORE opening the browser to avoid any race condition
+    alert("Registering appUrlOpen listener...");
+    const handle = await App.addListener("appUrlOpen", async (event: { url: string }) => {
+      alert("appUrlOpen fired: " + event.url.slice(0, 80));
+      if (!event.url.startsWith("com.homebase.app://auth/callback")) return;
 
-        if (token) {
-          const { setMobileToken } = await import("@/lib/mobile-auth-storage");
-          await setMobileToken(token);
-          await queryClient.invalidateQueries({ queryKey: ["mobile-user"] });
-          router.push(inviteToken ? `/invite/${inviteToken}` : "/dashboard");
-        }
-      });
-      removeListener = () => void handle.remove();
-    })();
+      const qs = event.url.includes("?") ? event.url.split("?")[1]! : "";
+      const params = new URLSearchParams(qs);
+      const token = params.get("token");
+      alert("token present: " + !!token + (token ? " prefix: " + token.slice(0, 20) : ""));
 
-    return () => { removeListener?.(); };
-  }, [router, queryClient, inviteToken]);
+      if (token) {
+        await handle.remove();
+        const { setMobileToken } = await import("@/lib/mobile-auth-storage");
+        await setMobileToken(token);
+        alert("Token stored. Closing browser...");
+        await Browser.close();
+        await queryClient.invalidateQueries({ queryKey: ["mobile-user"] });
+        router.push(inviteToken ? `/invite/${inviteToken}` : "/dashboard");
+      }
+    });
+
+    const googleAuthUrl = buildGoogleAuthUrl();
+    alert("Opening browser: " + googleAuthUrl.slice(0, 80));
+    await Browser.open({ url: googleAuthUrl });
+  }
 
   const {
     register,
@@ -134,7 +144,7 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
         variant="outline"
         size="lg"
         className="w-full"
-        onClick={() => googleLogin.mutate()}
+        onClick={() => void handleNativeGoogleLogin()}
         disabled={googleLogin.isPending}
       >
         {googleLogin.isPending ? "Connecting..." : "Continue with Google"}
