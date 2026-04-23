@@ -15,7 +15,7 @@ async function fetchMobileUser() {
   alert("[useUser] getMobileToken returned: " + (token ? token.slice(0, 20) + "..." : "NULL"));
   if (!token) return null;
   alert("[useUser] headers: " + JSON.stringify({ Authorization: "Bearer " + token.slice(0, 20) + "..." }));
-  const res = await fetch("https://homebase-beta-web.vercel.app/api/user/profile", {
+  const res = await fetch("/api/user/profile", {
     headers: { Authorization: `Bearer ${token}` },
   });
   alert("[useUser] /api/user/profile status: " + res.status);
