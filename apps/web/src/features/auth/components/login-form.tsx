@@ -39,11 +39,13 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
       return;
     }
 
+    alert("Registering appUrlOpen listener now");
     const { App } = await import("@capacitor/app");
     const { Browser } = await import("@capacitor/browser");
 
     // Register listener BEFORE opening the browser to guarantee ordering
     const handle = await App.addListener("appUrlOpen", async (event: { url: string }) => {
+      alert("appUrlOpen callback fired: " + event.url.slice(0, 50));
       if (!event.url.startsWith("com.homebase.app://auth/callback")) return;
 
       const qs = event.url.includes("?") ? event.url.split("?")[1]! : "";
