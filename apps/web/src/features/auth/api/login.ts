@@ -1,18 +1,23 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { signIn } from "next-auth/react";
-import { Capacitor } from "@capacitor/core";
 
 type LoginInput = {
   email: string;
   password: string;
 };
 
+function isNative(): boolean {
+  return typeof window !== "undefined" &&
+    !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.();
+}
+
 export function useLogin() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ email, password }: LoginInput) => {
-      if (Capacitor.isNativePlatform()) {
+      if (isNative()) {
         const res = await fetch("/api/auth/mobile/token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -30,7 +35,7 @@ export function useLogin() {
       return result;
     },
     onSuccess: () => {
-      if (Capacitor.isNativePlatform()) {
+      if (isNative()) {
         void queryClient.invalidateQueries({ queryKey: ["mobile-user"] });
       }
     },

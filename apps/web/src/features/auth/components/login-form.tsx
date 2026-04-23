@@ -21,6 +21,12 @@ interface LoginFormProps {
   inviteToken?: string;
 }
 
+function isNative(): boolean {
+  return typeof window !== "undefined" &&
+    !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.();
+}
+
 export function LoginForm({ inviteToken }: LoginFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -28,11 +34,7 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
   const googleLogin = useGoogleLogin();
 
   async function handleNativeGoogleLogin() {
-    const isNative = !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
-      .Capacitor?.isNativePlatform?.();
-    alert("handleNativeGoogleLogin — isNative: " + isNative);
-
-    if (!isNative) {
+    if (!isNative()) {
       googleLogin.mutate();
       return;
     }
@@ -40,34 +42,26 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
     const { App } = await import("@capacitor/app");
     const { Browser } = await import("@capacitor/browser");
 
-    // Register listener BEFORE opening the browser to avoid any race condition
-    alert("Registering appUrlOpen listener...");
+    // Register listener BEFORE opening the browser to guarantee ordering
     const handle = await App.addListener("appUrlOpen", async (event: { url: string }) => {
-      alert("appUrlOpen fired: " + event.url.slice(0, 80));
       if (!event.url.startsWith("com.homebase.app://auth/callback")) return;
 
       const qs = event.url.includes("?") ? event.url.split("?")[1]! : "";
       const params = new URLSearchParams(qs);
       const token = params.get("token");
-      alert("token present: " + !!token + (token ? " prefix: " + token.slice(0, 20) : ""));
 
       if (token) {
         await handle.remove();
         const { setMobileToken, getMobileToken } = await import("@/lib/mobile-auth-storage");
         await setMobileToken(token);
-        // Warm the in-memory cache so the patched fetch can read it synchronously
-        await getMobileToken();
-        alert("token stored, length: " + token.length);
-        alert("Token stored. Closing browser...");
+        await getMobileToken(); // warm in-memory cache before navigation triggers fetches
         await Browser.close();
         await queryClient.invalidateQueries({ queryKey: ["mobile-user"] });
         router.push(inviteToken ? `/invite/${inviteToken}` : "/dashboard");
       }
     });
 
-    const googleAuthUrl = buildGoogleAuthUrl();
-    alert("Opening browser: " + googleAuthUrl.slice(0, 80));
-    await Browser.open({ url: googleAuthUrl });
+    await Browser.open({ url: buildGoogleAuthUrl() });
   }
 
   const {
@@ -81,11 +75,7 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
   function onSubmit(data: LoginFormValues) {
     login.mutate(data, {
       onSuccess: () => {
-        if (inviteToken) {
-          router.push(`/invite/${inviteToken}`);
-        } else {
-          router.push("/dashboard");
-        }
+        router.push(inviteToken ? `/invite/${inviteToken}` : "/dashboard");
       },
     });
   }
