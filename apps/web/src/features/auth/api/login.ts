@@ -58,9 +58,16 @@ export function useGoogleLogin() {
           access_type: "offline",
           prompt: "select_account",
         });
-        const url = `${GOOGLE_AUTH_BASE}?${params.toString()}`;
-        alert("URL: " + url.slice(0, 100));
-        await Browser.open({ url });
+        const googleAuthUrl = `${GOOGLE_AUTH_BASE}?${params.toString()}`;
+        alert("URL: " + googleAuthUrl.slice(0, 100));
+        try {
+          alert("Calling Browser.open now");
+          const { Browser } = await import("@capacitor/browser");
+          await Browser.open({ url: googleAuthUrl });
+          alert("Browser.open completed");
+        } catch (err) {
+          alert("Browser.open error: " + String(err));
+        }
         return;
       }
 
