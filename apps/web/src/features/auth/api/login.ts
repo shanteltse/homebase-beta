@@ -43,6 +43,7 @@ const MOBILE_REDIRECT_URI = "https://homebase-beta-web.vercel.app/api/auth/mobil
 export function useGoogleLogin() {
   return useMutation({
     mutationFn: async () => {
+      console.log("[mobile-auth] isNative:", Capacitor.isNativePlatform(), "clientId:", process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? "SET" : "MISSING");
       if (Capacitor.isNativePlatform()) {
         const { Browser } = await import("@capacitor/browser");
         const params = new URLSearchParams({
