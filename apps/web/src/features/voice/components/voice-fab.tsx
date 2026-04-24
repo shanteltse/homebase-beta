@@ -82,16 +82,11 @@ export function VoiceFab() {
   const createTask = useCreateTask();
 
   useEffect(() => {
-    async function checkSupport() {
-      if (isNative()) {
-        const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
-        const { available } = await SpeechRecognition.available();
-        setIsSupported(available);
-      } else {
-        setIsSupported(getSpeechRecognitionConstructor() !== null);
-      }
+    if (isNative()) {
+      setIsSupported(true);
+    } else {
+      setIsSupported(getSpeechRecognitionConstructor() !== null);
     }
-    void checkSupport();
   }, []);
 
   const clearSilenceTimer = useCallback(() => {
