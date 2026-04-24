@@ -124,7 +124,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
             href={`/tasks/${task.id}`}
             className={cn(
               "body font-medium text-foreground hover:text-primary min-w-0",
-              compact ? "shrink truncate" : "break-words flex-1",
+              compact ? "flex-1 break-words whitespace-normal" : "break-words flex-1 whitespace-normal",
               !compact && task.completed && "line-through",
               task.starred && "font-bold",
             )}
@@ -145,9 +145,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
             </a>
           )}
           {compact && (
-            <>
-              <div className="flex-1" />
-              {task.completed ? (
+            <>{task.completed ? (
                 <button
                   type="button"
                   onClick={() => onToggleComplete(task.id, !task.completed)}

@@ -33,7 +33,7 @@ import { useDeleteTask } from "../api/delete-task";
 import { TagPicker } from "./tag-picker";
 import { RecurringPicker } from "./recurring-picker";
 import { AssigneePicker } from "@/features/household/components/assignee-picker";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const editFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -106,6 +106,8 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isTitleEditing, setIsTitleEditing] = useState(false);
+  const titleTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [tags, setTags] = useState<string[]>(task?.tags ?? []);
   const [recurring, setRecurring] = useState<RecurringPattern | undefined>(
@@ -237,6 +239,8 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
     setNewSubtaskTitle("");
   }
 
+  const { ref: titleFormRef, ...titleRegisterProps } = register("title");
+
   function handleToggleSubtask(subtaskId: string) {
     const updated = task!.subtasks.map((s) =>
       s.id === subtaskId ? { ...s, completed: !s.completed } : s,
@@ -264,13 +268,30 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
             checked={task.completed}
             onCheckedChange={handleToggleComplete}
           />
-          <textarea
-            {...register("title")}
-            rows={1}
-            style={{ overflowX: "auto", whiteSpace: "nowrap" }}
-            className="heading-sm flex-1 min-w-0 resize-none rounded-md bg-muted/40 px-1 py-0.5 text-foreground outline-none placeholder:text-muted-foreground sm:bg-transparent sm:hover:bg-muted/50 focus:bg-muted/50 focus:ring-1 focus:ring-ring transition-colors cursor-text"
-            placeholder="Task title"
-          />
+          {isTitleEditing ? (
+            <textarea
+              {...titleRegisterProps}
+              ref={(el) => {
+                titleFormRef(el);
+                titleTextareaRef.current = el;
+              }}
+              rows={1}
+              autoFocus
+              className="heading-sm flex-1 min-w-0 resize-none rounded-md bg-muted/40 px-1 py-0.5 text-foreground outline-none placeholder:text-muted-foreground focus:bg-muted/50 focus:ring-1 focus:ring-ring transition-colors"
+              placeholder="Task title"
+              onBlur={() => setIsTitleEditing(false)}
+            />
+          ) : (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={() => setIsTitleEditing(true)}
+              onKeyDown={(e) => e.key === "Enter" && setIsTitleEditing(true)}
+              className="heading-sm flex-1 min-w-0 truncate cursor-text rounded-md px-1 py-0.5 text-foreground hover:bg-muted/50 transition-colors"
+            >
+              {watch("title") || task.title}
+            </span>
+          )}
         </div>
         <div className="flex shrink-0 flex-col items-center gap-1.5">
           <Button
