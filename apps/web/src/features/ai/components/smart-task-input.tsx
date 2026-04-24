@@ -422,28 +422,24 @@ function SmartTaskInput({ onOpenCreateDialog, rightLabel }, ref) {
               "pr-16 leading-normal",
             )}
           />
-          <button
-            type="button"
-            onClick={() => dateInputRef.current?.showPicker()}
-            title={quickDueDate ? formatQuickDueDate(quickDueDate) : "Add due date"}
-            aria-label={quickDueDate ? `Due date: ${formatQuickDueDate(quickDueDate)}` : "Add due date"}
-            className={cn(
-              "absolute right-9 top-2 flex h-6 w-6 items-center justify-center rounded-full transition-colors",
-              quickDueDate
-                ? "text-primary"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <CalendarDays className="h-3.5 w-3.5" />
-          </button>
-          <input
-            ref={dateInputRef}
-            type="date"
-            className="sr-only"
-            value={quickDueDate}
-            onChange={(e) => setQuickDueDate(e.target.value)}
-            tabIndex={-1}
-          />
+          {/* Calendar button: the native date input sits transparent on top so iOS
+              opens the picker on a direct tap — showPicker() is blocked in WKWebView */}
+          <div className={cn(
+            "absolute right-9 top-2 flex h-6 w-6 items-center justify-center rounded-full transition-colors",
+            quickDueDate ? "text-primary" : "text-muted-foreground",
+          )}>
+            <CalendarDays className="h-3.5 w-3.5 pointer-events-none" />
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={quickDueDate}
+              onChange={(e) => setQuickDueDate(e.target.value)}
+              tabIndex={-1}
+              title={quickDueDate ? formatQuickDueDate(quickDueDate) : "Add due date"}
+              aria-label={quickDueDate ? `Due date: ${formatQuickDueDate(quickDueDate)}` : "Add due date"}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
+          </div>
           {getInlineSpeechAPI() && (
             <button
               type="button"
