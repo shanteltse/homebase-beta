@@ -15,12 +15,22 @@ const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 function DropdownMenuContent({
   className,
   sideOffset = 4,
+  onCloseAutoFocus,
+  onInteractOutside,
   ...props
 }: ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>) {
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
         sideOffset={sideOffset}
+        onCloseAutoFocus={(e) => {
+          onCloseAutoFocus?.(e);
+          e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          onInteractOutside?.(e);
+          e.preventDefault();
+        }}
         className={cn(
           "z-50 min-w-[8rem] overflow-hidden rounded-md border border-border bg-background p-1 shadow-md",
           className,

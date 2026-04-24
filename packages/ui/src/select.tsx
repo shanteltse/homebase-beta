@@ -35,6 +35,7 @@ function SelectContent({
   children,
   position = "popper",
   onCloseAutoFocus,
+  onInteractOutside,
   ...props
 }: ComponentPropsWithoutRef<typeof SelectPrimitive.Content>) {
   return (
@@ -42,9 +43,10 @@ function SelectContent({
       <SelectPrimitive.Content
         onCloseAutoFocus={(e) => {
           onCloseAutoFocus?.(e);
-          // Prevent Radix from returning focus to the trigger on close.
-          // On iOS WebKit this focus shift interrupts the pending touch
-          // sequence and swallows the click on the element the user tapped.
+          e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          onInteractOutside?.(e);
           e.preventDefault();
         }}
         className={cn(
