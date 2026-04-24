@@ -35,7 +35,7 @@ function SelectContent({
   children,
   position = "popper",
   onCloseAutoFocus,
-  onInteractOutside,
+  onPointerDownOutside,
   ...props
 }: ComponentPropsWithoutRef<typeof SelectPrimitive.Content>) {
   return (
@@ -45,8 +45,8 @@ function SelectContent({
           onCloseAutoFocus?.(e);
           e.preventDefault();
         }}
-        onInteractOutside={(e) => {
-          onInteractOutside?.(e);
+        onPointerDownOutside={(e) => {
+          onPointerDownOutside?.(e);
           e.preventDefault();
         }}
         className={cn(
