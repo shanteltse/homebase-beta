@@ -20,11 +20,13 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { email, password } = body;
+    const { email: rawEmail, password } = body;
 
-    if (!email || !password) {
+    if (!rawEmail || !password) {
       throw new ApiError(400, "Email and password are required");
     }
+
+    const email = (rawEmail as string).toLowerCase().trim();
 
     const [user] = await db
       .select()

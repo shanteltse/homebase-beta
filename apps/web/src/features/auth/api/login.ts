@@ -23,8 +23,9 @@ export function useLogin() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         });
-        if (!res.ok) throw new Error("Invalid email or password");
-        const { token } = await res.json() as { token: string };
+        const json = await res.json() as { token?: string; error?: string };
+        if (!res.ok) throw new Error(json.error ?? "Invalid email or password");
+        const { token } = json as { token: string };
         const { setMobileToken } = await import("@/lib/mobile-auth-storage");
         await setMobileToken(token);
         return { ok: true };

@@ -115,7 +115,7 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
 
       {error && (
         <p className="body text-destructive">
-          Invalid email or password. Please try again.
+          {error.message ?? "Invalid email or password. Please try again."}
         </p>
       )}
 
