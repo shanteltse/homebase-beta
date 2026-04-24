@@ -108,6 +108,16 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   const titleTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (isTitleEditing && titleTextareaRef.current) {
+      const el = titleTextareaRef.current;
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    }
+  }, [isTitleEditing]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [tags, setTags] = useState<string[]>(task?.tags ?? []);
   const [recurring, setRecurring] = useState<RecurringPattern | undefined>(
@@ -275,10 +285,13 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
                 titleFormRef(el);
                 titleTextareaRef.current = el;
               }}
-              rows={1}
-              autoFocus
-              className="heading-sm flex-1 min-w-0 resize-none rounded-md bg-muted/40 px-1 py-0.5 text-foreground outline-none placeholder:text-muted-foreground focus:bg-muted/50 focus:ring-1 focus:ring-ring transition-colors"
+              className="heading-sm flex-1 min-w-0 resize-none overflow-hidden rounded-md bg-muted/40 px-1 py-0.5 text-foreground outline-none placeholder:text-muted-foreground focus:bg-muted/50 focus:ring-1 focus:ring-ring transition-colors"
               placeholder="Task title"
+              onInput={(e) => {
+                const el = e.currentTarget;
+                el.style.height = "auto";
+                el.style.height = `${el.scrollHeight}px`;
+              }}
               onBlur={() => setIsTitleEditing(false)}
             />
           ) : (

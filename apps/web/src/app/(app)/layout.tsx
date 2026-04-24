@@ -18,9 +18,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGuard>
       <NotificationProvider>
-        <div className="flex h-dvh bg-background">
+        <div className="flex h-dvh w-full max-w-full overflow-x-hidden bg-background">
           <Sidebar />
-          <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
+          <main className="flex-1 min-w-0 w-0 flex flex-col overflow-hidden">
             {/* Mobile header */}
             <MobileHeader />
             {/* Desktop header */}

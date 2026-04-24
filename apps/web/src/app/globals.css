@@ -41,15 +41,17 @@
 @layer base {
   html {
     background-color: #faf7f4; /* fills status bar + home indicator safe areas on iOS */
-    overflow-x: hidden;
+    overflow-x: clip; /* clip is more aggressive than hidden — prevents portal elements from widening the viewport */
+    max-width: 100%;
   }
   body {
-    overflow-x: hidden;
+    overflow-x: clip;
+    max-width: 100vw;
     overscroll-behavior: none;
     @apply bg-background text-foreground antialiased;
   }
   :root {
-    --content-pb: calc(env(safe-area-inset-bottom) + 140px);
+    --content-pb: calc(env(safe-area-inset-bottom) + 180px);
   }
   @media (min-width: 768px) {
     :root {
