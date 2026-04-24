@@ -170,51 +170,66 @@ export function VoiceFab() {
 
     setFabState("requesting");
 
-    const { speechRecognition } = await SpeechRecognition.requestPermissions();
-    if (speechRecognition !== "granted") {
-      try { localStorage.setItem(MIC_PREF_KEY, "denied"); } catch { /* ignore */ }
-      window.dispatchEvent(new CustomEvent(MIC_DENIED_EVENT));
-      showError("Microphone permission denied");
-      return;
-    }
+    try {
+      // Request both speech recognition and microphone permissions
+      const { speechRecognition } = await SpeechRecognition.requestPermissions();
+      if (speechRecognition !== "granted") {
+        try { localStorage.setItem(MIC_PREF_KEY, "denied"); } catch { /* ignore */ }
+        window.dispatchEvent(new CustomEvent(MIC_DENIED_EVENT));
+        showError("Microphone permission denied");
+        return;
+      }
 
-    try { localStorage.setItem(MIC_PREF_KEY, "granted"); } catch { /* ignore */ }
-    window.dispatchEvent(new CustomEvent(MIC_GRANTED_EVENT));
+      try { localStorage.setItem(MIC_PREF_KEY, "granted"); } catch { /* ignore */ }
+      window.dispatchEvent(new CustomEvent(MIC_GRANTED_EVENT));
 
-    nativeFinalTextRef.current = "";
+      nativeFinalTextRef.current = "";
 
-    const partialHandle = await SpeechRecognition.addListener("partialResults", (data) => {
-      const text = data.matches?.[0] ?? "";
-      nativeFinalTextRef.current = text;
-      setInterimText(text);
-    });
-    nativePartialListenerRef.current = partialHandle;
+      const partialHandle = await SpeechRecognition.addListener("partialResults", (data) => {
+        const text = data.matches?.[0] ?? "";
+        nativeFinalTextRef.current = text;
+        setInterimText(text);
+      });
+      nativePartialListenerRef.current = partialHandle;
 
-    // listeningState:stopped fires when iOS ends the session (silence or stop())
-    const stateHandle = await SpeechRecognition.addListener("listeningState", (data) => {
-      if (data.status !== "stopped") return;
-      void partialHandle.remove();
-      void stateHandle.remove();
+      // listeningState:stopped fires when iOS ends the session (silence or stop()).
+      // Guard against double-fire: stop() and the recognition task's final result
+      // can both emit "stopped" in quick succession.
+      const stateHandle = await SpeechRecognition.addListener("listeningState", (data) => {
+        if (data.status !== "stopped") return;
+        if (!nativeStateListenerRef.current) return; // already cleaned up
+        void partialHandle.remove();
+        void stateHandle.remove();
+        nativePartialListenerRef.current = null;
+        nativeStateListenerRef.current = null;
+        const text = nativeFinalTextRef.current.trim();
+        nativeFinalTextRef.current = "";
+        setInterimText("");
+        processTranscript(text);
+      });
+      nativeStateListenerRef.current = stateHandle;
+
+      setFabState("listening");
+      setInterimText("");
+
+      // start() resolves immediately when partialResults:true; results stream via events
+      await SpeechRecognition.start({ language: "en-US", maxResults: 1, partialResults: true, popup: false });
+    } catch (err) {
+      void nativePartialListenerRef.current?.remove();
+      void nativeStateListenerRef.current?.remove();
       nativePartialListenerRef.current = null;
       nativeStateListenerRef.current = null;
-      const text = nativeFinalTextRef.current.trim();
-      nativeFinalTextRef.current = "";
       setInterimText("");
-      processTranscript(text);
-    });
-    nativeStateListenerRef.current = stateHandle;
-
-    setFabState("listening");
-    setInterimText("");
-
-    // start() returns immediately when partialResults:true; results stream via events
-    await SpeechRecognition.start({ language: "en-US", maxResults: 1, partialResults: true, popup: false });
+      showError(err instanceof Error ? err.message : "Speech recognition failed");
+    }
   }, [showError, processTranscript]);
 
   const stopNativeListening = useCallback(async () => {
     const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
-    await SpeechRecognition.stop();
-    // listeningState:stopped handler drives the state transition from here
+    try {
+      await SpeechRecognition.stop();
+      // listeningState:stopped handler drives the state transition from here
+    } catch { /* ignore — engine may already be stopped */ }
   }, []);
 
   // ── Web path (webkitSpeechRecognition) ───────────────────────────────────
