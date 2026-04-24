@@ -283,7 +283,7 @@ export default function DashboardPage() {
           </div>
           <StatsCard />
           {showMemberFilter && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="grid grid-cols-2 gap-2">
               {(members ?? []).map((member) => {
                 const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
                 const memberTasks = allTasks.filter((t) => t.assignee === member.id);
@@ -296,11 +296,11 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={member.id}
-                    className="flex min-w-[148px] shrink-0 flex-col gap-2.5 rounded-lg border border-border bg-card p-3"
+                    className="flex flex-col gap-2 rounded-lg border border-border bg-card p-2.5"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
                       <MemberAvatar name={member.name} image={member.image} size="sm" avatarColor={member.avatarColor} useGooglePhoto={member.useGooglePhoto} />
-                      <span className="text-sm font-medium text-foreground truncate">
+                      <span className="text-xs font-medium text-foreground truncate">
                         {member.name ?? member.email}
                       </span>
                     </div>
@@ -312,7 +312,7 @@ export default function DashboardPage() {
                         />
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {activeCount} left · {completedThisWeek} done this week · {pct}%
+                        {activeCount} left · {pct}%
                       </p>
                     </div>
                   </div>

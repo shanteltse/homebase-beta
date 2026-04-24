@@ -125,7 +125,7 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
             className={cn(
               "body font-medium text-foreground hover:text-primary min-w-0",
               compact ? "shrink truncate" : "break-words flex-1",
-              task.completed && "line-through",
+              !compact && task.completed && "line-through",
               task.starred && "font-bold",
             )}
           >
@@ -147,22 +147,25 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
           {compact && (
             <>
               <div className="flex-1" />
-              <button
-                type="button"
-                onClick={() => onToggleComplete(task.id, !task.completed)}
-                className={cn(
-                  "shrink-0 flex items-center justify-center rounded-full border-[1.5px] bg-white h-7 w-7 transition-colors",
-                  task.completed ? "border-border" : "border-[#D4A898]",
-                )}
-                aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
-              >
-                <Check
-                  className="h-3.5 w-3.5"
-                  style={task.completed
-                    ? { color: "var(--muted-foreground)", strokeWidth: 1.8 }
-                    : { color: "#D4A898", strokeWidth: 1.8 }}
-                />
-              </button>
+              {task.completed ? (
+                <button
+                  type="button"
+                  onClick={() => onToggleComplete(task.id, !task.completed)}
+                  className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Mark incomplete"
+                >
+                  undo
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onToggleComplete(task.id, !task.completed)}
+                  className="shrink-0 flex items-center justify-center rounded-full border-[1.5px] border-[#D4A898] bg-white h-7 w-7 transition-colors"
+                  aria-label="Mark complete"
+                >
+                  <Check className="h-3.5 w-3.5" style={{ color: "#D4A898", strokeWidth: 1.8 }} />
+                </button>
+              )}
             </>
           )}
         </div>

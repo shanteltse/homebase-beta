@@ -17,27 +17,27 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGuard>
       <NotificationProvider>
-        <OfflineBanner />
-        <div className="flex min-h-screen bg-background">
+        <div className="flex h-dvh bg-background">
           <Sidebar />
-          <main className="flex-1 min-w-0 flex flex-col overflow-x-hidden">
+          <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
             {/* Mobile header */}
             <header
-              className="flex items-center justify-between border-b border-border px-4 pb-3 md:hidden"
+              className="flex shrink-0 items-center justify-between border-b border-border px-4 pb-3 md:hidden"
               style={{ paddingTop: "max(env(safe-area-inset-top), 12px)" }}
             >
               <h1 className="heading-xs text-foreground">HomeBase</h1>
               <NotificationBell />
             </header>
             {/* Desktop header */}
-            <div className="hidden md:flex items-center justify-end border-b border-border px-6 py-2">
+            <div className="hidden shrink-0 md:flex items-center justify-end border-b border-border px-6 py-2">
               <NotificationBell />
             </div>
+            <OfflineBanner />
             {/* Onboarding setup banner — only shows when setup is incomplete */}
             <SetupBanner />
             {/* Microphone permission banner — one-time, shown when mic is denied */}
             <MicPermissionBanner />
-            <div className="flex-1 min-w-0 p-6 pb-36 md:pb-6">{children}</div>
+            <div className="flex-1 min-w-0 overflow-y-auto p-6 pb-24 md:pb-6">{children}</div>
             <MobileNav />
           </main>
         </div>
