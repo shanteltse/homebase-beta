@@ -39,11 +39,12 @@
 }
 
 @layer base {
-  html,
-  body {
+  html {
+    background-color: #faf7f4; /* fills status bar + home indicator safe areas on iOS */
     overflow-x: hidden;
   }
   body {
+    overflow-x: hidden;
     overscroll-behavior: none;
     @apply bg-background text-foreground antialiased;
   }

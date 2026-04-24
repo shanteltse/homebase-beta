@@ -151,10 +151,10 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
                 <button
                   type="button"
                   onClick={() => onToggleComplete(task.id, !task.completed)}
-                  className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground hover:border-foreground hover:text-foreground transition-colors"
                   aria-label="Mark incomplete"
                 >
-                  undo
+                  Undo
                 </button>
               ) : (
                 <button

@@ -35,9 +35,9 @@ type TaskFiltersProps = {
 
 const VIEWS: { value: TaskView; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "starred", label: "⭐ Starred" },
+  { value: "starred", label: "Starred" },
   { value: "today", label: "Today" },
-  { value: "this-week", label: "This Week" },
+  { value: "this-week", label: "Week" },
   { value: "overdue", label: "Late" },
   { value: "completed", label: "Done" },
 ];
@@ -68,7 +68,7 @@ export function TaskFilters({
             type="button"
             onClick={() => onFilterChange("view", v.value === "all" ? "" : v.value)}
             className={cn(
-              "shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+              "shrink-0 rounded-md px-2 py-1 text-xs font-medium transition-colors",
               view === v.value
                 ? "bg-foreground text-background pointer-events-none"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted",
