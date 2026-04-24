@@ -32,7 +32,13 @@ export function useLogin() {
       }
 
       const result = await signIn("credentials", { email, password, redirect: false });
-      if (result?.error) throw new Error(result.error);
+      if (result?.error) {
+        // Auth.js returns internal codes like "CredentialsSignin" — map to readable message
+        const msg = result.error === "CredentialsSignin"
+          ? "Invalid email or password"
+          : `Auth error: ${result.error}`;
+        throw new Error(msg);
+      }
       return result;
     },
     onSuccess: () => {

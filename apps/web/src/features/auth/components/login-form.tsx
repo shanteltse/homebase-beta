@@ -92,6 +92,9 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
         type="email"
         placeholder="you@example.com"
         autoComplete="email"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         error={errors.email?.message}
         {...register("email")}
       />
