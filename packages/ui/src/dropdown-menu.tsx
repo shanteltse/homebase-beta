@@ -4,7 +4,12 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { cn } from "./cn";
 import type { ComponentPropsWithoutRef } from "react";
 
-const DropdownMenu = DropdownMenuPrimitive.Root;
+function DropdownMenu({
+  modal = false,
+  ...props
+}: ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Root>) {
+  return <DropdownMenuPrimitive.Root modal={modal} {...props} />;
+}
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
 function DropdownMenuContent({
