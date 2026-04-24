@@ -20,7 +20,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <OfflineBanner />
         <div className="flex min-h-screen bg-background">
           <Sidebar />
-          <main className="flex-1 min-w-0 flex flex-col">
+          <main className="flex-1 min-w-0 flex flex-col overflow-x-hidden">
             {/* Mobile header */}
             <header
               className="flex items-center justify-between border-b border-border px-4 pb-3 md:hidden"
@@ -37,7 +37,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <SetupBanner />
             {/* Microphone permission banner — one-time, shown when mic is denied */}
             <MicPermissionBanner />
-            <div className="flex-1 min-w-0 overflow-y-auto p-6 pb-36 md:pb-6">{children}</div>
+            <div className="flex-1 min-w-0 p-6 pb-36 md:pb-6">{children}</div>
             <MobileNav />
           </main>
         </div>

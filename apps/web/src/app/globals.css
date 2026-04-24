@@ -41,10 +41,10 @@
 @layer base {
   html,
   body {
-    height: 100dvh;
-    overflow: hidden;
+    overflow-x: hidden;
   }
   body {
+    overscroll-behavior: none;
     @apply bg-background text-foreground antialiased;
   }
 }

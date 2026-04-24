@@ -38,6 +38,7 @@ export function CompletionCelebration() {
           justify-content: center;
           pointer-events: auto;
           overflow: hidden;
+          transform: translateZ(0);
           animation: celebration-fade-in 0.2s ease-out;
         }
 
@@ -52,14 +53,15 @@ export function CompletionCelebration() {
           border-radius: 1rem;
           padding: 2rem;
           text-align: center;
-          animation: celebration-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+          animation: celebration-pop 0.35s ease-out;
           box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
           position: relative;
-          max-width: 20rem;
+          max-width: min(20rem, calc(100vw - 3rem));
         }
 
         @keyframes celebration-pop {
-          0% { transform: scale(0.5); opacity: 0; }
+          0%   { transform: scale(0.5); opacity: 0; }
+          70%  { transform: scale(1.05); opacity: 1; }
           100% { transform: scale(1); opacity: 1; }
         }
 
