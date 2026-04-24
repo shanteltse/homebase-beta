@@ -27,11 +27,8 @@ const nextAuth: NextAuthResult = NextAuth({
         password: {},
       },
       async authorize(credentials) {
-        const rawEmail = credentials.email as string;
-        const email = rawEmail.toLowerCase().trim();
+        const email = (credentials.email as string).toLowerCase().trim();
         const password = credentials.password as string;
-
-        console.log("[auth] authorize called — raw email:", rawEmail, "| normalized:", email);
 
         const [user] = await db
           .select()
@@ -39,22 +36,11 @@ const nextAuth: NextAuthResult = NextAuth({
           .where(eq(users.email, email))
           .limit(1);
 
-        console.log("[auth] DB lookup result — found user:", !!user, "| has passwordHash:", !!user?.passwordHash);
-
-        if (!user?.passwordHash) {
-          console.log("[auth] authorize failed — no user or no passwordHash");
-          return null;
-        }
+        if (!user?.passwordHash) return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);
-        console.log("[auth] bcrypt.compare result:", valid);
+        if (!valid) return null;
 
-        if (!valid) {
-          console.log("[auth] authorize failed — wrong password");
-          return null;
-        }
-
-        console.log("[auth] authorize succeeded for user id:", user.id);
         return { id: user.id, name: user.name, email: user.email, image: user.image };
       },
     }),
