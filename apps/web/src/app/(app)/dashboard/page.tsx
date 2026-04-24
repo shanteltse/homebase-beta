@@ -312,7 +312,7 @@ export default function DashboardPage() {
                         />
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {completedThisWeek}/{total} done this week
+                        {completedThisWeek}/{total} done this week ({pct}%)
                       </p>
                     </div>
                   </div>

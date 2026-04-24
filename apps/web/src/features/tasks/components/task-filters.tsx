@@ -61,14 +61,14 @@ export function TaskFilters({
   return (
     <div className="flex flex-col gap-2">
       {/* View tabs — compact, scrolls horizontally on narrow screens */}
-      <div className="flex gap-0.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex justify-between">
         {VIEWS.map((v) => (
           <button
             key={v.value}
             type="button"
             onClick={() => onFilterChange("view", v.value === "all" ? "" : v.value)}
             className={cn(
-              "shrink-0 rounded-md px-2 py-1 text-xs font-medium transition-colors",
+              "rounded-md px-2 py-1 text-xs font-medium transition-colors",
               view === v.value
                 ? "bg-foreground text-background pointer-events-none"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted",
