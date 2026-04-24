@@ -16,7 +16,6 @@ function DropdownMenuContent({
   className,
   sideOffset = 4,
   onCloseAutoFocus,
-  onInteractOutside,
   ...props
 }: ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>) {
   return (
@@ -25,10 +24,6 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         onCloseAutoFocus={(e) => {
           onCloseAutoFocus?.(e);
-          e.preventDefault();
-        }}
-        onInteractOutside={(e) => {
-          onInteractOutside?.(e);
           e.preventDefault();
         }}
         className={cn(
