@@ -94,7 +94,7 @@ export function TaskFilters({
       </div>
 
       {/* Filter + sort row */}
-      <div className="flex flex-nowrap items-center gap-1">
+      <div className="flex w-full flex-nowrap items-center gap-1">
         {showMemberFilter && (
           <Select
             open={openFilter === "members"}
@@ -169,7 +169,7 @@ export function TaskFilters({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="ml-auto flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               aria-label="Sort tasks"
             >
               <ArrowUpDown className="h-3 w-3" />
