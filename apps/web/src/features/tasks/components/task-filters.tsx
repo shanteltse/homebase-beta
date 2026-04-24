@@ -86,7 +86,7 @@ export function TaskFilters({
             value={assigneeFilter ?? ""}
             onValueChange={(val) => onAssigneeFilterChange(val === "all" ? "" : val)}
           >
-            <SelectTrigger className="h-7 w-[6rem] shrink-0 text-xs">
+            <SelectTrigger className="h-7 w-[7.5rem] shrink-0 text-xs">
               <SelectValue placeholder="All members" />
             </SelectTrigger>
             <SelectContent>
