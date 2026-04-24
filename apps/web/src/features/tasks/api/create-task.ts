@@ -7,7 +7,7 @@ async function createTask(input: CreateTaskInput): Promise<Task> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  if (!res.ok) throw new Error("Failed to create task");
+  if (!res.ok) throw new Error(`Failed to create task: ${res.status}`);
   return res.json();
 }
 

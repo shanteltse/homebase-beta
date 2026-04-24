@@ -146,6 +146,10 @@ export function VoiceFab() {
           return;
         }
         setFabState("processing");
+        // Log token presence for auth diagnostics on native
+        import("@/lib/mobile-auth-storage").then(({ getMobileToken }) => getMobileToken()).then((tok) => {
+          console.log("[VoiceFab] mobile token present:", !!tok);
+        }).catch(() => { /* not native */ });
         parseTask.mutate(text, {
           onSuccess: (parsed) => {
             let taskInput: Parameters<typeof createTask.mutate>[0];
@@ -178,15 +182,16 @@ export function VoiceFab() {
             }
             createTask.mutate(taskInput, {
               onSuccess: () => { setFabState("success"); setTimeout(() => setFabState("idle"), 1500); },
-              onError: () => showError("Couldn't save task — try again"),
+              onError: (err) => { console.error("[VoiceFab] createTask error (parsed):", err); showError("Couldn't save task — try again"); },
             });
           },
-          onError: () => {
+          onError: (parseErr) => {
+            console.error("[VoiceFab] parseTask error:", parseErr);
             createTask.mutate(
               { title: text, category: "personal", priority: "medium", subtasks: [], tags: [], links: [] },
               {
                 onSuccess: () => { setFabState("success"); setTimeout(() => setFabState("idle"), 1500); },
-                onError: () => showError("Couldn't save task — try again"),
+                onError: (err) => { console.error("[VoiceFab] createTask error (fallback):", err); showError("Couldn't save task — try again"); },
               },
             );
           },
