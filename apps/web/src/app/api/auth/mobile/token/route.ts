@@ -22,11 +22,15 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email: rawEmail, password } = body;
 
+    console.log("[mobile/token] raw email:", JSON.stringify(rawEmail), "| password present:", !!password);
+
     if (!rawEmail || !password) {
+      console.log("[mobile/token] 400 — missing email or password");
       throw new ApiError(400, "Email and password are required");
     }
 
     const email = (rawEmail as string).toLowerCase().trim();
+    console.log("[mobile/token] normalized email:", JSON.stringify(email));
 
     const [user] = await db
       .select()
@@ -34,12 +38,18 @@ export async function POST(request: Request) {
       .where(eq(users.email, email))
       .limit(1);
 
+    console.log("[mobile/token] DB result — user found:", !!user, "| has passwordHash:", !!user?.passwordHash);
+
     if (!user?.passwordHash) {
+      console.log("[mobile/token] 401 — no user found or no passwordHash for email:", email);
       throw new ApiError(401, "Invalid email or password");
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
+    console.log("[mobile/token] bcrypt.compare result:", valid);
+
     if (!valid) {
+      console.log("[mobile/token] 401 — bcrypt compare failed for user id:", user.id);
       throw new ApiError(401, "Invalid email or password");
     }
 
