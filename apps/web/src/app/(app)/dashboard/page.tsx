@@ -204,7 +204,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-3 pt-0">
+    <div className="flex flex-col gap-3 pt-0 min-w-0 overflow-x-hidden">
       <div className="flex flex-col gap-0.5">
         <h2 className="heading-md text-foreground">Here&apos;s the Rundown</h2>
         <p className="body text-muted-foreground">
@@ -345,7 +345,7 @@ export default function DashboardPage() {
             type="button"
             onClick={() => {
               smartInputRef.current?.focus();
-              window.scrollTo({ top: 0, behavior: "smooth" });
+              document.getElementById("main-scroll")?.scrollTo({ top: 0, behavior: "smooth" });
             }}
             className="flex items-center gap-2 rounded-xl border-2 border-dashed border-primary/40 px-8 py-4 text-sm font-medium text-primary transition-all hover:border-primary hover:bg-primary/5 active:scale-95"
           >
