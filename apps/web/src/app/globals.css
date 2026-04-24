@@ -41,7 +41,8 @@
 @layer base {
   html,
   body {
-    overflow-x: hidden;
+    height: 100dvh;
+    overflow: hidden;
   }
   body {
     @apply bg-background text-foreground antialiased;

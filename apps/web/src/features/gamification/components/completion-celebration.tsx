@@ -37,6 +37,7 @@ export function CompletionCelebration() {
           align-items: center;
           justify-content: center;
           pointer-events: auto;
+          overflow: hidden;
           animation: celebration-fade-in 0.2s ease-out;
         }
 
@@ -83,7 +84,7 @@ export function CompletionCelebration() {
             opacity: 1;
           }
           100% {
-            transform: translateY(100vh) rotate(720deg) scale(0);
+            transform: translateY(100dvh) rotate(720deg) scale(0);
             opacity: 0;
           }
         }

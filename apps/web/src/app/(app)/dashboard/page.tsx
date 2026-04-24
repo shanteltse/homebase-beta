@@ -283,7 +283,7 @@ export default function DashboardPage() {
           </div>
           <StatsCard />
           {showMemberFilter && (
-            <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
+            <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-6 px-6">
               {(members ?? []).map((member) => {
                 const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
                 const memberTasks = allTasks.filter((t) => t.assignee === member.id);
