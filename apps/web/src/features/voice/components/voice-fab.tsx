@@ -155,7 +155,7 @@ export function VoiceFab() {
             let taskInput: Parameters<typeof createTask.mutate>[0];
             if (parsed.type === "single") {
               taskInput = {
-                title: parsed.task.title ?? text,
+                title: parsed.task.title || text,
                 category: parsed.task.category ?? "personal",
                 subcategory: parsed.task.subcategory,
                 priority: parsed.task.priority ?? "medium",
@@ -169,7 +169,7 @@ export function VoiceFab() {
               const first = parsed.tasks[0];
               if (!first) { setFabState("idle"); return; }
               taskInput = {
-                title: first.title ?? text,
+                title: first.title || text,
                 category: first.category ?? "personal",
                 subcategory: first.subcategory,
                 priority: first.priority ?? "medium",
