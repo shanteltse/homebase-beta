@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/layouts/sidebar";
 import { MobileNav } from "@/components/layouts/mobile-nav";
 import { AuthGuard } from "@/features/auth/components/auth-guard";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
+import { MobileHeader } from "@/components/layouts/mobile-header";
 import { NotificationProvider } from "@/features/notifications/components/notification-provider";
 import { CompletionCelebration } from "@/features/gamification/components/completion-celebration";
 import { OfflineBanner } from "@/components/offline-banner";
@@ -21,13 +22,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Sidebar />
           <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
             {/* Mobile header */}
-            <header
-              className="flex shrink-0 items-center justify-between border-b border-border px-4 pb-3 md:hidden"
-              style={{ paddingTop: "max(env(safe-area-inset-top), 12px)" }}
-            >
-              <h1 className="heading-xs text-foreground">HomeBase</h1>
-              <NotificationBell />
-            </header>
+            <MobileHeader />
             {/* Desktop header */}
             <div className="hidden shrink-0 md:flex items-center justify-end border-b border-border px-6 py-2">
               <NotificationBell />
