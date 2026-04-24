@@ -43,7 +43,7 @@
     background-color: #faf7f4; /* fills status bar + home indicator safe areas on iOS */
     overflow-x: clip; /* clip is more aggressive than hidden — prevents portal elements from widening the viewport */
     max-width: 100%;
-    touch-action: manipulation; /* eliminates iOS 300ms tap delay */
+    touch-action: pan-x pan-y; /* pan-x pan-y disables pinch-zoom at CSS level; manipulation would still allow it */
   }
   body {
     overflow-x: clip;
@@ -54,6 +54,11 @@
   }
   button, a, input, select, textarea, label, [role="button"] {
     touch-action: manipulation;
+  }
+  /* iOS auto-zooms on any focused input with font-size < 16px, ignoring viewport meta.
+     Force 16px on all form controls to prevent this. */
+  input, textarea, select {
+    font-size: 16px !important;
   }
 
   :root {
