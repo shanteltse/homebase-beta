@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation";
 import { useParseTask } from "@/features/ai/api/parse-task";
 import { useCreateTask } from "@/features/tasks/api/create-task";
 import { MIC_PREF_KEY, MIC_DENIED_EVENT, MIC_GRANTED_EVENT } from "./mic-permission-banner";
-import type { PluginListenerHandle } from "@capacitor/core";
 
 type FabState = "idle" | "requesting" | "listening" | "processing" | "success" | "error";
 
@@ -43,16 +42,6 @@ declare global {
   }
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function isNative(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
-      .Capacitor?.isNativePlatform?.()
-  );
-}
-
 function getSpeechRecognitionConstructor(): (new () => SpeechRecognitionInstance) | null {
   if (typeof window === "undefined") return null;
   return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null;
@@ -67,26 +56,15 @@ export function VoiceFab() {
   const [interimText, setInterimText] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Web Speech API
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Native Speech Recognition (Capacitor)
-  const nativeFinalTextRef = useRef("");
-  const nativePartialListenerRef = useRef<PluginListenerHandle | null>(null);
-  const nativeStateListenerRef = useRef<PluginListenerHandle | null>(null);
-
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const parseTask = useParseTask();
   const createTask = useCreateTask();
 
   useEffect(() => {
-    if (isNative()) {
-      setIsSupported(true);
-    } else {
-      setIsSupported(getSpeechRecognitionConstructor() !== null);
-    }
+    setIsSupported(getSpeechRecognitionConstructor() !== null);
   }, []);
 
   const clearSilenceTimer = useCallback(() => {
@@ -106,135 +84,15 @@ export function VoiceFab() {
     }, 4000);
   }, []);
 
-  // Shared: parse text → create task
-  const processTranscript = useCallback(
-    (text: string) => {
-      if (!text) {
-        setFabState("idle");
-        return;
-      }
-      setFabState("processing");
-      parseTask.mutate(text, {
-        onSuccess: (parsed) => {
-          let taskInput: Parameters<typeof createTask.mutate>[0];
-          if (parsed.type === "single") {
-            taskInput = {
-              title: parsed.task.title ?? text,
-              category: parsed.task.category ?? "personal",
-              subcategory: parsed.task.subcategory,
-              priority: parsed.task.priority ?? "medium",
-              dueDate: parsed.task.dueDate,
-              tags: parsed.task.tags ?? [],
-              notes: parsed.task.notes,
-              subtasks: [],
-              links: [],
-            };
-          } else {
-            const first = parsed.tasks[0];
-            if (!first) { setFabState("idle"); return; }
-            taskInput = {
-              title: first.title ?? text,
-              category: first.category ?? "personal",
-              subcategory: first.subcategory,
-              priority: first.priority ?? "medium",
-              dueDate: first.dueDate,
-              tags: first.tags ?? [],
-              notes: first.notes,
-              subtasks: [],
-              links: [],
-            };
-          }
-          createTask.mutate(taskInput, {
-            onSuccess: () => { setFabState("success"); setTimeout(() => setFabState("idle"), 1500); },
-            onError: () => showError("Couldn't save task — try again"),
-          });
-        },
-        onError: () => {
-          createTask.mutate(
-            { title: text, category: "personal", priority: "medium", subtasks: [], tags: [], links: [] },
-            {
-              onSuccess: () => { setFabState("success"); setTimeout(() => setFabState("idle"), 1500); },
-              onError: () => showError("Couldn't save task — try again"),
-            },
-          );
-        },
-      });
-    },
-    [parseTask, createTask, showError],
-  );
+  const stopListening = useCallback(() => {
+    clearSilenceTimer();
+    try { recognitionRef.current?.stop(); } catch { /* ignore */ }
+    recognitionRef.current = null;
+    setFabState("idle");
+    setInterimText("");
+  }, [clearSilenceTimer]);
 
-  // ── Native path (Capacitor SpeechRecognition plugin) ─────────────────────
-
-  const startNativeListening = useCallback(async () => {
-    const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
-
-    setFabState("requesting");
-
-    try {
-      // Request both speech recognition and microphone permissions
-      const { speechRecognition } = await SpeechRecognition.requestPermissions();
-      if (speechRecognition !== "granted") {
-        try { localStorage.setItem(MIC_PREF_KEY, "denied"); } catch { /* ignore */ }
-        window.dispatchEvent(new CustomEvent(MIC_DENIED_EVENT));
-        showError("Microphone permission denied");
-        return;
-      }
-
-      try { localStorage.setItem(MIC_PREF_KEY, "granted"); } catch { /* ignore */ }
-      window.dispatchEvent(new CustomEvent(MIC_GRANTED_EVENT));
-
-      nativeFinalTextRef.current = "";
-
-      const partialHandle = await SpeechRecognition.addListener("partialResults", (data) => {
-        const text = data.matches?.[0] ?? "";
-        nativeFinalTextRef.current = text;
-        setInterimText(text);
-      });
-      nativePartialListenerRef.current = partialHandle;
-
-      // listeningState:stopped fires when iOS ends the session (silence or stop()).
-      // Guard against double-fire: stop() and the recognition task's final result
-      // can both emit "stopped" in quick succession.
-      const stateHandle = await SpeechRecognition.addListener("listeningState", (data) => {
-        if (data.status !== "stopped") return;
-        if (!nativeStateListenerRef.current) return; // already cleaned up
-        void partialHandle.remove();
-        void stateHandle.remove();
-        nativePartialListenerRef.current = null;
-        nativeStateListenerRef.current = null;
-        const text = nativeFinalTextRef.current.trim();
-        nativeFinalTextRef.current = "";
-        setInterimText("");
-        processTranscript(text);
-      });
-      nativeStateListenerRef.current = stateHandle;
-
-      setFabState("listening");
-      setInterimText("");
-
-      // start() resolves immediately when partialResults:true; results stream via events
-      await SpeechRecognition.start({ language: "en-US", maxResults: 1, partialResults: true, popup: false });
-    } catch (err) {
-      void nativePartialListenerRef.current?.remove();
-      void nativeStateListenerRef.current?.remove();
-      nativePartialListenerRef.current = null;
-      nativeStateListenerRef.current = null;
-      setInterimText("");
-      showError(err instanceof Error ? err.message : "Speech recognition failed");
-    }
-  }, [showError, processTranscript]);
-
-  const stopNativeListening = useCallback(async () => {
-    const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
-    try {
-      await SpeechRecognition.stop();
-      // listeningState:stopped handler drives the state transition from here
-    } catch { /* ignore — engine may already be stopped */ }
-  }, []);
-
-  // ── Web path (webkitSpeechRecognition) ───────────────────────────────────
-
-  const startWebListening = useCallback(() => {
+  const startListening = useCallback(() => {
     const SpeechRecognitionAPI = getSpeechRecognitionConstructor();
     if (!SpeechRecognitionAPI) {
       showError("Speech recognition not supported in this browser");
@@ -282,7 +140,57 @@ export function VoiceFab() {
         clearSilenceTimer();
         recognitionRef.current = null;
         setInterimText("");
-        processTranscript(finalTranscript.trim());
+        const text = finalTranscript.trim();
+        if (!text) {
+          setFabState("idle");
+          return;
+        }
+        setFabState("processing");
+        parseTask.mutate(text, {
+          onSuccess: (parsed) => {
+            let taskInput: Parameters<typeof createTask.mutate>[0];
+            if (parsed.type === "single") {
+              taskInput = {
+                title: parsed.task.title ?? text,
+                category: parsed.task.category ?? "personal",
+                subcategory: parsed.task.subcategory,
+                priority: parsed.task.priority ?? "medium",
+                dueDate: parsed.task.dueDate,
+                tags: parsed.task.tags ?? [],
+                notes: parsed.task.notes,
+                subtasks: [],
+                links: [],
+              };
+            } else {
+              const first = parsed.tasks[0];
+              if (!first) { setFabState("idle"); return; }
+              taskInput = {
+                title: first.title ?? text,
+                category: first.category ?? "personal",
+                subcategory: first.subcategory,
+                priority: first.priority ?? "medium",
+                dueDate: first.dueDate,
+                tags: first.tags ?? [],
+                notes: first.notes,
+                subtasks: [],
+                links: [],
+              };
+            }
+            createTask.mutate(taskInput, {
+              onSuccess: () => { setFabState("success"); setTimeout(() => setFabState("idle"), 1500); },
+              onError: () => showError("Couldn't save task — try again"),
+            });
+          },
+          onError: () => {
+            createTask.mutate(
+              { title: text, category: "personal", priority: "medium", subtasks: [], tags: [], links: [] },
+              {
+                onSuccess: () => { setFabState("success"); setTimeout(() => setFabState("idle"), 1500); },
+                onError: () => showError("Couldn't save task — try again"),
+              },
+            );
+          },
+        });
       };
 
       recognition.onerror = (event: { error: string }) => {
@@ -308,26 +216,7 @@ export function VoiceFab() {
     } catch (err) {
       showError(err instanceof Error ? err.message : "Failed to start microphone");
     }
-  }, [clearSilenceTimer, showError, processTranscript]);
-
-  // ── Unified start/stop ────────────────────────────────────────────────────
-
-  const startListening = useCallback(() => {
-    if (isNative()) void startNativeListening();
-    else startWebListening();
-  }, [startNativeListening, startWebListening]);
-
-  const stopListening = useCallback(() => {
-    clearSilenceTimer();
-    if (isNative()) {
-      void stopNativeListening();
-    } else {
-      try { recognitionRef.current?.stop(); } catch { /* ignore */ }
-      recognitionRef.current = null;
-      setFabState("idle");
-      setInterimText("");
-    }
-  }, [clearSilenceTimer, stopNativeListening]);
+  }, [clearSilenceTimer, showError, parseTask, createTask]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -335,8 +224,6 @@ export function VoiceFab() {
       clearSilenceTimer();
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
       try { recognitionRef.current?.stop(); } catch { /* ignore */ }
-      void nativePartialListenerRef.current?.remove();
-      void nativeStateListenerRef.current?.remove();
     };
   }, [clearSilenceTimer]);
 
