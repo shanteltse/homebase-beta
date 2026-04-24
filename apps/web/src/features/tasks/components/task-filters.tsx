@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -33,6 +34,8 @@ type TaskFiltersProps = {
   onAssigneeFilterChange?: (value: string) => void;
 };
 
+type FilterId = "members" | "category" | "priority" | "sort";
+
 const VIEWS: { value: TaskView; label: string }[] = [
   { value: "all", label: "All" },
   { value: "starred", label: "Starred" },
@@ -55,12 +58,22 @@ export function TaskFilters({
   assigneeFilter,
   onAssigneeFilterChange,
 }: TaskFiltersProps) {
+  const [openFilter, setOpenFilter] = useState<FilterId | null>(null);
   const showMemberFilter =
     onAssigneeFilterChange && members && members.length > 1;
 
+  function open(id: FilterId) { setOpenFilter(id); }
+  function close() { setOpenFilter(null); }
+
   return (
     <div className="flex flex-col gap-2">
-      {/* View tabs — compact, scrolls horizontally on narrow screens */}
+      {/* Full-screen overlay — captures the first tap on iOS to close the open
+          dropdown without needing Radix's outside-click detection */}
+      {openFilter !== null && (
+        <div className="fixed inset-0 z-[45]" onClick={close} />
+      )}
+
+      {/* View tabs */}
       <div className="flex justify-between">
         {VIEWS.map((v) => (
           <button
@@ -79,17 +92,22 @@ export function TaskFilters({
         ))}
       </div>
 
-      {/* Filter + sort row — single scrollable row */}
-      <div className="flex flex-nowrap items-center gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      {/* Filter + sort row */}
+      <div className="flex flex-nowrap items-center gap-1">
         {showMemberFilter && (
           <Select
+            open={openFilter === "members"}
+            onOpenChange={(isOpen) => isOpen ? open("members") : close()}
             value={assigneeFilter ?? ""}
-            onValueChange={(val) => onAssigneeFilterChange(val === "all" ? "" : val)}
+            onValueChange={(val) => {
+              onAssigneeFilterChange(val === "all" ? "" : val);
+              close();
+            }}
           >
-            <SelectTrigger className="h-7 w-[7.5rem] shrink-0 text-xs">
+            <SelectTrigger className="h-7 w-[6.5rem] shrink-0 text-xs px-2">
               <SelectValue placeholder="All members" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-50">
               <SelectItem value="all">All members</SelectItem>
               <SelectItem value="mine">Mine</SelectItem>
               {members.filter((m) => m.id !== currentUserId).map((m) => (
@@ -102,13 +120,18 @@ export function TaskFilters({
         )}
 
         <Select
+          open={openFilter === "category"}
+          onOpenChange={(isOpen) => isOpen ? open("category") : close()}
           value={category}
-          onValueChange={(val) => onFilterChange("category", val === "all" ? "" : val)}
+          onValueChange={(val) => {
+            onFilterChange("category", val === "all" ? "" : val);
+            close();
+          }}
         >
-          <SelectTrigger className="h-7 w-[6rem] shrink-0 text-xs">
+          <SelectTrigger className="h-7 w-[5.5rem] shrink-0 text-xs px-2">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-50">
             <SelectItem value="all">All categories</SelectItem>
             {DEFAULT_CATEGORIES.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
@@ -119,13 +142,18 @@ export function TaskFilters({
         </Select>
 
         <Select
+          open={openFilter === "priority"}
+          onOpenChange={(isOpen) => isOpen ? open("priority") : close()}
           value={priority}
-          onValueChange={(val) => onFilterChange("priority", val === "all" ? "" : val)}
+          onValueChange={(val) => {
+            onFilterChange("priority", val === "all" ? "" : val);
+            close();
+          }}
         >
-          <SelectTrigger className="h-7 w-[6rem] shrink-0 text-xs">
+          <SelectTrigger className="h-7 w-[5.5rem] shrink-0 text-xs px-2">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-50">
             <SelectItem value="all">All priorities</SelectItem>
             <SelectItem value="high">High</SelectItem>
             <SelectItem value="medium">Medium</SelectItem>
@@ -133,7 +161,10 @@ export function TaskFilters({
           </SelectContent>
         </Select>
 
-        <DropdownMenu>
+        <DropdownMenu
+          open={openFilter === "sort"}
+          onOpenChange={(isOpen) => isOpen ? open("sort") : close()}
+        >
           <DropdownMenuTrigger asChild>
             <button
               type="button"
@@ -146,9 +177,13 @@ export function TaskFilters({
               </span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="z-50">
             {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
-              <DropdownMenuItem key={s} onClick={() => onSortChange(s)} className="flex items-center justify-between gap-4">
+              <DropdownMenuItem
+                key={s}
+                onClick={() => { onSortChange(s); close(); }}
+                className="flex items-center justify-between gap-4"
+              >
                 {s === "due-date" ? "Due Date" : s === "priority" ? "Priority" : s === "assignee" ? "Assignee" : "Date Created"}
                 {sort === s && <Check className="h-3.5 w-3.5 text-primary" />}
               </DropdownMenuItem>

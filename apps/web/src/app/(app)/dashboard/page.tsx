@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const [assigneeFilter, setAssigneeFilterState] = useState<string>("");
   const [sort, setSortState] = useState<TaskSort>("due-date");
   const [showOverview, setShowOverviewState] = useState(true);
+  const [openDashFilter, setOpenDashFilter] = useState<"members" | "sort" | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem(ASSIGNEE_FILTER_KEY) ?? "";
@@ -362,6 +363,10 @@ export default function DashboardPage() {
           {/* All / Today / This Week toggle section */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
+              {/* Overlay — captures first tap on iOS to close open dropdown */}
+              {openDashFilter !== null && (
+                <div className="fixed inset-0 z-[45]" onClick={() => setOpenDashFilter(null)} />
+              )}
               {/* Single row: toggle pills (left) + member filter + sort (right) */}
               <div className="flex items-center justify-between">
                 <div className="flex gap-1 rounded-lg border border-border p-0.5">
@@ -383,13 +388,18 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2">
                   {showMemberFilter && (
                     <Select
+                      open={openDashFilter === "members"}
+                      onOpenChange={(isOpen) => setOpenDashFilter(isOpen ? "members" : null)}
                       value={assigneeFilter || "all"}
-                      onValueChange={(val) => setAssigneeFilter(val === "all" ? "" : val)}
+                      onValueChange={(val) => {
+                        setAssigneeFilter(val === "all" ? "" : val);
+                        setOpenDashFilter(null);
+                      }}
                     >
-                      <SelectTrigger className="h-7 w-[8rem] text-xs">
+                      <SelectTrigger className="h-7 w-[7rem] text-xs px-2">
                         <SelectValue placeholder="All members" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-50">
                         <SelectItem value="all">All members</SelectItem>
                         <SelectItem value="mine">Mine</SelectItem>
                         {members.filter((m) => m.id !== user?.id).map((m) => (
@@ -400,7 +410,10 @@ export default function DashboardPage() {
                       </SelectContent>
                     </Select>
                   )}
-                  <DropdownMenu>
+                  <DropdownMenu
+                    open={openDashFilter === "sort"}
+                    onOpenChange={(isOpen) => setOpenDashFilter(isOpen ? "sort" : null)}
+                  >
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
@@ -413,9 +426,13 @@ export default function DashboardPage() {
                         </span>
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="z-50">
                       {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
-                        <DropdownMenuItem key={s} onClick={() => setSort(s)} className="flex items-center justify-between gap-4">
+                        <DropdownMenuItem
+                          key={s}
+                          onClick={() => { setSort(s); setOpenDashFilter(null); }}
+                          className="flex items-center justify-between gap-4"
+                        >
                           {s === "due-date" ? "Due Date" : s === "priority" ? "Priority" : s === "assignee" ? "Assignee" : "Date Created"}
                           {sort === s && <Check className="h-3.5 w-3.5 text-primary" />}
                         </DropdownMenuItem>
