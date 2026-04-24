@@ -32,7 +32,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <SetupBanner />
             {/* Microphone permission banner — one-time, shown when mic is denied */}
             <MicPermissionBanner />
-            <div className="flex-1 min-w-0 overflow-y-auto p-6 pb-24 md:pb-6">{children}</div>
+            <div
+              className="flex-1 min-w-0 overflow-y-auto p-6 [scrollbar-gutter:stable]"
+              style={{ paddingBottom: "var(--content-pb)" }}
+            >
+              {children}
+            </div>
             <MobileNav />
           </main>
         </div>

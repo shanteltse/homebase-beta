@@ -48,6 +48,14 @@
     overscroll-behavior: none;
     @apply bg-background text-foreground antialiased;
   }
+  :root {
+    --content-pb: calc(env(safe-area-inset-bottom) + 140px);
+  }
+  @media (min-width: 768px) {
+    :root {
+      --content-pb: 1.5rem; /* md:pb-6 */
+    }
+  }
 }
 
 /*
