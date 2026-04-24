@@ -67,10 +67,11 @@ export function TaskFilters({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Full-screen overlay — captures the first tap on iOS to close the open
-          dropdown without needing Radix's outside-click detection */}
+      {/* Full-screen overlay — use onPointerDown (= touchstart) so React
+          re-renders and removes the overlay before touchend fires; touchend
+          then lands on the element underneath, giving one-tap dismiss+act */}
       {openFilter !== null && (
-        <div className="fixed inset-0 z-[45]" onClick={close} />
+        <div className="fixed inset-0 z-[45]" onPointerDown={close} />
       )}
 
       {/* View tabs */}

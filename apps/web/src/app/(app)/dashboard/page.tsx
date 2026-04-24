@@ -365,7 +365,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-2">
               {/* Overlay — captures first tap on iOS to close open dropdown */}
               {openDashFilter !== null && (
-                <div className="fixed inset-0 z-[45]" onClick={() => setOpenDashFilter(null)} />
+                <div className="fixed inset-0 z-[45]" onPointerDown={() => setOpenDashFilter(null)} />
               )}
               {/* Single row: toggle pills (left) + member filter + sort (right) */}
               <div className="flex items-center justify-between">
