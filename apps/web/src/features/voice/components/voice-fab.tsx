@@ -235,7 +235,7 @@ export function VoiceFab() {
           // Dispatch event so the app-level banner shows (one-time, dismissible)
           window.dispatchEvent(new CustomEvent(MIC_DENIED_EVENT));
           // Show brief helpful hint in the FAB bubble, then return to idle
-          showError("Tap the mic to enable voice input — you may need to allow microphone access in Safari");
+          showError(`Mic error: ${event.error}`);
           setInterimText("");
           return;
         }
