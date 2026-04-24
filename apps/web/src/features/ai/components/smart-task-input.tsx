@@ -458,6 +458,33 @@ function SmartTaskInput({ onOpenCreateDialog, rightLabel }, ref) {
             </button>
           )}
         </div>
+
+        {/* Date pill — shown when a quick due date is selected */}
+        {quickDueDate && (
+          <div className="inline-flex self-start items-center rounded-full bg-primary/10 text-xs font-medium text-primary overflow-hidden">
+            <div className="relative flex items-center gap-1 pl-2 pr-1 py-1 cursor-pointer">
+              <CalendarDays className="h-3 w-3 pointer-events-none" />
+              <span className="pointer-events-none">{formatQuickDueDate(quickDueDate)}</span>
+              <input
+                type="date"
+                value={quickDueDate}
+                onChange={(e) => setQuickDueDate(e.target.value)}
+                tabIndex={-1}
+                aria-label="Change due date"
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setQuickDueDate("")}
+              aria-label="Clear due date"
+              className="flex items-center px-1.5 py-1 hover:bg-primary/20 transition-colors"
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
+          </div>
+        )}
+
 {!preview && !(tasksPreview && tasksPreview.length > 0) && (
           <>
             {/* Quick Add / Smart Add — right under the textarea */}
