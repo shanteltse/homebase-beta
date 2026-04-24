@@ -52,6 +52,10 @@
     touch-action: manipulation;
     @apply bg-background text-foreground antialiased;
   }
+  button, a, input, select, textarea, label, [role="button"] {
+    touch-action: manipulation;
+  }
+
   :root {
     --content-pb: calc(env(safe-area-inset-bottom) + 180px);
   }
