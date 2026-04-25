@@ -119,6 +119,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
     }
   }, [isTitleEditing]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [subtasks, setSubtasks] = useState<Subtask[]>(task?.subtasks ?? []);
   const [tags, setTags] = useState<string[]>(task?.tags ?? []);
   const [recurring, setRecurring] = useState<RecurringPattern | undefined>(
     task?.recurring as RecurringPattern | undefined,
@@ -138,6 +139,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   // (e.g. individual-task cache was cold after a mutation invalidation).
   useEffect(() => {
     if (!task) return;
+    setSubtasks(task.subtasks ?? []);
     setTags(task.tags ?? []);
     setRecurring(task.recurring as RecurringPattern | undefined);
     setAssignee(task.assignee ?? undefined);
@@ -208,6 +210,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   // recurring, tags, and assignee are managed outside react-hook-form, so
   // isDirty won't catch their changes. Track them manually.
   const isExtraDirty =
+    JSON.stringify(subtasks) !== JSON.stringify(task.subtasks ?? []) ||
     JSON.stringify(recurring ?? null) !== JSON.stringify(task.recurring ?? null) ||
     JSON.stringify(tags) !== JSON.stringify(task.tags ?? []) ||
     (assignee ?? null) !== (task.assignee ?? null);
@@ -227,6 +230,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         // undefined is stripped by JSON.stringify; null explicitly writes NULL.
         recurring: recurring ?? null,
         contact: data.contact || null,
+        subtasks,
         tags,
         assignee,
       },
@@ -247,12 +251,8 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   function handleAddSubtask() {
     const title = newSubtaskTitle.trim();
     if (!title) return;
-    const subtask: Subtask = {
-      id: crypto.randomUUID(),
-      title,
-      completed: false,
-    };
-    updateTask.mutate({ id: taskId, subtasks: [...task!.subtasks, subtask] });
+    const subtask: Subtask = { id: crypto.randomUUID(), title, completed: false };
+    setSubtasks((prev) => [...prev, subtask]);
     setNewSubtaskTitle("");
   }
 
@@ -260,15 +260,13 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   const { ref: notesFormRef, ...notesRegisterProps } = register("notes");
 
   function handleToggleSubtask(subtaskId: string) {
-    const updated = task!.subtasks.map((s) =>
-      s.id === subtaskId ? { ...s, completed: !s.completed } : s,
+    setSubtasks((prev) =>
+      prev.map((s) => (s.id === subtaskId ? { ...s, completed: !s.completed } : s)),
     );
-    updateTask.mutate({ id: taskId, subtasks: updated });
   }
 
   function handleDeleteSubtask(subtaskId: string) {
-    const updated = task!.subtasks.filter((s) => s.id !== subtaskId);
-    updateTask.mutate({ id: taskId, subtasks: updated });
+    setSubtasks((prev) => prev.filter((s) => s.id !== subtaskId));
   }
 
   return (
@@ -470,17 +468,17 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <label className="label text-foreground">Subtasks</label>
-            {task.subtasks.length > 0 && (
+            {subtasks.length > 0 && (
               <span className="caption text-muted-foreground">
-                {task.subtasks.filter((s) => s.completed).length}/
-                {task.subtasks.length} subtasks completed
+                {subtasks.filter((s) => s.completed).length}/
+                {subtasks.length} subtasks completed
               </span>
             )}
           </div>
 
-          {task.subtasks.length > 0 && (
+          {subtasks.length > 0 && (
             <div className="flex flex-col gap-1">
-              {task.subtasks.map((subtask) => (
+              {subtasks.map((subtask) => (
                 <div
                   key={subtask.id}
                   className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50"
