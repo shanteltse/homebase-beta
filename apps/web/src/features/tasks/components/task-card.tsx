@@ -347,24 +347,6 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
             </DropdownMenu>
           )}
 
-          {task.subtasks.length > 0 && (() => {
-            const completed = task.subtasks.filter((s) => s.completed).length;
-            const total = task.subtasks.length;
-            const pct = Math.round((completed / total) * 100);
-            return (
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <span className="caption text-muted-foreground">
-                  {completed}/{total} subtasks
-                </span>
-              </div>
-            );
-          })()}
 
         </div>
       </div>
