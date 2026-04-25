@@ -399,7 +399,7 @@ export default function DashboardPage() {
                       <SelectTrigger className="h-7 w-[7rem] text-xs px-2">
                         <SelectValue placeholder="All members" />
                       </SelectTrigger>
-                      <SelectContent className="z-50">
+                      <SelectContent className="z-50" onPointerDownOutside={(e) => e.preventDefault()}>
                         <SelectItem value="all">All members</SelectItem>
                         <SelectItem value="mine">Mine</SelectItem>
                         {members.filter((m) => m.id !== user?.id).map((m) => (
@@ -426,7 +426,7 @@ export default function DashboardPage() {
                         </span>
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="z-50">
+                    <DropdownMenuContent align="end" className="z-50" onInteractOutside={(e) => e.preventDefault()}>
                       {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
                         <DropdownMenuItem
                           key={s}

@@ -108,7 +108,7 @@ export function TaskFilters({
             <SelectTrigger className="h-7 w-[6.5rem] shrink-0 text-xs px-2">
               <SelectValue placeholder="All members" />
             </SelectTrigger>
-            <SelectContent className="z-50">
+            <SelectContent className="z-50" onPointerDownOutside={(e) => e.preventDefault()}>
               <SelectItem value="all">All members</SelectItem>
               <SelectItem value="mine">Mine</SelectItem>
               {members.filter((m) => m.id !== currentUserId).map((m) => (
@@ -132,7 +132,7 @@ export function TaskFilters({
           <SelectTrigger className="h-7 w-[5.5rem] shrink-0 text-xs px-2">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
-          <SelectContent className="z-50">
+          <SelectContent className="z-50" onPointerDownOutside={(e) => e.preventDefault()}>
             <SelectItem value="all">All categories</SelectItem>
             {DEFAULT_CATEGORIES.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
@@ -154,7 +154,7 @@ export function TaskFilters({
           <SelectTrigger className="h-7 w-[5.5rem] shrink-0 text-xs px-2">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
-          <SelectContent className="z-50">
+          <SelectContent className="z-50" onPointerDownOutside={(e) => e.preventDefault()}>
             <SelectItem value="all">All priorities</SelectItem>
             <SelectItem value="high">High</SelectItem>
             <SelectItem value="medium">Medium</SelectItem>
@@ -178,7 +178,7 @@ export function TaskFilters({
               </span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-50">
+          <DropdownMenuContent align="end" className="z-50" onInteractOutside={(e) => e.preventDefault()}>
             {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
               <DropdownMenuItem
                 key={s}
