@@ -72,5 +72,12 @@ export const updateTaskInputSchema = createTaskInputSchema.partial().extend({
   recurring: z.union([recurringPatternSchema, z.null()]).optional(),
   // Allow explicit null to clear contact
   contact: z.string().nullable().optional(),
+  // createTaskInputSchema defines these with .default([]), which survives .partial() and
+  // causes Zod to output [] instead of undefined when the field is absent. The API guard
+  // `if (validated.x !== undefined)` then fires and overwrites the DB with []. Fix by
+  // explicitly overriding these to plain optional (no default) so absence stays undefined.
+  subtasks: z.array(subtaskSchema).optional(),
+  tags: z.array(z.string()).optional(),
+  links: z.array(z.string().url()).optional(),
 });
 export type UpdateTaskInput = z.infer<typeof updateTaskInputSchema>;
