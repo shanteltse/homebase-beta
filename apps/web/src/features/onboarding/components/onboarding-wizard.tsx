@@ -6,6 +6,7 @@ import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
 import { Plus, Trash2, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCreateTask } from "@/features/tasks/api/create-task";
 
 type Member = {
   name: string;
@@ -44,6 +45,7 @@ export function OnboardingWizard({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const createTask = useCreateTask();
   const startStep = Math.min(Math.max(initialStep, 1), 4);
   const [step, setStep] = useState(startStep);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,17 +94,13 @@ export function OnboardingWizard({
     setIsSubmitting(true);
     try {
       if (taskTitle?.trim()) {
-        await fetch("/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: taskTitle.trim(),
-            category: "personal",
-            priority: "medium",
-            subtasks: [],
-            tags: [],
-            links: [],
-          }),
+        await createTask.mutateAsync({
+          title: taskTitle.trim(),
+          category: "personal",
+          priority: "medium",
+          subtasks: [],
+          tags: [],
+          links: [],
         }).catch(() => {/* best-effort — don't block onboarding completion */});
       }
 
