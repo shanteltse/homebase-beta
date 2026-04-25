@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -59,8 +59,18 @@ export function TaskFilters({
   onAssigneeFilterChange,
 }: TaskFiltersProps) {
   const [openFilter, setOpenFilter] = useState<FilterId | null>(null);
+  const [overlayReady, setOverlayReady] = useState(false);
   const showMemberFilter =
     onAssigneeFilterChange && members && members.length > 1;
+
+  useEffect(() => {
+    if (openFilter !== null) {
+      const t = setTimeout(() => setOverlayReady(true), 50);
+      return () => clearTimeout(t);
+    } else {
+      setOverlayReady(false);
+    }
+  }, [openFilter]);
 
   function open(id: FilterId) { setOpenFilter(id); }
   function close() { setOpenFilter(null); }
@@ -70,7 +80,7 @@ export function TaskFilters({
       {/* Full-screen overlay — use onPointerDown (= touchstart) so React
           re-renders and removes the overlay before touchend fires; touchend
           then lands on the element underneath, giving one-tap dismiss+act */}
-      {openFilter !== null && (
+      {openFilter !== null && overlayReady && (
         <div className="fixed inset-0 z-[45]" onPointerDown={close} />
       )}
 
@@ -108,7 +118,7 @@ export function TaskFilters({
             <SelectTrigger className="h-7 w-[6.5rem] shrink-0 text-xs px-2">
               <SelectValue placeholder="All members" />
             </SelectTrigger>
-            <SelectContent className="z-50" onPointerDownOutside={(e) => e.preventDefault()}>
+            <SelectContent className="z-50">
               <SelectItem value="all">All members</SelectItem>
               <SelectItem value="mine">Mine</SelectItem>
               {members.filter((m) => m.id !== currentUserId).map((m) => (
@@ -132,7 +142,7 @@ export function TaskFilters({
           <SelectTrigger className="h-7 w-[5.5rem] shrink-0 text-xs px-2">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
-          <SelectContent className="z-50" onPointerDownOutside={(e) => e.preventDefault()}>
+          <SelectContent className="z-50">
             <SelectItem value="all">All categories</SelectItem>
             {DEFAULT_CATEGORIES.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
@@ -154,7 +164,7 @@ export function TaskFilters({
           <SelectTrigger className="h-7 w-[5.5rem] shrink-0 text-xs px-2">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
-          <SelectContent className="z-50" onPointerDownOutside={(e) => e.preventDefault()}>
+          <SelectContent className="z-50">
             <SelectItem value="all">All priorities</SelectItem>
             <SelectItem value="high">High</SelectItem>
             <SelectItem value="medium">Medium</SelectItem>
@@ -178,7 +188,7 @@ export function TaskFilters({
               </span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-50" onInteractOutside={(e) => e.preventDefault()}>
+          <DropdownMenuContent align="end" className="z-50">
             {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
               <DropdownMenuItem
                 key={s}

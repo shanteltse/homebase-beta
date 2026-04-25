@@ -61,6 +61,16 @@ export default function DashboardPage() {
   const [sort, setSortState] = useState<TaskSort>("due-date");
   const [showOverview, setShowOverviewState] = useState(true);
   const [openDashFilter, setOpenDashFilter] = useState<"members" | "sort" | null>(null);
+  const [dashOverlayReady, setDashOverlayReady] = useState(false);
+
+  useEffect(() => {
+    if (openDashFilter !== null) {
+      const t = setTimeout(() => setDashOverlayReady(true), 50);
+      return () => clearTimeout(t);
+    } else {
+      setDashOverlayReady(false);
+    }
+  }, [openDashFilter]);
 
   useEffect(() => {
     const stored = localStorage.getItem(ASSIGNEE_FILTER_KEY) ?? "";
@@ -364,7 +374,7 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
               {/* Overlay — captures first tap on iOS to close open dropdown */}
-              {openDashFilter !== null && (
+              {openDashFilter !== null && dashOverlayReady && (
                 <div className="fixed inset-0 z-[45]" onPointerDown={() => setOpenDashFilter(null)} />
               )}
               {/* Single row: toggle pills (left) + member filter + sort (right) */}
@@ -399,7 +409,7 @@ export default function DashboardPage() {
                       <SelectTrigger className="h-7 w-[7rem] text-xs px-2">
                         <SelectValue placeholder="All members" />
                       </SelectTrigger>
-                      <SelectContent className="z-50" onPointerDownOutside={(e) => e.preventDefault()}>
+                      <SelectContent className="z-50">
                         <SelectItem value="all">All members</SelectItem>
                         <SelectItem value="mine">Mine</SelectItem>
                         {members.filter((m) => m.id !== user?.id).map((m) => (
@@ -426,7 +436,7 @@ export default function DashboardPage() {
                         </span>
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="z-50" onInteractOutside={(e) => e.preventDefault()}>
+                    <DropdownMenuContent align="end" className="z-50">
                       {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
                         <DropdownMenuItem
                           key={s}
