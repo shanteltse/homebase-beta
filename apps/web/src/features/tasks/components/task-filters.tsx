@@ -103,7 +103,7 @@ export function TaskFilters({
       </div>
 
       {/* Filter + sort row */}
-      <div className="flex w-full flex-nowrap items-center justify-between gap-1">
+      <div className="flex flex-nowrap items-center gap-1">
         {showMemberFilter && (
           <Popover open={openFilter === "members"} onOpenChange={(open) => { if (!open) close(); }}>
             <PopoverTrigger asChild>
