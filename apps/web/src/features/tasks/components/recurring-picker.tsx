@@ -71,7 +71,7 @@ export function RecurringPicker({ value, onChange }: RecurringPickerProps) {
           )}
         >
           <RefreshCw className="h-3 w-3" />
-          {isSet ? FREQ_LABELS[frequency] : "No repeat"}
+          {isSet ? FREQ_LABELS[frequency] : "None"}
           <Pencil className="h-2.5 w-2.5 opacity-50 sm:opacity-0 sm:group-hover:opacity-60 transition-opacity" />
         </button>
       </PopoverTrigger>
