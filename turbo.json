@@ -16,7 +16,11 @@
         "NODE_ENV",
         "NEXTAUTH_URL",
         "AUTH_URL",
-        "RESEND_API_KEY"
+        "RESEND_API_KEY",
+        "EMAIL_FROM",
+        "APNS_KEY_ID",
+        "APNS_TEAM_ID",
+        "APNS_PRIVATE_KEY"
       ]
     },
     "lint": {

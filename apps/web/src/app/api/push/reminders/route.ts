@@ -43,8 +43,8 @@ export async function POST(request: Request) {
             eq(tasks.userId, userId),
             eq(tasks.completed, false),
             isNotNull(tasks.dueDate),
-            gte(tasks.dueDate, tomorrowStart.toISOString().split("T")[0]!),
-            lt(tasks.dueDate, dayAfterTomorrow.toISOString().split("T")[0]!),
+            gte(tasks.dueDate, tomorrowStart),
+            lt(tasks.dueDate, dayAfterTomorrow),
           ),
         );
 
@@ -56,8 +56,8 @@ export async function POST(request: Request) {
             eq(tasks.userId, userId),
             eq(tasks.completed, false),
             isNotNull(tasks.dueDate),
-            gte(tasks.dueDate, todayStart.toISOString().split("T")[0]!),
-            lt(tasks.dueDate, tomorrowStart.toISOString().split("T")[0]!),
+            gte(tasks.dueDate, todayStart),
+            lt(tasks.dueDate, tomorrowStart),
           ),
         );
 
