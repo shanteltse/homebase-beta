@@ -10,6 +10,7 @@ import { SetupBanner } from "@/features/onboarding/components/setup-banner";
 import { WelcomeModal } from "@/features/onboarding/components/welcome-modal";
 import { VoiceFab } from "@/features/voice/components/voice-fab";
 import { MicPermissionBanner } from "@/features/voice/components/mic-permission-banner";
+import { AppOpenTracker } from "@/components/app-open-tracker";
 import type { ReactNode } from "react";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +46,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <CompletionCelebration />
         {/* Welcome modal — shown once to brand-new users */}
         <WelcomeModal />
+        <AppOpenTracker />
         {/* Voice-to-task FAB — fixed top-right, below the notification bell */}
         <VoiceFab />
       </NotificationProvider>

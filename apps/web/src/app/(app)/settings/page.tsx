@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@/features/auth/api/get-user";
 import { useLogout } from "@/features/auth/api/logout";
 import { useUserProfile } from "@/features/auth/api/get-user-profile";
@@ -9,6 +9,7 @@ import { Spinner } from "@repo/ui/spinner";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@repo/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@repo/ui/tabs";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { HouseholdSettings } from "@/features/household/components/household-settings";
 import { NotificationSettings } from "@/features/notifications/components/notification-settings";
 import { ReminderSettings } from "@/features/notifications/components/reminder-settings";
@@ -16,14 +17,39 @@ import { AchievementsGrid } from "@/features/gamification/components/achievement
 // import { GoogleCalendarSettings } from "@/features/calendar/components/google-calendar-settings";
 import { ImportTasksDialog } from "@/features/tasks/components/import-tasks-dialog";
 import { Suspense } from "react";
-import { Wand2, Upload } from "lucide-react";
+import { Wand2, Upload, RotateCcw } from "lucide-react";
+
+const APP_OPEN_COUNT_KEY = "appOpenCount";
+const REDO_ONBOARDING_THRESHOLD = 20;
 
 export default function SettingsPage() {
   const { data: user, isLoading } = useUser();
   const { data: profile } = useUserProfile();
   const logout = useLogout();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [importOpen, setImportOpen] = useState(false);
+  const [appOpenCount, setAppOpenCount] = useState<number>(Infinity);
+  const [isRedoingOnboarding, setIsRedoingOnboarding] = useState(false);
+
+  useEffect(() => {
+    setAppOpenCount(Number(localStorage.getItem(APP_OPEN_COUNT_KEY) ?? Infinity));
+  }, []);
+
+  async function handleRedoOnboarding() {
+    setIsRedoingOnboarding(true);
+    try {
+      await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ onboardingCompleted: false, onboardingStep: 0 }),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      router.push("/onboarding");
+    } finally {
+      setIsRedoingOnboarding(false);
+    }
+  }
 
   function handleSignOut() {
     logout.mutate(undefined, {
@@ -76,6 +102,27 @@ export default function SettingsPage() {
                 <Button variant="outline" onClick={() => router.push("/onboarding")} className="gap-2">
                   <Wand2 className="h-4 w-4" />
                   {profile && profile.onboardingStep > 0 ? "Resume Setup" : "Start Setup"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Redo Onboarding — visible for first 20 app opens */}
+          {appOpenCount <= REDO_ONBOARDING_THRESHOLD && profile?.onboardingCompleted && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <RotateCcw className="h-5 w-5" />
+                  Redo Onboarding
+                </CardTitle>
+                <CardDescription>
+                  Walk through the setup wizard again to update your household or preferences.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" onClick={handleRedoOnboarding} disabled={isRedoingOnboarding} className="gap-2">
+                  <RotateCcw className="h-4 w-4" />
+                  {isRedoingOnboarding ? "Starting…" : "Redo Setup"}
                 </Button>
               </CardContent>
             </Card>

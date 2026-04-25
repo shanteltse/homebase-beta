@@ -73,6 +73,7 @@ export async function PATCH(request: Request) {
     if (typeof body.name === "string") updatable.name = body.name.trim().slice(0, 100);
     if (typeof body.image === "string") updatable.image = body.image;
     if (typeof body.onboardingStep === "number") updatable.onboardingStep = body.onboardingStep;
+    if (typeof body.onboardingCompleted === "boolean") updatable.onboardingCompleted = body.onboardingCompleted;
     if (typeof body.notificationDailyRecap === "boolean") updatable.notificationDailyRecap = body.notificationDailyRecap;
     if (typeof body.notificationRecapTime === "string") updatable.notificationRecapTime = body.notificationRecapTime;
     if (typeof body.notificationMorningSummary === "boolean") updatable.notificationMorningSummary = body.notificationMorningSummary;
