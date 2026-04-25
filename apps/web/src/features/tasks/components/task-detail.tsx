@@ -8,7 +8,6 @@ import { ArrowLeft, Calendar, ExternalLink, Plus, RefreshCw, Trash2, X } from "l
 import { cn } from "@/utils/cn";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
-import { Textarea } from "@repo/ui/textarea";
 import { Spinner } from "@repo/ui/spinner";
 import { Checkbox } from "@repo/ui/checkbox";
 import {
@@ -108,6 +107,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   const titleTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const notesTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (isTitleEditing && titleTextareaRef.current) {
@@ -126,6 +126,13 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   const [assignee, setAssignee] = useState<string | undefined>(
     task?.assignee ?? undefined,
   );
+
+  useEffect(() => {
+    if (notesTextareaRef.current) {
+      notesTextareaRef.current.style.height = "auto";
+      notesTextareaRef.current.style.height = `${notesTextareaRef.current.scrollHeight}px`;
+    }
+  }, [task?.notes]);
 
   // Sync out-of-form state when task data arrives asynchronously
   // (e.g. individual-task cache was cold after a mutation invalidation).
@@ -250,6 +257,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   }
 
   const { ref: titleFormRef, ...titleRegisterProps } = register("title");
+  const { ref: notesFormRef, ...notesRegisterProps } = register("notes");
 
   function handleToggleSubtask(subtaskId: string) {
     const updated = task!.subtasks.map((s) =>
@@ -399,12 +407,15 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1">
             <label htmlFor="dueDateDate" className="label text-foreground">Due date</label>
-            <input
-              id="dueDateDate"
-              type="date"
-              {...register("dueDateDate")}
-              className="flex h-10 w-full appearance-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-date-and-time-value]:text-left"
-            />
+            <div className="flex items-center gap-1.5 min-w-0">
+              <input
+                id="dueDateDate"
+                type="date"
+                {...register("dueDateDate")}
+                className="flex h-10 flex-1 min-w-0 appearance-none rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-date-and-time-value]:text-left"
+              />
+              <RecurringPicker value={recurring} onChange={setRecurring} />
+            </div>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="dueDateTime" className="label text-foreground">Time (optional)</label>
@@ -429,16 +440,31 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <RecurringPicker value={recurring} onChange={setRecurring} />
-        </div>
-
         <div className="grid grid-cols-2 gap-2">
           <AssigneePicker value={assignee} onChange={setAssignee} />
           <ContactField register={register} watch={watch} />
         </div>
 
-        <Textarea id="notes" label="Notes" rows={2} {...register("notes")} />
+        {/* Notes — auto-resizes to fit content */}
+        <div className="flex flex-col gap-1">
+          <label htmlFor="notes" className="label text-foreground">Notes</label>
+          <textarea
+            id="notes"
+            {...notesRegisterProps}
+            ref={(el) => {
+              notesFormRef(el);
+              notesTextareaRef.current = el;
+            }}
+            rows={2}
+            placeholder="Add notes…"
+            onInput={(e) => {
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${el.scrollHeight}px`;
+            }}
+            className="flex w-full resize-none overflow-hidden rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </div>
 
         {/* Subtasks */}
         <div className="flex flex-col gap-2">
