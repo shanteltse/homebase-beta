@@ -1,0 +1,59 @@
+"use client";
+
+import { useEffect } from "react";
+import { useUser } from "@/features/auth/api/get-user";
+
+function isNative(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.()
+  );
+}
+
+export function PushNotificationRegistrar() {
+  const { data: user } = useUser();
+
+  useEffect(() => {
+    if (!user || !isNative()) return;
+
+    async function registerPush() {
+      try {
+        const { PushNotifications } = await import("@capacitor/push-notifications");
+
+        const permStatus = await PushNotifications.checkPermissions();
+
+        if (permStatus.receive === "prompt") {
+          const result = await PushNotifications.requestPermissions();
+          if (result.receive !== "granted") return;
+        } else if (permStatus.receive !== "granted") {
+          return;
+        }
+
+        await PushNotifications.register();
+
+        PushNotifications.addListener("registration", async (token) => {
+          try {
+            await fetch("/api/push/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token: token.value, platform: "ios" }),
+            });
+          } catch (err) {
+            console.error("[push] Failed to register token", err);
+          }
+        });
+
+        PushNotifications.addListener("registrationError", (err) => {
+          console.error("[push] Registration error", err);
+        });
+      } catch (err) {
+        console.error("[push] Push setup error", err);
+      }
+    }
+
+    void registerPush();
+  }, [user]);
+
+  return null;
+}

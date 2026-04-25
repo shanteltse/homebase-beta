@@ -248,6 +248,20 @@ export const calendarEvents = pgTable("calendar_events", {
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
+// ─── Device tokens (push notifications) ───
+
+export const deviceTokens = pgTable("device_tokens", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull(),
+  platform: text("platform", { enum: ["ios", "android"] }).notNull().default("ios"),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+});
+
 // ─── Notifications ───
 
 export const notifications = pgTable("notifications", {

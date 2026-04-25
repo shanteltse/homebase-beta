@@ -26,6 +26,8 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>HomeBase uses the microphone to let you add tasks by voice.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>HomeBase sends push notifications to remind you about upcoming task due dates.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>HomeBase uses speech recognition to transcribe your voice into tasks.</string>
 	<key>UILaunchStoryboardName</key>

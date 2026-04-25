@@ -11,6 +11,7 @@ import { WelcomeModal } from "@/features/onboarding/components/welcome-modal";
 import { VoiceFab } from "@/features/voice/components/voice-fab";
 import { MicPermissionBanner } from "@/features/voice/components/mic-permission-banner";
 import { AppOpenTracker } from "@/components/app-open-tracker";
+import { PushNotificationRegistrar } from "@/components/push-notification-registrar";
 import type { ReactNode } from "react";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {/* Welcome modal — shown once to brand-new users */}
         <WelcomeModal />
         <AppOpenTracker />
+        <PushNotificationRegistrar />
         {/* Voice-to-task FAB — fixed top-right, below the notification bell */}
         <VoiceFab />
       </NotificationProvider>
