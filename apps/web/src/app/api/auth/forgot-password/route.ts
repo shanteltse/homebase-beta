@@ -6,6 +6,7 @@ import { users, verificationTokens } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { generatePasswordResetHtml } from "@/lib/email-templates";
+import { sendEmail } from "@/lib/send-email";
 import { rateLimitByIp } from "@/lib/api-rate-limit";
 import { validateOrigin } from "@/lib/api-utils";
 import { ApiError, handleApiError } from "@/lib/api-error";
@@ -61,10 +62,7 @@ export async function POST(request: Request) {
     // Generate email HTML
     const html = generatePasswordResetHtml({ userName: user.name, resetUrl, appUrl });
 
-    // TODO: send email via Resend/SendGrid
-    // await sendEmail({ to: email, subject: "Reset your HomeBase password", html });
-    console.log(`[forgot-password] Reset link for ${email}: ${resetUrl}`);
-    void html; // suppress unused warning until email provider is wired up
+    await sendEmail({ to: email, subject: "Reset your HomeBase password", html });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
