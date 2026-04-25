@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       expires,
     });
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://homebase-beta-web.vercel.app";
     const resetUrl = `${appUrl}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
 
     // Generate email HTML
