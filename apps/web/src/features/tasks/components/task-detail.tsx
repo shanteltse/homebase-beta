@@ -129,11 +129,11 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
   );
 
   useEffect(() => {
-    if (notesTextareaRef.current) {
-      notesTextareaRef.current.style.height = "auto";
-      notesTextareaRef.current.style.height = `${notesTextareaRef.current.scrollHeight}px`;
-    }
-  }, [task?.notes]);
+    const el = notesTextareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  });
 
   // Sync out-of-form state when task data arrives asynchronously
   // (e.g. individual-task cache was cold after a mutation invalidation).
@@ -460,7 +460,8 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
               el.style.height = "auto";
               el.style.height = `${el.scrollHeight}px`;
             }}
-            className="flex w-full resize-none overflow-hidden rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ overflowY: "hidden" }}
+            className="flex w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
 

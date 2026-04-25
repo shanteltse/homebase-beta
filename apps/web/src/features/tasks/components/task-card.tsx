@@ -347,6 +347,11 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
             </DropdownMenu>
           )}
 
+          {task.subtasks.length > 0 && (
+            <span className="caption text-muted-foreground">
+              {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} subtasks done
+            </span>
+          )}
 
         </div>
       </div>
