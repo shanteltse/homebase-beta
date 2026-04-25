@@ -19,15 +19,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@repo/ui/dropdown-menu";
-import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@repo/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@repo/ui/popover";
+import { ChevronDown } from "lucide-react";
 import type { Task } from "@/types/task";
 import { cn } from "@/utils/cn";
 import type { TaskSort } from "@/features/tasks/hooks/use-task-filters";
@@ -61,16 +56,11 @@ export default function DashboardPage() {
   const [sort, setSortState] = useState<TaskSort>("due-date");
   const [showOverview, setShowOverviewState] = useState(true);
   const [openDashFilter, setOpenDashFilter] = useState<"members" | "sort" | null>(null);
-  const [dashOverlayReady, setDashOverlayReady] = useState(false);
 
-  useEffect(() => {
-    if (openDashFilter !== null) {
-      const t = setTimeout(() => setDashOverlayReady(true), 50);
-      return () => clearTimeout(t);
-    } else {
-      setDashOverlayReady(false);
-    }
-  }, [openDashFilter]);
+  function toggleDashFilter(id: "members" | "sort") {
+    setOpenDashFilter((prev) => (prev === id ? null : id));
+  }
+  function closeDashFilter() { setOpenDashFilter(null); }
 
   useEffect(() => {
     const stored = localStorage.getItem(ASSIGNEE_FILTER_KEY) ?? "";
@@ -373,10 +363,6 @@ export default function DashboardPage() {
           {/* All / Today / This Week toggle section */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
-              {/* Overlay — captures first tap on iOS to close open dropdown */}
-              {openDashFilter !== null && dashOverlayReady && (
-                <div className="fixed inset-0 z-[45]" onPointerDown={() => setOpenDashFilter(null)} />
-              )}
               {/* Single row: toggle pills (left) + member filter + sort (right) */}
               <div className="flex items-center justify-between">
                 <div className="flex gap-1 rounded-lg border border-border p-0.5">
@@ -397,50 +383,80 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   {showMemberFilter && (
-                    <Select
+                    <Popover
                       open={openDashFilter === "members"}
-                      onOpenChange={(isOpen) => setOpenDashFilter(isOpen ? "members" : null)}
-                      value={assigneeFilter || "all"}
-                      onValueChange={(val) => {
-                        setAssigneeFilter(val === "all" ? "" : val);
-                        setOpenDashFilter(null);
-                      }}
+                      onOpenChange={(open) => { if (!open) closeDashFilter(); }}
                     >
-                      <SelectTrigger className="h-7 w-[7rem] text-xs px-2">
-                        <SelectValue placeholder="All members" />
-                      </SelectTrigger>
-                      <SelectContent className="z-50">
-                        <SelectItem value="all">All members</SelectItem>
-                        <SelectItem value="mine">Mine</SelectItem>
-                        {members.filter((m) => m.id !== user?.id).map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.name ?? m.email}
-                          </SelectItem>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => toggleDashFilter("members")}
+                          className="flex h-7 w-[7rem] items-center justify-between gap-1 rounded-md border border-border bg-background px-2 text-xs"
+                        >
+                          <span className={cn("truncate", assigneeFilter ? "text-foreground" : "text-muted-foreground")}>
+                            {!assigneeFilter
+                              ? "All members"
+                              : assigneeFilter === "mine"
+                                ? "Mine"
+                                : (members.find((m) => m.id === assigneeFilter)?.name ?? "Member")}
+                          </span>
+                          <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="end"
+                        className="w-40 p-1"
+                        onInteractOutside={() => closeDashFilter()}
+                      >
+                        {[
+                          { value: "", label: "All members" },
+                          { value: "mine", label: "Mine" },
+                          ...members.filter((m) => m.id !== user?.id).map((m) => ({
+                            value: m.id,
+                            label: m.name ?? m.email,
+                          })),
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => { setAssigneeFilter(opt.value); closeDashFilter(); }}
+                            className={cn(
+                              "flex w-full items-center rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-muted",
+                              (assigneeFilter ?? "") === opt.value && "font-medium",
+                            )}
+                          >
+                            {opt.label}
+                          </button>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </PopoverContent>
+                    </Popover>
                   )}
                   <DropdownMenu
                     open={openDashFilter === "sort"}
-                    onOpenChange={(isOpen) => setOpenDashFilter(isOpen ? "sort" : null)}
+                    onOpenChange={(isOpen) => { if (!isOpen) closeDashFilter(); }}
                   >
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
+                        onClick={() => toggleDashFilter("sort")}
                         className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                         aria-label="Sort tasks"
                       >
                         <ArrowUpDown className="h-3 w-3" />
                         <span className="hidden md:inline">
-                          {sort === "due-date" ? "Due date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : sort === "created" ? "Date created" : "Sort"}
+                          {sort === "due-date" ? "Due date" : sort === "priority" ? "Priority" : sort === "assignee" ? "Assignee" : "Date created"}
                         </span>
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="z-50">
+                    <DropdownMenuContent
+                      align="end"
+                      className="z-50"
+                      onInteractOutside={() => closeDashFilter()}
+                    >
                       {(["due-date", "priority", "assignee", "created"] as const).map((s) => (
                         <DropdownMenuItem
                           key={s}
-                          onClick={() => { setSort(s); setOpenDashFilter(null); }}
+                          onClick={() => { setSort(s); closeDashFilter(); }}
                           className="flex items-center justify-between gap-4"
                         >
                           {s === "due-date" ? "Due Date" : s === "priority" ? "Priority" : s === "assignee" ? "Assignee" : "Date Created"}
