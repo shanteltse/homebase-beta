@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { CalendarDays, Check, Mail, Phone, Repeat, Star, UserRound } from "lucide-react";
+import { CalendarDays, Check, Mail, MapPin, Phone, Repeat, Star, UserRound } from "lucide-react";
 import { Badge } from "@repo/ui/badge";
 import {
   DropdownMenu,
@@ -63,12 +63,27 @@ function isOverdue(dueDate: string | undefined): boolean {
   return dueDateStr < todayStr;
 }
 
-function getContactMeta(contact: string | null | undefined): { type: "email" | "phone"; href: string } | null {
+function isNative(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.()
+  );
+}
+
+function getContactMeta(contact: string | null | undefined): { type: "email" | "phone" | "address"; href: string } | null {
   if (!contact) return null;
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact))
     return { type: "email", href: `mailto:${contact}` };
   if (/^[+\d][\d\s\-().]{6,}$/.test(contact))
     return { type: "phone", href: `tel:${contact.replace(/\s/g, "")}` };
+  if (/\d/.test(contact) && contact.trim().split(/\s+/).length >= 2)
+    return {
+      type: "address",
+      href: isNative()
+        ? `maps://?q=${encodeURIComponent(contact)}`
+        : `https://maps.google.com/?q=${encodeURIComponent(contact)}`,
+    };
   return null;
 }
 
@@ -134,13 +149,19 @@ export function TaskCard({ task, onToggleComplete, onToggleStar, onTagClick, com
           {contactMeta && (
             <a
               href={contactMeta.href}
-              aria-label={contactMeta.type === "email" ? `Email ${task.contact}` : `Call ${task.contact}`}
+              aria-label={
+                contactMeta.type === "email" ? `Email ${task.contact}`
+                : contactMeta.type === "phone" ? `Call ${task.contact}`
+                : `Open ${task.contact} in Maps`
+              }
+              target={contactMeta.type === "address" ? "_blank" : undefined}
+              rel={contactMeta.type === "address" ? "noopener noreferrer" : undefined}
               onClick={(e) => e.stopPropagation()}
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary max-w-[160px]"
             >
-              {contactMeta.type === "email"
-                ? <Mail className="h-3 w-3 shrink-0" />
-                : <Phone className="h-3 w-3 shrink-0" />}
+              {contactMeta.type === "email" ? <Mail className="h-3 w-3 shrink-0" />
+                : contactMeta.type === "phone" ? <Phone className="h-3 w-3 shrink-0" />
+                : <MapPin className="h-3 w-3 shrink-0" />}
               <span className="truncate">{task.contact}</span>
             </a>
           )}

@@ -60,10 +60,20 @@ function detectContactType(value: string): "email" | "phone" | "address" | null 
   return null;
 }
 
+function isNative(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.()
+  );
+}
+
 function getContactHref(value: string, type: "email" | "phone" | "address"): string {
   if (type === "email") return `mailto:${value}`;
   if (type === "phone") return `tel:${value.replace(/\s/g, "")}`;
-  return `https://maps.apple.com/?q=${encodeURIComponent(value)}`;
+  return isNative()
+    ? `maps://?q=${encodeURIComponent(value)}`
+    : `https://maps.google.com/?q=${encodeURIComponent(value)}`;
 }
 
 type ContactFieldProps = {
