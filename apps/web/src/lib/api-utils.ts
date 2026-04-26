@@ -13,6 +13,8 @@ export function validateOrigin(request: Request): boolean {
 
   if (origin) {
     try {
+      // Allow Capacitor (iOS/Android) native WebView origins
+      if (origin.startsWith("capacitor://") || origin.startsWith("ionic://")) return true;
       const originHost = new URL(origin).host;
       if (allowedHost && originHost === allowedHost) return true;
     } catch {
