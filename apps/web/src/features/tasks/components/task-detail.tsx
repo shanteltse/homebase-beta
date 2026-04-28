@@ -129,6 +129,7 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
     }
   }, [isTitleEditing]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const [subtasks, setSubtasks] = useState<Subtask[]>(task?.subtasks ?? []);
   const [tags, setTags] = useState<string[]>(task?.tags ?? []);
   const [recurring, setRecurring] = useState<RecurringPattern | undefined>(
@@ -277,6 +278,18 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
 
   function handleDeleteSubtask(subtaskId: string) {
     setSubtasks((prev) => prev.filter((s) => s.id !== subtaskId));
+  }
+
+  function handleEditSubtask(subtaskId: string, newTitle: string) {
+    const title = newTitle.trim();
+    if (!title) {
+      handleDeleteSubtask(subtaskId);
+    } else {
+      setSubtasks((prev) =>
+        prev.map((s) => (s.id === subtaskId ? { ...s, title } : s)),
+      );
+    }
+    setEditingSubtaskId(null);
   }
 
   return (
@@ -498,15 +511,36 @@ export function TaskDetail({ taskId }: TaskDetailProps) {
                     checked={subtask.completed}
                     onCheckedChange={() => handleToggleSubtask(subtask.id)}
                   />
-                  <span
-                    className={
-                      subtask.completed
-                        ? "body flex-1 text-muted-foreground line-through"
-                        : "body flex-1 text-foreground"
-                    }
-                  >
-                    {subtask.title}
-                  </span>
+                  {editingSubtaskId === subtask.id ? (
+                    <input
+                      autoFocus
+                      defaultValue={subtask.title}
+                      className="body flex-1 min-w-0 rounded bg-muted/50 px-1 py-0.5 text-foreground outline-none focus:ring-1 focus:ring-ring"
+                      onBlur={(e) => handleEditSubtask(subtask.id, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleEditSubtask(subtask.id, e.currentTarget.value);
+                        } else if (e.key === "Escape") {
+                          setEditingSubtaskId(null);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setEditingSubtaskId(subtask.id)}
+                      onKeyDown={(e) => e.key === "Enter" && setEditingSubtaskId(subtask.id)}
+                      className={
+                        subtask.completed
+                          ? "body flex-1 cursor-text text-muted-foreground line-through"
+                          : "body flex-1 cursor-text text-foreground"
+                      }
+                    >
+                      {subtask.title}
+                    </span>
+                  )}
                   <Button
                     type="button"
                     variant="ghost"
