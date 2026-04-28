@@ -12,9 +12,11 @@ function isNative(): boolean {
 }
 
 export function PushNotificationRegistrar() {
+  console.log("[push] registrar mounted");
   const { data: user } = useUser();
 
   useEffect(() => {
+    console.log("[push] effect fired — user:", !!user, "isNative:", isNative());
     if (!user || !isNative()) return;
 
     async function registerPush() {
