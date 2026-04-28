@@ -30,8 +30,8 @@ export function PushNotificationRegistrar() {
           return;
         }
 
-        await PushNotifications.register();
-
+        // Listeners must be added before register() so the token isn't missed
+        // if APNs responds before the listener is attached.
         PushNotifications.addListener("registration", async (token) => {
           try {
             await fetch("/api/push/register", {
@@ -47,6 +47,8 @@ export function PushNotificationRegistrar() {
         PushNotifications.addListener("registrationError", (err) => {
           console.error("[push] Registration error", err);
         });
+
+        await PushNotifications.register();
       } catch (err) {
         console.error("[push] Push setup error", err);
       }
