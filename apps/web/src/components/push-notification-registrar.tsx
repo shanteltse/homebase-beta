@@ -33,12 +33,19 @@ export function PushNotificationRegistrar() {
         // Listeners must be added before register() so the token isn't missed
         // if APNs responds before the listener is attached.
         PushNotifications.addListener("registration", async (token) => {
+          console.log("[push] Got APNs token, registering with server...");
           try {
-            await fetch("/api/push/register", {
+            const res = await fetch("/api/push/register", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token: token.value, platform: "ios" }),
             });
+            const data = await res.json();
+            if (!res.ok) {
+              console.error("[push] Server rejected token registration", res.status, data);
+            } else {
+              console.log("[push] Token registered successfully", data);
+            }
           } catch (err) {
             console.error("[push] Failed to register token", err);
           }
