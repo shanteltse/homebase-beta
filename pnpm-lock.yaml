@@ -137,9 +137,6 @@ importers:
       '@auth/drizzle-adapter':
         specifier: ^1.11.1
         version: 1.11.1
-      '@capacitor-community/speech-recognition':
-        specifier: ^7.0.1
-        version: 7.0.1(@capacitor/core@8.3.1)
       '@capacitor/app':
         specifier: ^8.1.0
         version: 8.1.0(@capacitor/core@8.3.1)
@@ -1001,11 +998,6 @@ packages:
   '@bramus/specificity@2.4.2':
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
-
-  '@capacitor-community/speech-recognition@7.0.1':
-    resolution: {integrity: sha512-ykpBZziR575X0eURO5vXaD9gVrXXC/7Ra2qql/2KP6/jxWOqAFuw4eKjSPjwdAgGE6a/Z+v8FJm4SVh57MVwDA==}
-    peerDependencies:
-      '@capacitor/core': '>=7.0.0'
 
   '@capacitor/app@8.1.0':
     resolution: {integrity: sha512-MlmttTOWHDedr/G4SrhNRxsXMqY+R75S4MM4eIgzsgCzOYhb/MpCkA5Q3nuOCfL1oHm26xjUzqZ5aupbOwdfYg==}
@@ -7013,10 +7005,6 @@ snapshots:
   '@bramus/specificity@2.4.2':
     dependencies:
       css-tree: 3.2.1
-
-  '@capacitor-community/speech-recognition@7.0.1(@capacitor/core@8.3.1)':
-    dependencies:
-      '@capacitor/core': 8.3.1
 
   '@capacitor/app@8.1.0(@capacitor/core@8.3.1)':
     dependencies:
