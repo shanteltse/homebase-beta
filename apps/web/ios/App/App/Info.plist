@@ -58,7 +58,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.homebase.app</string>
+				<string>com.shanteltse.homebase</string>
 			</array>
 		</dict>
 	</array>

@@ -8,7 +8,7 @@ import { createMobileToken } from "@/lib/auth-mobile";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const REDIRECT_URI = "https://homebase-beta-web.vercel.app/api/auth/mobile/google/callback";
-const APP_DEEP_LINK = "com.homebase.app://auth/callback";
+const APP_DEEP_LINK = "com.shanteltse.homebase://auth/callback";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

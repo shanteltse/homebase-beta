@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.homebase.app"
+      "bundleIdentifier": "com.shanteltse.homebase"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.homebase.app"
+      "package": "com.shanteltse.homebase"
     },
     "web": {
       "bundler": "metro",

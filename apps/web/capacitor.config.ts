@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.homebase.app',
+  appId: 'com.shanteltse.homebase',
   appName: 'HomeBase',
   webDir: 'out',
   backgroundColor: '#faf7f4',

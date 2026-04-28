@@ -61,7 +61,7 @@ async function sendApns({
   const keyId = process.env.APNS_KEY_ID;
   const teamId = process.env.APNS_TEAM_ID;
   const privateKey = process.env.APNS_PRIVATE_KEY;
-  const bundleId = process.env.APNS_BUNDLE_ID ?? "com.homebase.app";
+  const bundleId = process.env.APNS_BUNDLE_ID ?? "com.shanteltse.homebase";
   const production = process.env.NODE_ENV === "production";
 
   if (!keyId || !teamId || !privateKey) {

@@ -45,7 +45,7 @@ export function LoginForm({ inviteToken }: LoginFormProps) {
     // Register listener BEFORE opening the browser to guarantee ordering
     const handle = await App.addListener("appUrlOpen", async (event: { url: string }) => {
       alert("appUrlOpen callback fired: " + event.url.slice(0, 50));
-      if (!event.url.startsWith("com.homebase.app://auth/callback")) return;
+      if (!event.url.startsWith("com.shanteltse.homebase://auth/callback")) return;
 
       const qs = event.url.includes("?") ? event.url.split("?")[1]! : "";
       const params = new URLSearchParams(qs);
