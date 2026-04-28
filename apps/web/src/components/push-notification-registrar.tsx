@@ -34,7 +34,10 @@ export function PushNotificationRegistrar() {
 
         // Listeners must be added before register() so the token isn't missed
         // if APNs responds before the listener is attached.
+        let tokenReceived = false;
+
         PushNotifications.addListener("registration", async (token) => {
+          tokenReceived = true;
           console.log("[push] Got APNs token, registering with server...");
           try {
             const res = await fetch("/api/push/register", {
@@ -54,10 +57,18 @@ export function PushNotificationRegistrar() {
         });
 
         PushNotifications.addListener("registrationError", (err) => {
-          console.error("[push] Registration error", err);
+          console.error("[push] Registration error — code:", (err as { error?: unknown }).error, "full:", JSON.stringify(err));
         });
 
+        console.log("[push] Calling register()...");
         await PushNotifications.register();
+        console.log("[push] register() returned");
+
+        setTimeout(() => {
+          if (!tokenReceived) {
+            console.error("[push] register timed out — no token received after 10s");
+          }
+        }, 10000);
       } catch (err) {
         console.error("[push] Push setup error", err);
       }
