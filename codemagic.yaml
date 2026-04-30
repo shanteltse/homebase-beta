@@ -12,7 +12,7 @@ workflows:
         XCODE_PROJECT: apps/web/ios/App/App.xcodeproj
         XCODE_SCHEME: App
         # Add your Apple Team ID (10-character string, e.g. "AB12CD34EF")
-        APPLE_TEAM_ID: YOUR_APPLE_TEAM_ID
+        APPLE_TEAM_ID: P8GPR7V2U6
       groups:
         # Create this group in Codemagic UI → Teams → Global variables & secrets
         # and add the following encrypted variables:
