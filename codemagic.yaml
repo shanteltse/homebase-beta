@@ -3,6 +3,10 @@ workflows:
     name: iOS → TestFlight
     max_build_duration: 120
     instance_type: mac_mini_m2
+    # References the App Store Connect API key added in Codemagic UI:
+    # Teams → Integrations → App Store Connect → add key, give it this name
+    integrations:
+      app_store_connect: Codemagic Magic Key
 
     environment:
       xcode: 26.0
@@ -20,6 +24,9 @@ workflows:
         #   CERTIFICATE_PRIVATE_KEY           — RSA private key for the distribution certificate
         #     Generate with: ssh-keygen -t rsa -b 2048 -m PEM -f certificate_key
         - app_store_credentials
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.shanteltse.homebase
 
     scripts:
       - name: Install pnpm
@@ -34,16 +41,8 @@ workflows:
       - name: Sync Capacitor iOS
         script: cd apps/web && npx cap sync ios
 
-      - name: Set up keychain and fetch signing files
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files \
-            "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --certificate-key @env:CERTIFICATE_PRIVATE_KEY \
-            --create
-          keychain add-certificates
-          xcode-project use-profiles
+      - name: Set up code signing
+        script: xcode-project use-profiles
 
       - name: Build IPA
         script: |
