@@ -1,0 +1,75 @@
+workflows:
+  ios-testflight:
+    name: iOS → TestFlight
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: 26.0
+      node: 20
+      vars:
+        BUNDLE_ID: com.shanteltse.homebase
+        XCODE_PROJECT: apps/web/ios/App/App.xcodeproj
+        XCODE_SCHEME: App
+        # Add your Apple Team ID (10-character string, e.g. "AB12CD34EF")
+        APPLE_TEAM_ID: YOUR_APPLE_TEAM_ID
+      groups:
+        # Create this group in Codemagic UI → Teams → Global variables & secrets
+        # and add the following encrypted variables:
+        #
+        #   APP_STORE_CONNECT_KEY_IDENTIFIER
+        #     The Key ID from App Store Connect → Users and Access → Integrations → App Store Connect API
+        #
+        #   APP_STORE_CONNECT_ISSUER_ID
+        #     The Issuer ID from the same App Store Connect API page
+        #
+        #   APP_STORE_CONNECT_PRIVATE_KEY
+        #     Contents of the .p8 file downloaded from App Store Connect
+        #
+        #   CERTIFICATE_PRIVATE_KEY
+        #     RSA private key used to create/renew the iOS Distribution certificate
+        #     Generate with: ssh-keygen -t rsa -b 2048 -m PEM -f certificate_key
+        - app_store_credentials
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.shanteltse.homebase
+
+    scripts:
+      - name: Install pnpm
+        script: npm install -g pnpm@9
+
+      - name: Install dependencies
+        script: pnpm install
+
+      - name: Build web app
+        script: cd apps/web && pnpm build
+
+      - name: Sync Capacitor iOS
+        script: cd apps/web && npx cap sync ios
+
+      - name: Set up code signing
+        script: xcode-project use-profiles
+
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME" \
+            --config Release
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - shantel.tse@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: environment_variables
+        submit_to_testflight: true
+        cancel_previous_submissions: true
