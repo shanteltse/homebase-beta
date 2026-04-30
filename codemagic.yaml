@@ -6,7 +6,7 @@ workflows:
 
     environment:
       xcode: 26.0
-      node: 20
+      node: 22
       vars:
         BUNDLE_ID: com.shanteltse.homebase
         XCODE_PROJECT: apps/web/ios/App/App.xcodeproj
