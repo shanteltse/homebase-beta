@@ -20,10 +20,6 @@ workflows:
         #   CERTIFICATE_PRIVATE_KEY           — RSA private key for the distribution certificate
         #     Generate with: ssh-keygen -t rsa -b 2048 -m PEM -f certificate_key
         - app_store_credentials
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.shanteltse.homebase
-
     scripts:
       - name: Install pnpm
         script: npm install -g pnpm@9
