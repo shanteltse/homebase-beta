@@ -37,6 +37,13 @@ workflows:
       - name: Sync Capacitor iOS
         script: cd apps/web && npx cap sync ios
 
+      - name: Verify App Store Connect API credentials
+        script: |
+          app-store-connect list-certificates --type IOS_DISTRIBUTION \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --private-key @env:APP_STORE_CONNECT_PRIVATE_KEY
+
       - name: Fetch signing certificate and provisioning profile
         script: |
           keychain initialize
