@@ -70,6 +70,5 @@ workflows:
           success: true
           failure: true
       app_store_connect:
-        auth: environment_variables
         submit_to_testflight: true
         cancel_previous_submissions: true
