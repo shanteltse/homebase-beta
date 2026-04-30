@@ -22,7 +22,7 @@ workflows:
         - app_store_credentials
     scripts:
       - name: Install pnpm
-        script: npm install -g pnpm@9
+        script: corepack enable && corepack prepare pnpm@9 --activate
 
       - name: Install dependencies
         script: pnpm install
